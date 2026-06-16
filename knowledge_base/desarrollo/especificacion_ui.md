@@ -4,7 +4,7 @@ nombre: "Especificación de UI y Frontend"
 fecha_modificacion: "16/06/2026"
 estado: "BORRADOR"
 relacionados: ["GIM-03", "LOG-03"]
-tags: ["desarrollo", "frontend", "ui", "android", "kotlin"]
+tags: ["desarrollo", "frontend", "ui", "android", "java"]
 ---
 
 # Especificación de UI y Frontend

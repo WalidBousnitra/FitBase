@@ -10,10 +10,10 @@ tags: ["desarrollo", "prompt", "codigo", "estilo"]
 # Meta-Prompt y Normas de Compilación
 
 ## 1. Alcance
-Guía de estilo de código estricta para la generación de Kotlin y Google Apps Script.
+Guía de estilo de código estricta para la generación de java y Google Apps Script.
 
 ## 2. Variables del Sistema
-* [LENGUAJE_FRONT]: Kotlin (Jetpack Compose)
+* [LENGUAJE_FRONT]: java (Jetpack Compose)
 * [LENGUAJE_BACK]: JavaScript (Google Apps Script V8)
 
 ## 3. Lógica y Reglas
