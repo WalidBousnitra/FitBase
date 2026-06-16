@@ -1,4 +1,4 @@
----
+﻿---
 id: "SYS-00"
 nombre: "Manifest Maestro, Protocolo RAG y Arquitectura del Sistema"
 fecha_modificacion: "16/06/2026"
@@ -30,43 +30,71 @@ Queda prohibida la creación de archivos fuera de esta estructura plana. Toda mo
 /knowledge_base
 ├── manifest.md                 # [SYS-00] ESTE ARCHIVO: Núcleo de control y flujo.
 │
-├── /documentacion              # [TMP] ÁREA TEMPORAL: Inbox para ingesta de material crudo (PDFs/Webs) a procesar por NotebookLM.
+├── /plantilla.md               # Plantilla de documentos de conocimiento.
+├── /plantilla reglas.txt       # Plantilla de reglas de negocio o datos.
 │
-├── /perfil
-│   ├── biometria.md            # Datos físicos basales, historial clínico, medidas y lesiones.
-│   ├── horarios.md             # Ventanas horarias disponibles, cronotipo y bloques de descanso.
-│   └── cultura.md              # Fusión gastronómica España/Marruecos y adaptaciones de calendario (ej. Ramadán).
+├── /contexto                   # Datos del usuario y del entorno que NO modifican reglas directas.
+│   ├── /perfil
+│   │   ├── biometria.md        # Datos físicos basales, historial clínico, medidas y lesiones.
+│   │   ├── horarios.md         # Ventanas horarias disponibles, cronotipo y bloques de descanso.
+│   │   └── cultura.md          # Fusión gastronómica España/Marruecos y adaptaciones de calendario.
+│   │
+│   ├── /nutricion
+│   │   ├── preferencias.md     # Filtros de alimentos, intolerancias y logística de cocina.
+│   │   └── objetivos.md        # Objetivos actuales, macros base y metas de actividad.
+│   │
+│   ├── prioridades.md         # Prioridades globales del proyecto en orden de importancia.
+│   │
+│   └── /metricas
+│       ├── hardware_zepp.md    # Mapeo de datos del Amazfit GTS 4.
+│       ├── subjetivas.md       # Logs de estrés mental, fatiga subjetiva y energía pre-entreno.
+│       └── salud_connect.md    # Ingesta de pasos diarios y NEAT.
 │
-├── /nutricion
-│   ├── preferencias.md         # Filtros de alimentos (Top/Odiados), intolerancias y logística de cocina.
-│   ├── objetivos.md            # Fase actual, distribución de macros base y metas diarias de pasos.
-│   └── ciencia_nutricion.md    # Leyes inmutables extraídas de papers sobre digestión y timing.
+├── /evidencia                  # Hallazgos, papers y evidencia científica de apoyo.
+│   ├── cardio.md               # Evidencia sobre cardio y capacidad aeróbica.
+│   ├── fuerza.md               # Evidencia sobre fuerza y adaptaciones neuromusculares.
+│   ├── hipertrofia
+│   │   └── hipertrofia.md       # Evidencia sobre hipertrofia muscular y crecimiento.
+│   ├── intensidad.md           # Evidencia sobre intensidad, RPE y cargas relativas.
+│   ├── lesiones.md             # Evidencia sobre prevención y recuperación de lesiones.
+│   ├── metabolismo.md          # Evidencia sobre metabolismo y adaptación energética.
+│   ├── periodizacion.md        # Evidencia sobre ciclos y planificación.
+│   ├── postura
+│   │   └── postura.md          # Evidencia sobre postura y control corporal.
+│   ├── recuperacion.md         # Evidencia sobre recuperación, sueño y regeneración.
+│   ├── rendimiento.md          # Evidencia sobre potencia y eficiencia.
+│   ├── salud.md                # Evidencia sobre salud general y estado fisiológico.
+│   ├── suplementacion.md       # Evidencia sobre suplementos y ayudas ergogénicas.
+│   ├── volumen.md              # Evidencia sobre volumen óptimo y estrés mecánico.
+│   ├── frecuencia.md           # Evidencia sobre frecuencia de entrenamiento.
+│   ├── flexibilidad.md         # Evidencia sobre flexibilidad y estiramientos.
+│   ├── psicologia.md           # Evidencia sobre motivación, hábitos y adherencia.
+│   ├── progreso.md             # Evidencia sobre adaptación y progresión de cargas.
+│   ├── nutricion
+│   │   └── ciencia_nutricion.md    # Evidencia científica sobre digestión y timing.
+│   └── movilidad
+│       └── movilidad.md            # Evidencia sobre movilidad y rango articular.
 │
-├── /gimnasio
-│   ├── inventario.md           # Recursos físicos del gym, poleas y saltos de peso reales de mancuernas.
-│   ├── rutina.md               # Distribución de fuerza, bloques de ejercicios, series y reps actuales.
-│   ├── calentamiento.md        # Protocolos físicos de activación neuromuscular pre-sesión.
-│   ├── ciencia_volumen.md      # Leyes de volumen óptimo (MEV/MRV) y frecuencia por grupo muscular.
-│   └── ciencia_progresion.md   # Leyes de sobrecarga progresiva, RPE, RIR y protocolos de deload.
-│
-├── /movilidad
-│   ├── diagnostico.md          # Mapeo de desequilibrios posturales específicos (ej. hombros, cadera).
-│   └── protocolos.md           # Rutinas de rango de movimiento (ROM) y ejercicios correctivos dinámicos.
-│
-├── /natacion
-│   └── piscina.md              # Sesiones de nado, volumen de cardio residual y enfoque técnico.
-│
-├── /metricas
-│   ├── hardware_zepp.md        # Mapeo de datos del Amazfit GTS 4 (Sleep Score, REM, Deep Sleep).
-│   ├── subjetivas.md           # Logs de estrés mental, fatiga subjetiva y energía pre-entreno (Rango 1-5).
-│   └── salud_connect.md        # Ingesta en segundo plano de pasos diarios (NEAT) vía API.
-│
-├── /logica
-│   ├── motor_pesos.md          # Algoritmos matemáticos y factores de penalización de cargas (*0.93, etc.).
-│   ├── motor_dieta.md          # Algoritmo de ajuste calórico dinámico reactivo a los pasos (NEAT).
-│   ├── base_datos.md           # Arquitectura, indexación y nomenclatura de columnas en Google Sheets.
-│   └── excepciones.md          # Lógica para contingencias: Viajes, enfermedad y periodos atípicos.
-│
-└── /desarrollo
-    ├── especificacion_ui.md    # Flujo de pantallas, layouts, Foreground Services y alarmas.
-    └── prompt_compilador.md    # Instrucciones técnicas para la generación limpia de código fuente.
+└── /reglas                    # Reglas de negocio y lógica que afectan decisiones directas.
+    ├── /gimnasio
+    │   ├── inventario.md       # Reglas del equipo disponible y selección de cargas.
+    │   ├── rutina.md           # Reglas de programación de sesiones y bloques de trabajo.
+    │   └── calentamiento.md    # Reglas de activación neuromuscular y preparación.
+    │
+    ├── /movilidad
+    │   ├── diagnostico.md      # Reglas para diagnóstico de desequilibrios y prioridades.
+    │   └── protocolos.md       # Reglas de movilidad y protocolos correctivos.
+    │
+    ├── /natacion
+    │   └── piscina.md          # Reglas de sesiones de nado y volumen técnico.
+    │
+    ├── /logica
+    │   ├── motor_pesos.md      # Algoritmos matemáticos y factores de penalización.
+    │   ├── motor_dieta.md      # Reglas de ajuste calórico dinámico.
+    │   ├── base_datos.md       # Reglas de arquitectura, indexación y nomenclatura en Sheets.
+    │   └── excepciones.md      # Reglas de contingencia: viajes, enfermedad, atípicos.
+    │
+    └── /desarrollo
+        ├── especificacion_ui.md  # Reglas de interfaz, flujo y servicios.
+        └── prompt_compilador.md  # Reglas de generación de código.
+```

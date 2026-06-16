@@ -1,6 +1,6 @@
 ---
 id: "MET-02"
-nombre: "Métricas Subjetivas del Usuario"
+nombre: "Preferencias y Logística del gimnasio"
 fecha_modificacion: "16/06/2026"
 estado: "BORRADOR"
 relacionados: ["LOG-01"]
