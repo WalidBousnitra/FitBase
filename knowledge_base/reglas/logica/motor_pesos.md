@@ -28,16 +28,22 @@ Algoritmo que ajusta las cargas de entrenamiento basándose en fatiga, sueño y 
 
 ## 3. Variables de Entrada
 
-### Métricas de Hardware (USR-MET-01)
+### Métricas de Hardware (vía Health Connect)
+
+> **Fuente datos**: La app lee de Health Connect, que recibe de Zepp/Mi Fitness.
+> Ver [USR-MET-01](../../usuario/metricas/hardware.md) para flujo completo.
 
 > ✅ **Fuente HRV**: Kiviniemi et al. (2007) - `evidencia/sueno.md` § 7
 
 | Variable | Criterio | Acción | Evidencia |
 |----------|----------|--------|-----------|
-| `ZEPP_HRV` / Readiness | **< (media_10d - 1 SD)** | Reducir intensidad o descanso | ✅ Kiviniemi 2007 |
-| `ZEPP_HRV` / Readiness | **↓ 2+ días consecutivos** | Día de recuperación activa | ✅ Kiviniemi 2007 |
-| `ZEPP_SLEEP_SCORE` | <60 (heurístico) | Reducir volumen | ⚠️ HEURÍSTICO |
-| `ZEPP_HR_REST` | +10bpm vs baseline | Considerar descanso | ⚠️ HEURÍSTICO |
+| `HC_SLEEP_SCORE` (calculado) | **< 60** | Reducir volumen | ⚠️ HEURÍSTICO |
+| `HC_HR_REST` | **+10bpm vs baseline** | Considerar descanso | ⚠️ HEURÍSTICO |
+| `HC_HR_REST` | **↑ 2+ días consecutivos** | Día de recuperación activa | ✅ Adaptado de Kiviniemi 2007 |
+
+> ⚠️ **HRV no disponible**: Zepp no exporta RMSSD a Health Connect. Como alternativa, usamos:
+> - Sleep Score (calculado desde duración + fases de sueño)
+> - FC reposo elevada (indicador indirecto de estrés/fatiga)
 
 ### Métricas Subjetivas (USR-MET-02) - HEURÍSTICAS
 | Variable | Umbral | Acción | Nota |
@@ -46,47 +52,50 @@ Algoritmo que ajusta las cargas de entrenamiento basándose en fatiga, sueño y 
 | `SUB_ESTRES` | >7/10 | Reducir volumen | Heurístico |
 | `SUB_DOMS` | Severo en grupo | Evitar ese grupo | Sentido común |
 
-## 4. Protocolo HRV (Evidencia)
+## 4. Protocolo FC Reposo (Adaptado de Evidencia)
 
-> ✅ **Fuente**: Kiviniemi et al. (2007) - `evidencia/sueno.md` § 7
+> ✅ **Fuente original**: Kiviniemi et al. (2007) usaba HRV. Adaptamos a FC reposo.
+> La FC reposo elevada es indicador indirecto de estrés/recuperación incompleta.
 
 ```yaml
-HRV_AUTOREGULACION:
-  medicion:
+FC_AUTOREGULACION:
+  fuente_datos: "Health Connect (HC_HR_REST)"
+  
+  medicion_original:  # Usuario ve en Zepp app
     momento: "Al despertar, antes de levantarse"
-    duracion: "2-3 minutos"
-    posicion: "Supino"
+    duracion: "Automático (Amazfit mide durante la noche)"
   
   calculo_referencia:
     media_movil: "10 días anteriores"
-    umbral_bajo: "media - 1 desviación estándar"
+    umbral_alto: "media + 10 bpm"
     
   decision:
-    HRV_≥_media: "Sesión planificada normal"
-    HRV_<_umbral_bajo: "Reducir intensidad"
-    tendencia_descendente_2d: "Recuperación activa"
+    FC_≤_media: "Sesión planificada normal"
+    FC_>_umbral_alto: "Reducir intensidad"
+    tendencia_ascendente_2d: "Considerar recuperación activa"
 ```
 
-> **Resultado del paper**: Grupo guiado por HRV mejoró VO2peak +7.1% vs +1.3% del grupo fijo (p=0.048)
+> **Nota**: FC reposo elevada indica que el sistema nervioso simpático está activado (estrés, recuperación incompleta, enfermedad incipiente).
 
 ---
 
 ## 5. Lógica de Cálculo
 
-> Combinación de HRV (paper) + heurísticas marcadas
+> Combinación de FC reposo (adaptado de paper) + Sleep Score + heurísticas marcadas
 
 ```python
 def calcular_ajuste(datos_usuario):
     ajuste = 1.0  # 100% = sesión normal
     
-    # --- BASADO EN EVIDENCIA (Kiviniemi 2007) ---
-    if datos_usuario.hrv < datos_usuario.hrv_media_10d - datos_usuario.hrv_sd:
+    # --- ADAPTADO DE EVIDENCIA (Kiviniemi 2007) ---
+    # Usando FC reposo como proxy de HRV (Health Connect: HC_HR_REST)
+    if datos_usuario.fc_reposo > datos_usuario.fc_media_10d + 10:
         ajuste *= 0.80  # Reducción significativa
-    elif datos_usuario.hrv_tendencia == "descendente_2d":
+    elif datos_usuario.fc_tendencia == "ascendente_2d":
         return "RECUPERACION_ACTIVA"
     
     # --- HEURÍSTICAS (marcar claramente) ---
-    # Los factores numéricos siguientes son estimaciones prácticas
+    # Sleep Score: calculado desde HC_SLEEP_DURATION + fases
     if datos_usuario.sleep_score < 60:
         ajuste *= 0.90  # ⚠️ HEURÍSTICO
     if datos_usuario.estres_subjetivo > 7:

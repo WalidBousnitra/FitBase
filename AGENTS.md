@@ -44,6 +44,7 @@ Base de conocimiento para una app de programación de entrenamiento y nutrición
 └── /reglas               # Lógica de negocio (actualizada con evidencia)
     ├── /entrenamiento    # Programación, ejercicios, calentamiento
     ├── /nutricion        # Motor de dieta, preferencias
+    ├── /natacion         # Clases de natación 2x/semana
     ├── /logica           # Motor de cargas, BD, excepciones
     └── /desarrollo       # UI y reglas de código
 ```
@@ -52,10 +53,10 @@ Base de conocimiento para una app de programación de entrenamiento y nutrición
 
 | Componente | Tecnología |
 |------------|------------|
-| Frontend | Android (Kotlin + Jetpack Compose) |
+| Frontend | Android (Java + Views/XML) |
 | Backend | Google Apps Script (V8) |
-| Base de Datos | Google Sheets |
-| Métricas | Health Connect + Zepp (Amazfit GTS 4) |
+| Base de Datos | Google Sheets (14 hojas) |
+| Métricas | Health Connect ← Zepp (Amazfit GTS 4) |
 
 ## Archivos Clave
 
@@ -75,7 +76,7 @@ Base de conocimiento para una app de programación de entrenamiento y nutrición
 - Respetar el orden de `prioridades.md` en decisiones
 - Usar `plantilla.md` para crear nuevos documentos
 - Usar datos de `/evidencia/` para toda lógica de entrenamiento/nutrición
-- Generar código en español (Kotlin frontend, Apps Script backend)
+- Generar código en español (Java frontend, Apps Script backend)
 - Justificar toda lógica con referencia a archivos de `/knowledge_base/`
 
 ### NO HACER

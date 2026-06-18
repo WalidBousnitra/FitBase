@@ -17,8 +17,8 @@ Estructura y reglas para la persistencia de datos en Google Sheets, diseñada pa
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │ FLUJO 1: MAÑANA (Auto/Semi-auto)                                │
-│ Zepp → [sueño, HRV, readiness] → metricas_zepp                  │
-│ Usuario → [peso] → peso_log                                      │
+│ Health Connect → [sueño, FC reposo, pasos] → metricas_zepp      │
+│ Usuario → [peso (si no synced)] → peso_log                      │
 │ Motor → Calcula ajuste del día → ready para gym                 │
 └─────────────────────────────────────────────────────────────────┘
                               ↓

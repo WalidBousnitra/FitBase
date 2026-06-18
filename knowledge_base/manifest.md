@@ -44,7 +44,7 @@ Este documento es la **Única Fuente de Verdad (SSOT)** del proyecto FitBase.
 
 ---
 
-## 3. Mapa Estructural (39 archivos)
+## 3. Mapa Estructural (42 archivos)
 
 ```
 /knowledge_base
@@ -92,6 +92,8 @@ Este documento es la **Única Fuente de Verdad (SSOT)** del proyecto FitBase.
     ├── /nutricion
     │   ├── motor_dieta.md   # [REG-NUT-01] Cálculo de macros
     │   └── preferencias.md  # [REG-NUT-02] Filtros alimentarios
+    ├── /natacion
+    │   └── piscina.md       # [REG-NAT-01] Clases de natación 2x/semana
     ├── /logica
     │   ├── motor_pesos.md   # [REG-LOG-01] Autorregulación de cargas
     │   ├── base_datos.md    # [REG-LOG-02] Esquema Google Sheets (14 hojas)
@@ -101,7 +103,6 @@ Este documento es la **Única Fuente de Verdad (SSOT)** del proyecto FitBase.
         ├── MANUAL_DESPLIEGUE.md  # [REG-DEV-03] Guía paso a paso
         ├── ui.md                 # [REG-DEV-01] Especificación Android
         └── compilador.md         # [REG-DEV-02] Reglas de código para IA
-        └── compilador.md    # [REG-DEV-02] Reglas de código para IA
 ```
 
 ---

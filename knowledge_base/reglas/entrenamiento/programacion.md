@@ -180,7 +180,38 @@ Las cargas diarias son calculadas por `motor_pesos.md` basándose en:
 
 ---
 
-## 11. Uso en el Sistema
+## 11. Natación
+
+> Referencia: [piscina.md](../natacion/piscina.md)
+
+### Integración Semanal
+| Parámetro | Valor |
+|-----------|-------|
+| Frecuencia | **2x/semana** (Martes y Jueves probable) |
+| Duración | 1 hora (clase dirigida) |
+| Gasto calórico | ~250 kcal/sesión (principiante) |
+
+### Impacto en Programación
+- **NO sustituye gym** para hipertrofia (sin sobrecarga progresiva)
+- **SÍ beneficia postura** (extensión torácica, rotación hombros)
+- **SÍ cuenta como cardio** bajo impacto
+- Considerar menor volumen de hombros en días post-natación
+
+### Distribución Semanal Ejemplo
+```yaml
+SEMANA_TIPO:
+  lunes: GYM (Upper)
+  martes: NATACIÓN
+  miercoles: GYM (Lower)
+  jueves: NATACIÓN
+  viernes: GYM (Upper)
+  sabado: GYM (Lower) o descanso
+  domingo: DESCANSO
+```
+
+---
+
+## 12. Uso en el Sistema
 
 ```yaml
 GENERADOR_PROGRAMA:
@@ -207,7 +238,11 @@ GENERADOR_PROGRAMA:
     - sesion_separada
     - preferir_bici
     
-  6_periodizacion:
+  6_natacion:
+    - 2x/semana
+    - no_sustituye_gym
+    
+  7_periodizacion:
     - mesociclo: 4 semanas
     - deload: semana 4
     - progresion_RIR: 4→3→2→deload

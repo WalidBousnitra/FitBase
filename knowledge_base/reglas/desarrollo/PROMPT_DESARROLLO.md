@@ -93,8 +93,43 @@ OBLIGATORIO:
 | Dispositivo | Modelo | Uso |
 |-------------|--------|-----|
 | Móvil | Xiaomi Redmi Note 14 Pro 5G | App principal |
-| Wearable | Amazfit GTS 4 | Sueño, HRV, FC |
+| Wearable | Amazfit GTS 4 | Sueño, FC reposo, pasos |
 | Báscula | Xiaomi Mi Scale | Peso, composición |
+
+### ⚠️ INTEGRACIÓN DE MÉTRICAS (Health Connect)
+
+> **IMPORTANTE**: Zepp y Xiaomi NO tienen API pública. La app lee datos vía **Health Connect**.
+
+```
+┌──────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│ Amazfit GTS 4    │────▶│   Zepp App      │────▶│                 │
+│ (wearable)       │     │                 │     │                 │
+└──────────────────┘     └─────────────────┘     │ HEALTH CONNECT  │
+                                                 │ (API Android)   │
+┌──────────────────┐     ┌─────────────────┐     │                 │
+│ Báscula Xiaomi   │────▶│  Mi Fitness     │────▶│                 │
+│ (bluetooth)      │     │                 │     │                 │
+└──────────────────┘     └─────────────────┘     └────────┬────────┘
+                                                          │
+                                                          ▼
+                                                 ┌─────────────────┐
+                                                 │   APP FITBASE   │
+                                                 │ (lee al abrir)  │
+                                                 └─────────────────┘
+```
+
+**Métricas disponibles vía Health Connect:**
+- Sueño (duración, fases, score calculado)
+- FC reposo
+- Pasos diarios
+- Peso y grasa corporal (si la báscula sincroniza)
+
+**Métricas NO disponibles (entrada manual opcional):**
+- HRV (Zepp no exporta)
+- Nivel de estrés (Zepp no exporta)
+- Grasa visceral (Xiaomi no exporta)
+
+**Implementación:** Ver [compilador.md §15](compilador.md) para código de HealthConnectManager.java
 
 ---
 
@@ -105,7 +140,7 @@ OBLIGATORIO:
 Usuario despierta
     │
     ▼
-Abre app ──▶ Splash (0.5s)
+Abre app ──▶ Splash (0.5s) ──▶ Lee Health Connect
     │
     ▼
 HOME: Ver macros del día

@@ -1,7 +1,7 @@
 ---
 id: "USR-PER-02"
 nombre: "Horarios y Disponibilidad"
-fecha_modificacion: "17/06/2026"
+fecha_modificacion: "18/06/2026"
 estado: "PROD_ACTUAL"
 relacionados: ["USR-PER-01", "USR-01", "REG-ENT-01"]
 tags: ["perfil", "horarios", "cronotipo", "trabajo"]
@@ -152,7 +152,35 @@ COMIDAS:
     si_entreno_tarde: "Snack 16:00 → Entreno → Cena post"
 ```
 
-## 6. Compromisos Fijos
+## 6. Natación
+
+> Referencia: [piscina.md](../../reglas/natacion/piscina.md)
+
+### Horario de Clases
+| Día | Horario | Notas |
+|-----|---------|-------|
+| Martes | Por confirmar | Después del trabajo probable |
+| Jueves | Por confirmar | Después del trabajo probable |
+
+```yaml
+NATACION:
+  frecuencia: "2x/semana"
+  duracion: "1 hora (clase)"
+  dias_probables: ["Martes", "Jueves"]
+  distancia: "~3 min andando"
+  nivel: "Principiante (aprendizaje)"
+  
+  impacto_gym:
+    - No sustituye entrenamiento de fuerza
+    - Beneficia postura (extensión torácica)
+    - Considerar como cardio/recuperación
+  
+  ajuste_horario:
+    - Días de natación = no gym (normalmente)
+    - Gym preferible: L, V, S, D
+```
+
+## 7. Compromisos Fijos
 
 ### Semanales
 | Día | Compromiso | Horario | Impacto |
@@ -178,7 +206,7 @@ COMPROMISOS:
     ajuste: "Planificar como día alto en carbos"
 ```
 
-## 7. Resumen para el Sistema
+## 8. Resumen para el Sistema
 
 ### Variables Clave
 ```yaml

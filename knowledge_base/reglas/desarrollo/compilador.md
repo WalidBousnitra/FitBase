@@ -186,6 +186,9 @@ dependencies {
     
     // Swipe gestures
     implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
+    
+    // Health Connect (lectura de métricas)
+    implementation 'androidx.health.connect:connect-client:1.1.0-alpha07'
 }
 ```
 
@@ -811,3 +814,164 @@ public class ApiResponse<T> {
     <dimen name="button_corner_radius">28dp</dimen>
 </resources>
 ```
+
+---
+
+## 15. Health Connect - Integración
+
+> Referencia: [USR-MET-01](../../usuario/metricas/hardware.md)
+
+### Permisos en AndroidManifest.xml
+```xml
+<!-- Health Connect permissions -->
+<uses-permission android:name="android.permission.health.READ_STEPS"/>
+<uses-permission android:name="android.permission.health.READ_SLEEP"/>
+<uses-permission android:name="android.permission.health.READ_HEART_RATE"/>
+<uses-permission android:name="android.permission.health.READ_WEIGHT"/>
+<uses-permission android:name="android.permission.health.READ_BODY_FAT"/>
+<uses-permission android:name="android.permission.health.READ_DISTANCE"/>
+<uses-permission android:name="android.permission.health.READ_ACTIVE_CALORIES_BURNED"/>
+
+<!-- Health Connect intent filter (requerido para Privacy Policy) -->
+<intent-filter>
+    <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE"/>
+</intent-filter>
+
+<!-- Queries para verificar si Health Connect está instalado -->
+<queries>
+    <package android:name="com.google.android.apps.healthdata"/>
+</queries>
+```
+
+### HealthConnectManager.java
+```java
+package com.fitbase.data.health;
+
+import android.content.Context;
+import androidx.health.connect.client.HealthConnectClient;
+import androidx.health.connect.client.records.*;
+import androidx.health.connect.client.request.ReadRecordsRequest;
+import androidx.health.connect.client.time.TimeRangeFilter;
+import java.time.*;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+
+/**
+ * Manager para leer datos de Health Connect
+ * Fuentes: Zepp (Amazfit GTS 4) y Mi Fitness (báscula Xiaomi)
+ * Referencia: USR-MET-01 (hardware.md)
+ */
+public class HealthConnectManager {
+    
+    private final HealthConnectClient client;
+    
+    public HealthConnectManager(Context context) {
+        this.client = HealthConnectClient.getOrCreate(context);
+    }
+    
+    /**
+     * Verifica si Health Connect está disponible e instalado
+     */
+    public static boolean isAvailable(Context context) {
+        int status = HealthConnectClient.getSdkStatus(context);
+        return status == HealthConnectClient.SDK_AVAILABLE;
+    }
+    
+    /**
+     * Lee el sueño de la última noche
+     * Variable: HC_SLEEP_SCORE, HC_SLEEP_DURATION, HC_SLEEP_DEEP, HC_SLEEP_REM
+     */
+    public CompletableFuture<SleepData> getLastNightSleep() {
+        Instant endTime = Instant.now();
+        Instant startTime = endTime.minus(Duration.ofHours(24));
+        
+        TimeRangeFilter timeRange = TimeRangeFilter.between(startTime, endTime);
+        ReadRecordsRequest<SleepSessionRecord> request = 
+            new ReadRecordsRequest.Builder<>(SleepSessionRecord.class)
+                .setTimeRangeFilter(timeRange)
+                .build();
+        
+        // Implementar lectura asíncrona...
+        return null; // TODO: Implementar
+    }
+    
+    /**
+     * Lee el peso más reciente
+     * Variable: HC_WEIGHT, HC_BODY_FAT
+     */
+    public CompletableFuture<WeightData> getLatestWeight() {
+        // TODO: Implementar
+        return null;
+    }
+    
+    /**
+     * Lee pasos de hoy
+     * Variable: HC_STEPS
+     */
+    public CompletableFuture<Integer> getTodaySteps() {
+        // TODO: Implementar
+        return null;
+    }
+    
+    /**
+     * Lee FC en reposo más reciente
+     * Variable: HC_HR_REST
+     */
+    public CompletableFuture<Integer> getRestingHeartRate() {
+        // TODO: Implementar
+        return null;
+    }
+    
+    // Clases de datos internas
+    public static class SleepData {
+        public int durationMinutes;
+        public int deepMinutes;
+        public int remMinutes;
+        public int lightMinutes;
+        public int score; // Calculado: (deep*2 + rem*1.5 + light) / duration * 100
+    }
+    
+    public static class WeightData {
+        public float weightKg;
+        public float bodyFatPercent;
+        public String date;
+    }
+}
+```
+
+### Flujo de Sincronización
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    APP FITBASE - INICIO                      │
+├─────────────────────────────────────────────────────────────┤
+│ 1. Verificar: HealthConnectClient.getSdkStatus()            │
+│    └─ SDK_UNAVAILABLE → Mostrar "Instala Health Connect"    │
+│    └─ SDK_AVAILABLE → Continuar                             │
+│                                                             │
+│ 2. Solicitar permisos (si no concedidos)                    │
+│    └─ Mostrar rationale: "FitBase necesita acceso a..."     │
+│    └─ Usuario acepta → Guardar estado                       │
+│                                                             │
+│ 3. Leer datos de Health Connect                             │
+│    └─ Sueño última noche                                    │
+│    └─ Peso última medición                                  │
+│    └─ Pasos de hoy                                          │
+│    └─ FC reposo                                             │
+│                                                             │
+│ 4. Enviar a Google Sheets (metricas_zepp)                   │
+│    └─ POST /exec?accion=guardarMetricas                     │
+│                                                             │
+│ 5. Usar datos para motor_pesos y motor_dieta                │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Datos NO Disponibles (Entrada Manual)
+Los siguientes datos requieren entrada manual del usuario porque Zepp/Xiaomi no los exportan a Health Connect:
+
+| Métrica | Cómo obtener | Frecuencia |
+|---------|--------------|------------|
+| HRV (RMSSD) | Usuario mira Zepp app | Diario (opcional) |
+| Nivel estrés | Usuario mira Zepp app | Diario (opcional) |
+| Grasa visceral | Usuario mira Mi Fitness | Semanal |
+
+> **Recomendación**: Hacer estos campos opcionales en la UI para no frustrar al usuario.

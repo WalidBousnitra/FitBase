@@ -1,7 +1,7 @@
 ---
 id: "EVI-00"
 nombre: "Índice de Papers"
-fecha_modificacion: "19/06/2026"
+fecha_modificacion: "18/06/2026"
 estado: "ACTIVO"
 relacionados: ["EVI-*"]
 tags: ["evidencia", "papers", "indice", "referencias"]
@@ -127,7 +127,7 @@ Evidencia (evidencia/*.md)
     ↓ sintetizar en reglas (pendiente)
 Reglas (reglas/**/*.md)
     ↓ implementar en código (pendiente)
-App (Kotlin/Apps Script)
+App (Java/Apps Script)
 ```
 
 > **Estado actual**: Base de evidencia COMPLETA. Siguiente paso: Crear reglas de programación basadas en esta evidencia.

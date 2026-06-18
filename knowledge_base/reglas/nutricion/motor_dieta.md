@@ -86,10 +86,12 @@ Mujeres: BMR = (10 × peso_kg) + (6.25 × altura_cm) - (5 × edad) - 161
 
 ## 6. Ajustes Dinámicos
 
+> **Fuente datos**: Variables `HC_*` vienen de Health Connect → [hardware.md](../../usuario/metricas/hardware.md)
+
 ### Por Actividad Diaria
 ```
-Si ZEPP_STEPS > 12000:
-  → Añadir 150-200 kcal
+Si HC_STEPS > 12000:
+  → Añadir 150-200 kcal (pasos extra queman calorías)
 
 Si DIA_ENTRENAMIENTO:
   → Añadir carbos pre/post entreno
@@ -97,8 +99,9 @@ Si DIA_ENTRENAMIENTO:
 
 ### Por Métricas de Sueño
 ```
-Si ZEPP_SLEEP_SCORE < 60:
+Si HC_SLEEP_SCORE < 60:
   → Reducir volumen de entrenamiento, mantener calorías
+  → (Nota: Sleep Score calculado desde duración + fases, no nativo de Zepp)
 ```
 
 ## 7. Cálculo Actual del Usuario
