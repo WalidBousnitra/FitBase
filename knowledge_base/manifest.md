@@ -1,100 +1,236 @@
 ﻿---
 id: "SYS-00"
-nombre: "Manifest Maestro, Protocolo RAG y Arquitectura del Sistema"
-fecha_modificacion: "16/06/2026"
+nombre: "Manifest Maestro"
+fecha_modificacion: "18/06/2026"
 estado: "PROD_ACTUAL"
 relacionados: ["all"]
-tags: ["system-prompt", "core", "arquitectura", "bible", "ci-cd"]
+tags: ["system-prompt", "core", "arquitectura", "bible"]
 ---
 
-# CONTENIDO
+# Manifest Maestro
 
-## 1. Alcance, Rol de la IA y Stack Tecnológico
-Este documento es la **Única Fuente de Verdad (Single Source of Truth - SSOT)** del proyecto. 
-Eres un Ingeniero de Software Senior operando bajo una arquitectura *Knowledge-Driven*. Tu objetivo es compilar, mantener y refactorizar el código de este ecosistema.
+## 1. Propósito y REGLA CERO
 
-**REGLA CERO:** Tu única fuente de verdad son los archivos `.md` de este repositorio. Queda estrictamente prohibido inferir, inventar o utilizar conocimiento externo pre-entrenado para definir la lógica de negocio, los ejercicios o las pautas nutricionales.
+Este documento es la **Única Fuente de Verdad (SSOT)** del proyecto FitBase.
 
-**Stack Tecnológico Autorizado:**
-* **Frontend:** Android App Nativa (Kotlin). Actúa como un visualizador ágil (Dumb UI) centrado en el registro rápido de datos bajo fatiga.
-* **Backend:** Google Apps Script (REST API). Actúa como el cerebro computacional y motor de lógica.
-* **Base de Datos:** Google Sheets. Persistencia relacional tablar (SSOT de los datos del usuario).
-* **Ingesta de Hardware:** Health Connect API (Android) y mapeo de datos de Zepp (Amazfit GTS 4).
+> **REGLA CERO:** Tu única fuente de verdad son los archivos `.md` de este repositorio. 
+> Queda **PROHIBIDO** inferir, inventar o utilizar conocimiento pre-entrenado para lógica de negocio, ejercicios o pautas nutricionales.
 
----
+## 2. Stack Tecnológico
 
-## 2. Mapa Estructural y Matriz de Dominios
-Queda prohibida la creación de archivos fuera de esta estructura plana. Toda modificación de la arquitectura debe ser autorizada y registrada exclusivamente en este bloque.
+| Componente | Tecnología | Notas |
+|------------|------------|-------|
+| **Frontend** | Android (Java + Views/XML) | NO Kotlin, NO Compose |
+| UI | Material Design 3, modo oscuro | Minimalismo absoluto |
+| Backend | Google Apps Script | Solo API REST, sin lógica pesada |
+| Base de Datos | Google Sheets | 14 hojas (REG-LOG-02) |
+| Métricas | Amazfit GTS 4 (Zepp) | Sueño, HRV, FC, pasos |
+| Báscula | Xiaomi Mi Scale | Peso, composición corporal |
+| Dispositivo | Xiaomi Redmi Note 14 Pro 5G | Referencia para UI |
 
-```text
-/knowledge_base
-├── manifest.md                 # [SYS-00] ESTE ARCHIVO: Núcleo de control y flujo.
-│
-├── /plantilla.md               # Plantilla de documentos de conocimiento.
-├── /plantilla reglas.txt       # Plantilla de reglas de negocio o datos.
-│
-├── /contexto                   # Datos del usuario y del entorno que NO modifican reglas directas.
-│   ├── /perfil
-│   │   ├── biometria.md        # Datos físicos basales, historial clínico, medidas y lesiones.
-│   │   ├── horarios.md         # Ventanas horarias disponibles, cronotipo y bloques de descanso.
-│   │   └── cultura.md          # Fusión gastronómica España/Marruecos y adaptaciones de calendario.
-│   │
-│   ├── /nutricion
-│   │   ├── preferencias.md     # Filtros de alimentos, intolerancias y logística de cocina.
-│   │   └── objetivos.md        # Objetivos actuales, macros base y metas de actividad.
-│   │
-│   ├── prioridades.md         # Prioridades globales del proyecto en orden de importancia.
-│   │
-│   └── /metricas
-│       ├── hardware_zepp.md    # Mapeo de datos del Amazfit GTS 4.
-│       ├── subjetivas.md       # Logs de estrés mental, fatiga subjetiva y energía pre-entreno.
-│       └── salud_connect.md    # Ingesta de pasos diarios y NEAT.
-│
-├── /evidencia                  # Hallazgos, papers y evidencia científica de apoyo.
-│   ├── cardio.md               # Evidencia sobre cardio y capacidad aeróbica.
-│   ├── fuerza.md               # Evidencia sobre fuerza y adaptaciones neuromusculares.
-│   ├── hipertrofia
-│   │   └── hipertrofia.md       # Evidencia sobre hipertrofia muscular y crecimiento.
-│   ├── intensidad.md           # Evidencia sobre intensidad, RPE y cargas relativas.
-│   ├── lesiones.md             # Evidencia sobre prevención y recuperación de lesiones.
-│   ├── metabolismo.md          # Evidencia sobre metabolismo y adaptación energética.
-│   ├── periodizacion.md        # Evidencia sobre ciclos y planificación.
-│   ├── postura
-│   │   └── postura.md          # Evidencia sobre postura y control corporal.
-│   ├── recuperacion.md         # Evidencia sobre recuperación, sueño y regeneración.
-│   ├── rendimiento.md          # Evidencia sobre potencia y eficiencia.
-│   ├── salud.md                # Evidencia sobre salud general y estado fisiológico.
-│   ├── suplementacion.md       # Evidencia sobre suplementos y ayudas ergogénicas.
-│   ├── volumen.md              # Evidencia sobre volumen óptimo y estrés mecánico.
-│   ├── frecuencia.md           # Evidencia sobre frecuencia de entrenamiento.
-│   ├── flexibilidad.md         # Evidencia sobre flexibilidad y estiramientos.
-│   ├── psicologia.md           # Evidencia sobre motivación, hábitos y adherencia.
-│   ├── progreso.md             # Evidencia sobre adaptación y progresión de cargas.
-│   ├── nutricion
-│   │   └── ciencia_nutricion.md    # Evidencia científica sobre digestión y timing.
-│   └── movilidad
-│       └── movilidad.md            # Evidencia sobre movilidad y rango articular.
-│
-└── /reglas                    # Reglas de negocio y lógica que afectan decisiones directas.
-    ├── /gimnasio
-    │   ├── inventario.md       # Reglas del equipo disponible y selección de cargas.
-    │   ├── rutina.md           # Reglas de programación de sesiones y bloques de trabajo.
-    │   └── calentamiento.md    # Reglas de activación neuromuscular y preparación.
-    │
-    ├── /movilidad
-    │   ├── diagnostico.md      # Reglas para diagnóstico de desequilibrios y prioridades.
-    │   └── protocolos.md       # Reglas de movilidad y protocolos correctivos.
-    │
-    ├── /natacion
-    │   └── piscina.md          # Reglas de sesiones de nado y volumen técnico.
-    │
-    ├── /logica
-    │   ├── motor_pesos.md      # Algoritmos matemáticos y factores de penalización.
-    │   ├── motor_dieta.md      # Reglas de ajuste calórico dinámico.
-    │   ├── base_datos.md       # Reglas de arquitectura, indexación y nomenclatura en Sheets.
-    │   └── excepciones.md      # Reglas de contingencia: viajes, enfermedad, atípicos.
-    │
-    └── /desarrollo
-        ├── especificacion_ui.md  # Reglas de interfaz, flujo y servicios.
-        └── prompt_compilador.md  # Reglas de generación de código.
+### Arquitectura
 ```
+┌────────────────────────────────────────┐
+│       MÓVIL (Java, todo local)         │
+│   App FitBase - UI + Lógica + Cache    │
+└───────────────┬────────────────────────┘
+                │ HTTP/REST (cuando hay red)
+                ▼
+┌────────────────────────────────────────┐
+│         GOOGLE CLOUD (gratis)          │
+│   Apps Script (API) → Sheets (BD)      │
+└────────────────────────────────────────┘
+```
+
+---
+
+## 3. Mapa Estructural (39 archivos)
+
+```
+/knowledge_base
+├── manifest.md              # [SYS-00] Este archivo
+├── plantilla.md             # Plantilla para crear nuevos MDs
+│
+├── /usuario                 # Datos personales y tracking
+│   ├── prioridades.md       # [USR-01] ★ Ranking de objetivos
+│   ├── biometria.md         # [USR-02] Medidas y objetivos físicos
+│   ├── equipamiento.md      # [USR-03] Gym, cocina, dispositivos
+│   ├── /perfil
+│   │   ├── cultura.md       # [USR-PER-01] Restricciones culturales
+│   │   └── horarios.md      # [USR-PER-02] Disponibilidad y cronotipo
+│   └── /metricas
+│       ├── hardware.md      # [USR-MET-01] Zepp + Health Connect
+│       └── subjetivas.md    # [USR-MET-02] RPE, energía, estrés
+│
+├── /evidencia               # Papers científicos (1:1 con prioridades)
+│   ├── _indice_papers.md    # [EVI-00] Índice de papers procesados
+│   ├── _guia_extraccion.md  # Guía para extraer papers
+│   ├── estetica.md          # [EVI-01] P1: Estética muscular
+│   ├── postura.md           # [EVI-02] P2: Corrección postural
+│   ├── hipertrofia.md       # [EVI-03] P3: Crecimiento muscular
+│   ├── flexibilidad.md      # [EVI-04] P4: Movilidad articular
+│   ├── estres.md            # [EVI-05] P5: Cortisol y estrés
+│   ├── hormonal.md          # [EVI-06] P6: Salud hormonal
+│   ├── vitalidad.md         # [EVI-07] P7: Energía y vitalidad
+│   ├── digestivo.md         # [EVI-08] P8: Salud digestiva
+│   ├── agilidad.md          # [EVI-09] P9: Agilidad
+│   ├── cardio.md            # [EVI-10] P10: Capacidad cardiovascular
+│   ├── nutricion.md         # [EVI-11] Soporte: Ciencia nutricional
+│   ├── sueno.md             # [EVI-12] Soporte: Sueño y recuperación
+│   ├── suplementacion.md    # [EVI-13] Soporte: Suplementos
+│   ├── periodizacion.md     # [EVI-14] Soporte: Periodización y ciclos
+│   ├── lesiones.md          # [EVI-15] Soporte: Dolor y rehabilitación
+│   ├── calentamiento.md     # [EVI-16] Soporte: Warm-up y activación
+│   └── fatiga_mental.md     # [EVI-17] Soporte: Fatiga mental y rendimiento
+│
+└── /reglas                  # Lógica de negocio de la app
+    ├── /entrenamiento
+    │   ├── programacion.md  # [REG-ENT-01] Split, frecuencia, periodización
+    │   ├── ejercicios.md    # [REG-ENT-02] Inventario y selección
+    │   ├── calentamiento.md # [REG-ENT-03] Activación y movilidad
+    │   └── preferencias.md  # [REG-ENT-04] Preferencias de entrenamiento
+    ├── /nutricion
+    │   ├── motor_dieta.md   # [REG-NUT-01] Cálculo de macros
+    │   └── preferencias.md  # [REG-NUT-02] Filtros alimentarios
+    ├── /logica
+    │   ├── motor_pesos.md   # [REG-LOG-01] Autorregulación de cargas
+    │   ├── base_datos.md    # [REG-LOG-02] Esquema Google Sheets (14 hojas)
+    │   └── excepciones.md   # [REG-LOG-03] Viajes, enfermedad, Ramadán
+    └── /desarrollo
+        ├── PROMPT_DESARROLLO.md  # [REG-DEV-00] ★ Prompt maestro para IA
+        ├── MANUAL_DESPLIEGUE.md  # [REG-DEV-03] Guía paso a paso
+        ├── ui.md                 # [REG-DEV-01] Especificación Android
+        └── compilador.md         # [REG-DEV-02] Reglas de código para IA
+        └── compilador.md    # [REG-DEV-02] Reglas de código para IA
+```
+
+---
+
+## 4. Sistema de IDs
+
+| Prefijo | Dominio | Ejemplo |
+|---------|---------|---------|
+| `SYS` | Sistema | SYS-00 (manifest) |
+| `USR` | Usuario | USR-01 (prioridades) |
+| `EVI` | Evidencia | EVI-03 (hipertrofia) |
+| `REG-ENT` | Reglas Entrenamiento | REG-ENT-01 |
+| `REG-NUT` | Reglas Nutrición | REG-NUT-01 |
+| `REG-LOG` | Reglas Lógica | REG-LOG-01 |
+| `REG-DEV` | Reglas Desarrollo | REG-DEV-01 |
+
+---
+
+## 5. Flujo de Trabajo
+
+```
+┌─────────────┐     ┌──────────────┐     ┌─────────────┐
+│  USUARIO    │────▶│  EVIDENCIA   │────▶│   REGLAS    │
+│  (contexto) │     │  (papers)    │     │  (lógica)   │
+└─────────────┘     └──────────────┘     └─────────────┘
+       │                   │                    │
+       └───────────────────┴────────────────────┘
+                           │
+                           ▼
+                    ┌─────────────┐
+                    │    APP      │
+                    │  (código)   │
+                    └─────────────┘
+```
+
+1. **Usuario** define prioridades y contexto personal
+2. **Evidencia** respalda decisiones con papers científicos
+3. **Reglas** traducen evidencia en lógica de negocio
+4. **App** implementa las reglas en código
+
+---
+
+## 6. Reglas de Modificación
+
+1. **Prohibido** crear archivos fuera de esta estructura
+2. **Obligatorio** actualizar este manifest al añadir/eliminar archivos
+3. Usar `plantilla.md` para crear nuevos documentos
+4. Mantener relación 1:1 entre prioridades y evidencia
+
+---
+
+## 7. Contexto de Desarrollo (Leer antes de generar código)
+
+### 7.1 Fechas Clave
+| Fecha | Evento |
+|-------|--------|
+| 18/06/2026 | Knowledge base completado |
+| 01/09/2026 | **Fecha objetivo de lanzamiento** |
+| 01/09/2026 - 01/01/2027 | Primera fase de uso (4 meses) |
+
+### 7.2 Usuario Objetivo
+- **Único usuario**: El desarrollador es el usuario
+- **Edad**: 24 años (20/07/2001)
+- **Nivel fitness**: Intermedio-avanzado
+- **Dispositivo**: Xiaomi Redmi Note 14 Pro 5G (6.67" AMOLED)
+- **Wearable**: Amazfit GTS 4
+- **Báscula**: Xiaomi Mi Scale
+
+### 7.3 Archivos Críticos para el Código
+| Archivo | Contiene | Prioridad |
+|---------|----------|-----------|
+| [compilador.md](reglas/desarrollo/compilador.md) | Estructura código, convenciones | ⭐⭐⭐ |
+| [ui.md](reglas/desarrollo/ui.md) | Wireframes, flujos, gestos | ⭐⭐⭐ |
+| [base_datos.md](reglas/logica/base_datos.md) | Esquema 14 hojas Sheets | ⭐⭐⭐ |
+| [motor_pesos.md](reglas/logica/motor_pesos.md) | Algoritmo autorregulación | ⭐⭐ |
+| [motor_dieta.md](reglas/nutricion/motor_dieta.md) | Cálculo macros | ⭐⭐ |
+| [prioridades.md](usuario/prioridades.md) | Orden de decisiones | ⭐⭐ |
+| [biometria.md](usuario/biometria.md) | Datos físicos actuales | ⭐ |
+
+### 7.4 Orden de Generación de Código
+```
+1. Apps Script (backend)
+   └── Código para doGet/doPost
+   └── Funciones CRUD por hoja
+   
+2. Android (proyecto base)
+   └── Estructura MVVM
+   └── Retrofit + Room
+   └── Modelos de datos
+   
+3. Android (pantallas)
+   └── Home (macros del día)
+   └── Workout flow (swipe)
+   └── Timer (fullscreen)
+   └── Plan anual/semanal
+   └── Nutrición
+   └── Settings
+```
+
+### 7.5 Preparación del Usuario (Antes de 01/09)
+```yaml
+GOOGLE:
+  - Crear Spreadsheet "FitBase_DB" en Drive
+  - Crear las 14 hojas con headers exactos
+  - Crear proyecto Apps Script vinculado
+  - Deploy como Web App
+  - Copiar URL del endpoint
+
+ANDROID_STUDIO:
+  - Instalar Android Studio
+  - Configurar SDK 24-34
+  - Crear proyecto "FitBase"
+  - Copiar código generado
+
+DISPOSITIVO:
+  - Habilitar "Developer options"
+  - Habilitar "USB debugging"
+  - Conectar y probar
+```
+
+---
+
+## 8. Estado del Proyecto
+
+| Componente | Estado | Archivos |
+|------------|--------|----------|
+| Evidencia | ✅ COMPLETO | 19 archivos, ~40 papers |
+| Usuario | ✅ COMPLETO | 8 archivos |
+| Reglas | ✅ COMPLETO | 12 archivos |
+| Código | ⏳ PENDIENTE | Por generar |
+
+**Próximo paso**: Ejecutar prompt de desarrollo

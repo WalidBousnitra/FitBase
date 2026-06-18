@@ -1,49 +1,105 @@
 ﻿# FitBase AI Agent Instructions
 
 ## Propósito
-Esta guía ayuda a los agentes a trabajar con FitBase de forma inmediata y segura. El repositorio es una base de conocimiento centrada en Markdown y no contiene un proyecto ejecutable tradicional.
+Base de conocimiento para una app de programación de entrenamiento y nutrición. El repositorio contiene exclusivamente archivos Markdown que sirven como fuente de verdad para la IA.
 
-## Principios clave
-- La única fuente de verdad son los archivos `knowledge_base/**/*.md`.
-- No inferir ni inventar reglas, lógica de negocio, pautas nutricionales o protocolos de entrenamiento fuera de lo que dicen los MD.
-- No crear archivos ni carpetas fuera de la estructura existente sin autorización explícita.
-- Cuando haya duda, usar `knowledge_base/manifest.md` como autoridad principal.
+## REGLA CERO
+> **PROHIBIDO** inferir, inventar o usar conocimiento pre-entrenado para lógica de negocio, ejercicios o pautas nutricionales.
+> La **ÚNICA** fuente de verdad son los archivos `.md` de `/knowledge_base/`.
 
-## Estructura principal
-- `knowledge_base/manifest.md` — autoridad del dominio y mapa maestro de la estructura.
-- `knowledge_base/contexto/` — datos del usuario, horarios, cultura, métricas y contexto que no modifican reglas directas.
-- `knowledge_base/evidencia/` — hallazgos científicos, papers y evidencia de apoyo.
-  - No todas las entradas están en carpetas; muchas son MD directos dentro de `evidencia/`.
-  - Carpetas preservadas: `movilidad/`, `nutricion/`, `postura/`, `hipertrofia/`.
-- `knowledge_base/reglas/` — reglas de negocio, lógica y especificaciones que afectan decisiones.
-- `knowledge_base/plantilla.md` / `knowledge_base/plantilla reglas.txt` — plantillas de documentación.
+## Estructura del Proyecto
 
-## Arquitectura
-- Frontend: Android nativo (Kotlin / Jetpack Compose).
-- Backend: Google Apps Script (JavaScript V8).
-- Persistencia: Google Sheets como base de datos relacional tabular.
-- Ingesta de métricas: Health Connect (Android) y mapeo de Zepp (Amazfit GTS 4).
+```
+/knowledge_base
+├── manifest.md           # ★ Mapa maestro - LEER PRIMERO
+├── plantilla.md          # Plantilla para crear nuevos MDs
+│
+├── /usuario              # Contexto personal (rellenar con datos del usuario)
+│   ├── prioridades.md    # ★ Ranking de objetivos (guía toda la lógica)
+│   ├── biometria.md      # Medidas corporales y objetivos
+│   ├── equipamiento.md   # Gym, cocina, dispositivos
+│   ├── /perfil           # Cultura, horarios, cronotipo
+│   └── /metricas         # Hardware (Zepp) + subjetivas (RPE)
+│
+├── /evidencia            # ✅ Papers científicos COMPLETOS (17 archivos)
+│   ├── _indice_papers.md # Índice de 31 papers procesados
+│   ├── estetica.md       # P1: Estética muscular
+│   ├── postura.md        # P2: Corrección postural
+│   ├── hipertrofia.md    # P3: Crecimiento muscular (Schoenfeld x4)
+│   ├── flexibilidad.md   # P4: Movilidad (Page, Bandy, Afonso)
+│   ├── estres.md         # P5: Cortisol (Salmon, Kraemer)
+│   ├── hormonal.md       # P6: Salud hormonal (Kraemer)
+│   ├── vitalidad.md      # P7: Energía (Fullagar, Salmon)
+│   ├── digestivo.md      # P8: Salud digestiva (Mailing)
+│   ├── agilidad.md       # P9: Agilidad (Asadi)
+│   ├── cardio.md         # P10: Cardiovascular (Wilson, Viana)
+│   ├── nutricion.md      # Soporte (Helms, Iraki, Chaouachi)
+│   ├── sueno.md          # Soporte (Fullagar)
+│   ├── suplementacion.md # Soporte (Helms, Iraki)
+│   ├── periodizacion.md  # Soporte (Bompa)
+│   ├── lesiones.md       # Soporte (Smith)
+│   ├── calentamiento.md  # Soporte (Rodrigues)
+│   └── fatiga_mental.md  # Soporte (Van Cutsem)
+│
+└── /reglas               # Lógica de negocio (actualizada con evidencia)
+    ├── /entrenamiento    # Programación, ejercicios, calentamiento
+    ├── /nutricion        # Motor de dieta, preferencias
+    ├── /logica           # Motor de cargas, BD, excepciones
+    └── /desarrollo       # UI y reglas de código
+```
 
-## Documentos esenciales
-- `knowledge_base/manifest.md` — arquitectura, roles y mapa de dominios.
-- `knowledge_base/desarrollo/prompt_compilador.md` — normas de generación de código y estilo.
-- `knowledge_base/reglas/logica/*.md` — motores de dieta, pesos, base de datos y excepciones.
-- `knowledge_base/reglas/gimnasio/*.md` — reglas de programación de entrenamiento.
-- `knowledge_base/evidencia/*.md` — evidencia científica aplicable a decisiones de entrenamiento y nutrición.
+## Arquitectura Técnica
 
-## Comportamiento esperado
-- Priorizar siempre la estructura y el contenido de `knowledge_base/`.
-- Generar respuestas y código en español usando la terminología del repositorio.
-- Informar al usuario si no existen archivos de compilación/bibliotecas ejecutables ni configuraciones de build.
-- Para código: usar Kotlin para frontend y Apps Script para backend, según `prompt_compilador.md`.
-- Para lógica: separar claramente el contexto de usuario (`contexto/`) de la evidencia (`evidencia/`) y las reglas (`reglas/`).
+| Componente | Tecnología |
+|------------|------------|
+| Frontend | Android (Kotlin + Jetpack Compose) |
+| Backend | Google Apps Script (V8) |
+| Base de Datos | Google Sheets |
+| Métricas | Health Connect + Zepp (Amazfit GTS 4) |
 
-## Notas prácticas
-- `README.md` no define un proyecto instalable.
-- No hay `package.json`, `build.gradle`, `pyproject.toml`, ni otro fichero de build estándar en el árbol actual.
-- `knowledge_base/manifest.md` debe mantenerse sincronizado con el árbol real.
-- Si propones nuevas categorías de `evidencia/`, confirma primero con el usuario antes de crear carpetas.
+## Archivos Clave
 
-## Mejora continua
-- Esta guía se actualiza junto con `knowledge_base/manifest.md`.
-- Si la estructura cambia, primero ajusta el manifiesto y luego las instrucciones de agente.
+| Archivo | Propósito |
+|---------|-----------|
+| `manifest.md` | Mapa completo y reglas de estructura |
+| `usuario/prioridades.md` | Orden de importancia para decisiones |
+| `evidencia/_indice_papers.md` | Índice de 31 papers procesados |
+| `reglas/entrenamiento/programacion.md` | Volumen, frecuencia, periodización |
+| `reglas/logica/motor_pesos.md` | Autorregulación de cargas |
+| `reglas/nutricion/motor_dieta.md` | Cálculo de macros |
+
+## Comportamiento del Agente
+
+### HACER
+- Leer `manifest.md` antes de cualquier acción
+- Respetar el orden de `prioridades.md` en decisiones
+- Usar `plantilla.md` para crear nuevos documentos
+- Usar datos de `/evidencia/` para toda lógica de entrenamiento/nutrición
+- Generar código en español (Kotlin frontend, Apps Script backend)
+- Justificar toda lógica con referencia a archivos de `/knowledge_base/`
+
+### NO HACER
+- Crear archivos fuera de la estructura del manifest
+- Inventar reglas de entrenamiento o nutrición
+- Usar conocimiento externo para lógica de negocio
+- Modificar prioridades sin autorización explícita
+
+## Flujo de Trabajo
+
+```
+USUARIO define contexto → EVIDENCIA respalda con papers → REGLAS traducen a lógica → APP implementa en código
+```
+
+## Estado del Proyecto (18/06/2026)
+
+| Componente | Estado | Archivos |
+|------------|--------|----------|
+| Evidencia | ✅ **COMPLETO** | 17 archivos, 31 papers |
+| Reglas | ✅ **ACTUALIZADO** | Programación con datos reales |
+| Usuario | ⏳ Parcial | Biometría en borrador |
+| App | ⏳ Pendiente | No iniciado |
+
+## Notas
+- No hay archivos de build (`package.json`, `build.gradle`, etc.)
+- Todos los archivos de evidencia están **ACTIVOS** con datos de papers reales
+- La carpeta `contexto/` antigua fue renombrada a `usuario/`
