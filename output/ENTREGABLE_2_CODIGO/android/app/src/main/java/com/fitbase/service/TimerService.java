@@ -195,3 +195,12 @@ public class TimerService extends Service {
         if (timer != null) timer.cancel();
     }
 }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (timer != null) {
+            timer.cancel();
+        }
+    }
+}
