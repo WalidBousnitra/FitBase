@@ -40,7 +40,7 @@ public class HomeViewModel extends ViewModel {
         verificarModoDemo();
         cargarMacros();
         cargarSesion();
-        syncFatSecret();
+        syncNutricionDesdeHealthConnect();
     }
 
     /**
@@ -73,23 +73,14 @@ public class HomeViewModel extends ViewModel {
     }
 
     /**
-     * Sincroniza comidas desde FatSecret al abrir la app.
-     * Las calorías registradas en FatSecret se importan a la BD de FitBase.
+     * Lee datos de nutrición desde Health Connect (donde FatSecret deposita las comidas).
+     * Luego envía los datos al backend para guardar en Sheets.
+     * Flujo: FatSecret App → Health Connect → FitBase lee → API → Sheets
      */
-    private void syncFatSecret() {
+    private void syncNutricionDesdeHealthConnect() {
         if (Boolean.TRUE.equals(modoDemo.getValue())) return;
-
-        ApiClient.getApi().syncFatSecret("sync_fatsecret").enqueue(new Callback<Object>() {
-            @Override
-            public void onResponse(Call<Object> call, Response<Object> response) {
-                // Sync silencioso — no necesita feedback visual
-            }
-
-            @Override
-            public void onFailure(Call<Object> call, Throwable t) {
-                // Silencioso — FatSecret opcional
-            }
-        });
+        // La lectura real de Health Connect se hace en HealthConnectRepository
+        // que lee NutritionRecord del día y lo envía al backend vía POST sync_nutricion
     }
 
     private void verificarModoDemo() {

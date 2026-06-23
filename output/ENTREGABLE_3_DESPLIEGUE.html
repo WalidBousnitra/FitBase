@@ -161,30 +161,25 @@ ejercicios_catalogo, mediciones_log</code>
         </div>
     </div>
 
-    <!-- PASO 2.5: FatSecret -->
+    <!-- PASO 2.5: FatSecret via Health Connect -->
     <div class="step" id="step2b">
         <div class="step-header" onclick="toggleStep(this.parentElement)">
             <div class="step-number">2b</div>
-            <div class="step-title">Configurar FatSecret API</div>
-            <div class="step-time">~5 min</div>
+            <div class="step-title">Configurar FatSecret + Health Connect</div>
+            <div class="step-time">~3 min</div>
         </div>
         <div class="step-body">
-            <p>FitBase importa calorías y macros directamente desde FatSecret.</p>
+            <p>FitBase lee calorías/macros de <strong>Health Connect</strong>, donde FatSecret las deposita.</p>
             <ol>
-                <li>Crear cuenta en <strong>platform.fatsecret.com</strong></li>
-                <li>Crear aplicación → obtener Client ID y Client Secret</li>
-                <li>Generar Access Token (OAuth 2.0 Client Credentials)</li>
-                <li>En Apps Script: <strong>Archivo → Propiedades del proyecto</strong></li>
-                <li>Añadir propiedad: <code>FATSECRET_ACCESS_TOKEN</code> = tu token</li>
+                <li>Instalar <strong>FatSecret</strong> en el móvil (Google Play, cuenta normal)</li>
+                <li>En FatSecret: Ajustes → <strong>Apps conectadas → Health Connect → Activar</strong></li>
+                <li>Dar permiso de escritura de Nutrición a FatSecret</li>
+                <li>En FitBase (al instalar): dar permiso de <strong>lectura</strong> de Nutrición en Health Connect</li>
             </ol>
-            <div class="code-block">
-                <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
-                <code>FATSECRET_ACCESS_TOKEN = eyJ0eXAi...tu_token_aqui</code>
-            </div>
-            <div class="tip-box"><strong>🔗 Sync:</strong> Al abrir FitBase cada día, importa automáticamente lo registrado en FatSecret. Registra ahí tus comidas y FitBase lo recoge.</div>
+            <div class="tip-box"><strong>🔗 Flujo:</strong> Tú registras comidas en FatSecret → FatSecret escribe en Health Connect → FitBase lee de Health Connect → Envía a Sheets. No necesitas cuenta de platform.fatsecret.com (esa es solo para devs).</div>
             <label class="check-item" onclick="updateProgress()">
                 <input type="checkbox"><div class="check-box"></div>
-                <span class="check-label">FatSecret configurado con token</span>
+                <span class="check-label">FatSecret conectado a Health Connect</span>
             </label>
         </div>
     </div>
@@ -338,7 +333,7 @@ sourceCompatibility = JavaVersion.VERSION_17</code>
             </label>
             <label class="check-item" onclick="updateProgress()">
                 <input type="checkbox"><div class="check-box"></div>
-                <span class="check-label">FatSecret sync importa comidas</span>
+                <span class="check-label">FatSecret sync vía Health Connect funciona</span>
             </label>
             <label class="check-item" onclick="updateProgress()">
                 <input type="checkbox"><div class="check-box"></div>

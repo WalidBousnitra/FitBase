@@ -57,9 +57,6 @@ public interface FitBaseApi {
     Call<AusenciaResponse> checkAusencia(@Query("accion") String accion);
 
     @GET("exec")
-    Call<Object> syncFatSecret(@Query("accion") String accion);
-
-    @GET("exec")
     Call<Object> getComposicionSemanal(@Query("accion") String accion);
 
     // ─── POST ─────────────────────────────────────────────

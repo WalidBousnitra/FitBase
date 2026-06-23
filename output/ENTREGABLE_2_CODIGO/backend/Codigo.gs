@@ -77,11 +77,8 @@ function doGet(e) {
       case 'composicion_semanal':
         resultado = getComposicionSemanal();
         break;
-      case 'sync_fatsecret':
-        resultado = syncFatSecret();
-        break;
       default:
-        resultado = { error: 'Acción no reconocida', acciones_validas: ['sesion_hoy', 'plan_anual', 'plan_semanal', 'metricas_hoy', 'progresion', 'catalogo', 'macros_hoy', 'check_ausencia', 'composicion_semanal', 'sync_fatsecret'] };
+        resultado = { error: 'Acción no reconocida', acciones_validas: ['sesion_hoy', 'plan_anual', 'plan_semanal', 'metricas_hoy', 'progresion', 'catalogo', 'macros_hoy', 'check_ausencia', 'composicion_semanal'] };
     }
 
     return ContentService.createTextOutput(JSON.stringify(resultado))
@@ -139,6 +136,9 @@ function doPost(e) {
         break;
       case 'guardar_medicion':
         resultado = guardarMedicion(datos);
+        break;
+      case 'sync_nutricion':
+        resultado = syncNutricionDesdeHealthConnect(datos);
         break;
       default:
         resultado = { error: 'Acción POST no reconocida' };
@@ -686,67 +686,47 @@ function subirPesoManual(datos) {
 }
 
 /**
- * Sincroniza datos de FatSecret vía su API.
- * Importa comidas del día a comidas_log.
- * Fuente: Integración FatSecret REST API (OAuth 2.0)
+ * Guarda datos de nutrición recibidos desde Health Connect (Android).
+ * FatSecret → Health Connect → FitBase Android → API → Sheets.
+ * No se usa la API REST de FatSecret (la cuenta Platform es solo para devs).
  */
-function syncFatSecret() {
-  // FatSecret API credentials (configurar en Script Properties)
-  const props = PropertiesService.getScriptProperties();
-  const accessToken = props.getProperty('FATSECRET_ACCESS_TOKEN');
+function syncNutricionDesdeHealthConnect(datos) {
+  const hoja = getHoja(HOJAS.COMIDAS_LOG);
+  const fecha = datos.fecha || Utilities.formatDate(new Date(), 'Europe/Madrid', 'yyyy-MM-dd');
 
-  if (!accessToken) {
-    return { ok: false, error: 'FatSecret no configurado. Añadir FATSECRET_ACCESS_TOKEN en Properties.' };
+  let totalCal = 0, totalProt = 0, totalCarbs = 0, totalGrasa = 0;
+
+  const comidas = datos.comidas || [];
+  for (const comida of comidas) {
+    const comidaId = generarId('COM');
+    const fila = [
+      comidaId,
+      USER_ID,
+      fecha,
+      comida.tipo_comida || 'snack',
+      comida.calorias || 0,
+      comida.proteina_g || 0,
+      comida.carbos_g || 0,
+      comida.grasas_g || 0,
+      comida.pre_entreno || false,
+      comida.post_entreno || false,
+      comida.nombre || '',
+      new Date().toISOString()
+    ];
+    hoja.appendRow(fila);
+
+    totalCal += comida.calorias || 0;
+    totalProt += comida.proteina_g || 0;
+    totalCarbs += comida.carbos_g || 0;
+    totalGrasa += comida.grasas_g || 0;
   }
 
-  const hoy = Utilities.formatDate(new Date(), 'Europe/Madrid', 'yyyy-MM-dd');
-  // Convertir fecha a days_since_epoch para FatSecret
-  const epoch = new Date(1970, 0, 1);
-  const daysSinceEpoch = Math.floor((new Date() - epoch) / (1000 * 60 * 60 * 24));
-
-  try {
-    const response = UrlFetchApp.fetch(
-      `https://platform.fatsecret.com/rest/food-entries/v2?date=${daysSinceEpoch}&format=json`,
-      {
-        headers: { 'Authorization': 'Bearer ' + accessToken },
-        muteHttpExceptions: true
-      }
-    );
-
-    const data = JSON.parse(response.getContentText());
-    const entries = data.food_entries ? data.food_entries.food_entry : [];
-
-    let totalCal = 0, totalProt = 0, totalCarbs = 0, totalGrasa = 0;
-    const comidas = [];
-
-    for (const entry of (Array.isArray(entries) ? entries : [entries])) {
-      const comida = {
-        tipo_comida: entry.meal || 'snack',
-        calorias: parseFloat(entry.calories) || 0,
-        proteina_g: parseFloat(entry.protein) || 0,
-        carbos_g: parseFloat(entry.carbohydrate) || 0,
-        grasas_g: parseFloat(entry.fat) || 0,
-        notas: entry.food_entry_description || ''
-      };
-      totalCal += comida.calorias;
-      totalProt += comida.proteina_g;
-      totalCarbs += comida.carbos_g;
-      totalGrasa += comida.grasas_g;
-      comidas.push(comida);
-
-      // Guardar cada comida en la BD
-      guardarComida({ ...comida, fecha: hoy });
-    }
-
-    return {
-      ok: true,
-      fecha: hoy,
-      total_comidas: comidas.length,
-      totales: { calorias: totalCal, proteina_g: totalProt, carbos_g: totalCarbs, grasas_g: totalGrasa }
-    };
-  } catch (e) {
-    return { ok: false, error: 'Error sincronizando FatSecret: ' + e.message };
-  }
+  return {
+    ok: true,
+    fecha: fecha,
+    total_comidas: comidas.length,
+    totales: { calorias: totalCal, proteina_g: totalProt, carbos_g: totalCarbs, grasas_g: totalGrasa }
+  };
 }
 
 /**
@@ -795,8 +775,6 @@ function guardarMedicion(datos) {
     datos.bicep_cm || '',
     datos.muslo_cm || '',
     datos.pantorrilla_cm || '',
-    new Date().toISOString()
-  ];
     new Date().toISOString()
   ];
 
