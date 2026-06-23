@@ -102,7 +102,8 @@ Este documento es la **Única Fuente de Verdad (SSOT)** del proyecto FitBase.
         ├── PROMPT_DESARROLLO.md  # [REG-DEV-00] ★ Prompt maestro para IA
         ├── MANUAL_DESPLIEGUE.md  # [REG-DEV-03] Guía paso a paso
         ├── ui.md                 # [REG-DEV-01] Especificación Android
-        └── compilador.md         # [REG-DEV-02] Reglas de código para IA
+        ├── compilador.md         # [REG-DEV-02] Reglas de código para IA
+        └── Sistema_Diseno_Fitness.md  # [REG-DEV-04] Tokens de diseño (colores, fuentes, animaciones)
 ```
 
 ---

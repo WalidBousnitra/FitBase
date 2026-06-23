@@ -62,7 +62,8 @@ Generar una **app Android completa** llamada FitBase para entrenamientos y nutri
 5. **reglas/logica/motor_pesos.md** - Lógica de progresión
 6. **reglas/logica/motor_dieta.md** - Cálculo de macros
 7. **reglas/entrenamiento/programacion.md** - Split, volumen, frecuencia
-8. **reglas/desarrollo/especificacion_ui.md** - Pantallas y flujos
+8. **reglas/desarrollo/Sistema_Diseno_Fitness.md** - Colores, fuentes, animaciones
+9. **reglas/desarrollo/especificacion_ui.md** - Pantallas y flujos
 
 ---
 
@@ -122,13 +123,18 @@ Diseño en: `reglas/desarrollo/especificacion_ui.md`
 
 ## Fase 6: Layouts XML
 ```
-Material Design 3, modo oscuro
-Todos los layouts para las Activities/Fragments
+Usar tokens de: reglas/desarrollo/Sistema_Diseno_Fitness.md
+- Colores, tipografía, espaciado, animaciones
+- Estilo: Apple-Inspired Premium
+- Adaptar a modo OSCURO (invertir Background/Surface si es necesario)
 ```
 
 ## Fase 7: Resources
 ```
-colors.xml, dimens.xml, strings.xml, themes.xml
+colors.xml      ← Tokens de Sistema_Diseno_Fitness.md
+dimens.xml      ← Layout specs (24dp radius, 56dp buttons, etc.)
+strings.xml     ← En español
+themes.xml      ← Material 3 + tokens del sistema de diseño
 AndroidManifest.xml con permisos Health Connect
 build.gradle con dependencias
 ```
