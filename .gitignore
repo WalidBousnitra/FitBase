@@ -33,5 +33,3 @@ google-services.json
 # Android Profiling
 *.hprof
 documentacion/*
-.gitignore
-PROMPT_COPIAR_Y_PEGAR.md

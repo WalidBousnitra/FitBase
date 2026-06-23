@@ -21,8 +21,8 @@ Todas las métricas corporales medibles. Fuente única de verdad para el estado 
 | Fecha nacimiento | 20/07/2001 | — |
 | Edad | 24 años | Calcular automáticamente |
 | Sexo | Hombre | — |
-| Altura | 188 cm | Medir descalzo |
-| Envergadura | 📏 Pendiente medir | Brazos extendidos, pared a pared |
+| Altura | 188 cm | Potencial: **189-191 cm** si corrige postura |
+| Envergadura | XXX | Brazos extendidos, pared a pared |
 | Talla calzado | 45 EU | — |
 
 ---
@@ -32,20 +32,72 @@ Todas las métricas corporales medibles. Fuente única de verdad para el estado 
 > ⚠️ **Nota**: Los datos de bioimpedancia son aproximados (±3-5% error). Útiles para ver tendencias, no valores absolutos.
 
 ### Métricas de Composición Corporal
-| Métrica | Valor Actual | Fecha | Objetivo | Rango Saludable |
-|---------|--------------|-------|----------|-----------------|
-| **Peso** | 78.2 kg | 18/06/2026 | 83 kg | Según altura/objetivo |
-| **Grasa corporal** | 18.9% | 18/06/2026 | 15% | 10-20% (hombre fitness) |
-| **Masa muscular** | 60.2 kg | 18/06/2026 | +3 kg | ↑ Cuanto más mejor |
+| Métrica | Valor Actual | Fecha | Objetivo 12 meses | Rango Saludable |
+|---------|--------------|-------|-------------------|-----------------|
+| **Peso** | 78.2 kg | 18/06/2026 | **80-82 kg** | 70-90 kg para 188 cm |
+| **Grasa corporal** | 18.9% | 18/06/2026 | **14-15%** | 10-20% (hombre fitness) |
+| **Masa muscular** | 60.2 kg | 18/06/2026 | **+2-3 kg** | ↑ Cuanto más mejor |
 | **Masa ósea** | ~3 kg | | — | ~2.5-3.5 kg (hombre) |
 | **Agua corporal** | ~55% | | — | 50-65% |
 | **Proteína** | ~18% | | — | 16-20% |
-| **Grasa visceral** | 9 | 18/06/2026 | < 10 ✅ | 1-9 (saludable) |
+| **Grasa visceral** | 9 | 18/06/2026 | < 8 | 1-9 (saludable) |
 | **Metabolismo basal** | ~1850 kcal | | — | Referencia para dieta |
 | **Edad metabólica** | ~22 años | | < edad real ✅ | Menor = mejor |
-| **IMC** | 22.1 | | 22-25 ✅ | 18.5-24.9 (normal) |
+| **IMC** | 22.1 | | 22-24 | 18.5-24.9 (normal) |
 
-> 💡 **Objetivo**: Recomposición corporal (+4.8 kg peso, -3.9% grasa = ganar ~5kg músculo, perder ~1kg grasa)
+### Contexto del Usuario
+```yaml
+PERFIL_ENTRENAMIENTO:
+  experiencia: "3 años (entrenamiento casual/inconsistente)"
+  potencial: "Principiante-Intermedio (aún tiene ganancias rápidas)"
+  genetica: "Autopercibida como buena"
+  limitaciones: "Dolor crónico codo (evitar extensión completa bajo carga)"
+```
+
+### Objetivos por Fase (Ambicioso pero Realista)
+```yaml
+OBJETIVOS_12_MESES:
+  # Basado en: 3 años casual = potencial de ~2-3kg músculo/año
+  # Con buena adherencia, nutrición y sueño
+  
+  FASE_1_CUT (Sep-Nov 2026): # 12 semanas
+    peso_inicial: 78.2 kg
+    peso_objetivo: 74-75 kg (-3-4 kg)
+    grasa_objetivo: 14-15%
+    estrategia: "Déficit moderado -500 kcal, mantener proteína alta"
+    resultado_visual: "Abdominales visibles, cara más definida"
+    
+  FASE_2_LEAN_BULK (Dic 2026 - May 2027): # 24 semanas
+    peso_inicial: ~74 kg
+    peso_objetivo: 78-80 kg (+4-6 kg)
+    grasa_objetivo: "Mantener 15-16%"
+    estrategia: "Superávit moderado +300 kcal, maximizar músculo"
+    resultado_visual: "Más tamaño en hombros/brazos, V-taper visible"
+    
+  FASE_3_MINI_CUT (Jun-Jul 2027): # 8 semanas
+    peso_inicial: ~79 kg
+    peso_objetivo: 76-77 kg (-2-3 kg)
+    grasa_objetivo: 12-13%
+    estrategia: "Cut agresivo para verano"
+    resultado_visual: "Look atlético funcional, abs marcados"
+
+OBJETIVO_FINAL_VERANO_2027:
+  peso: "76-78 kg"
+  grasa: "12-14%"
+  look: "Atlético funcional (tipo Brad Pitt Fight Club / Chris Hemsworth Thor 1)"
+  postura: "Wall angel perfecto"
+```
+
+### Checkpoints de Progreso
+| Fecha | Peso Esperado | Grasa % | Checkpoint |
+|-------|---------------|---------|------------|
+| 1 Oct 2026 | 77 kg | 17% | Inicio cut visible |
+| 1 Dic 2026 | 74-75 kg | 14-15% | **FIN CUT - Abs visibles** |
+| 1 Mar 2027 | 76-77 kg | 15% | Mitad bulk |
+| 1 Jun 2027 | 78-80 kg | 15-16% | **FIN BULK - Máximo tamaño** |
+| 1 Ago 2027 | 76-78 kg | 12-14% | **OBJETIVO FINAL - Beach ready** |
+
+> 💡 **Nota**: Estos objetivos son ambiciosos pero alcanzables con adherencia >90% a entrenamiento y nutrición. Si la genética responde bien, podrías superar estas expectativas.
 
 ### Frecuencia de Medición
 ```yaml
@@ -110,42 +162,71 @@ AMAZFIT_GTS4:
 
 > 📏 **Protocolo**: Medir siempre en el mismo punto, relajado (no flexionando), por la mañana.
 
+### GUÍA DE OBJETIVOS REALISTAS (12 meses)
+
+> 📊 **Basado en**: Tu perfil (principiante-intermedio, 3 años casual, buena genética autopercibida)
+> Con adherencia >90% a entrenamiento y nutrición.
+
+| Zona | Ganancia REALISTA | Ganancia ÓPTIMA | Notas |
+|------|-------------------|-----------------|-------|
+| **Hombros** | +3-4 cm | +5-6 cm | Deltoides responden bien |
+| **Pecho** | +2-3 cm | +4 cm | Depende de genética de inserciones |
+| **Bíceps** | +1-2 cm | +2-3 cm | Músculo pequeño, crece lento |
+| **Antebrazo** | +0.5-1 cm | +1-1.5 cm | Muy genético |
+| **Muslo** | +2-3 cm | +4 cm | Responde bien a volumen |
+| **Pantorrilla** | +0.5-1 cm | +1-2 cm | Muy genético, difícil |
+| **Cintura** | -2-4 cm (cut) | -5 cm | Depende de grasa inicial |
+
+**Cómo calcular tu objetivo**: `Tu medida actual + ganancia realista = objetivo`
+
+**Ejemplo**: Bíceps actual 35cm + 2cm realista = **objetivo 37cm**
+
+---
+
 ### Circunferencias Principales
-| Zona | Punto de Medición | Actual (cm) | Objetivo (cm) | Fecha |
-|------|-------------------|-------------|---------------|-------|
-| **Cuello** | Bajo la nuez | [RELLENAR] | — | |
-| **Hombros** | Punto más ancho (deltoides) | [RELLENAR] | [RELLENAR] | |
-| **Pecho** | Línea de pezones, relajado | [RELLENAR] | [RELLENAR] | |
-| **Cintura** | Ombligo, relajado | [RELLENAR] | < 94 cm | |
-| **Cadera** | Punto más ancho (glúteos) | [RELLENAR] | — | |
+
+
+| Zona | Cómo Medir | Actual (cm) | Objetivo (cm) |
+|------|------------|-------------|---------------|
+| **Hombros** | Punto más ancho (deltoides) | XXX | +4 cm |
+| **Pecho** | Línea de pezones, relajado | XXX | +3 cm |
+| **Cintura** | Ombligo, relajado | XXX | < 85 cm |
+| **Cadera** | Punto más ancho (glúteos) | XXX | — |
 
 ### Circunferencias de Brazos
-| Zona | Punto de Medición | Derecho (cm) | Izquierdo (cm) | Objetivo | Fecha |
-|------|-------------------|--------------|----------------|----------|-------|
-| **Bíceps relajado** | Punto más grueso | [RELLENAR] | [RELLENAR] | [RELLENAR] | |
-| **Bíceps contraído** | Flexionado, pico | [RELLENAR] | [RELLENAR] | [RELLENAR] | |
-| **Antebrazo** | Punto más grueso | [RELLENAR] | [RELLENAR] | — | |
-| **Muñeca** | Justo encima del hueso | [RELLENAR] | [RELLENAR] | — | |
+| Zona | Cómo Medir | Derecho | Izquierdo | Objetivo |
+|------|------------|---------|-----------|----------|
+| **Bíceps contraído** | Flexionado, pico | XXX | XXX | +2 cm |
+| **Antebrazo** | Punto más grueso | XXX | XXX | +1 cm |
 
 ### Circunferencias de Piernas
-| Zona | Punto de Medición | Derecha (cm) | Izquierda (cm) | Objetivo | Fecha |
-|------|-------------------|--------------|----------------|----------|-------|
-| **Muslo proximal** | Justo bajo glúteo | [RELLENAR] | [RELLENAR] | [RELLENAR] | |
-| **Muslo medio** | Punto más grueso | [RELLENAR] | [RELLENAR] | [RELLENAR] | |
-| **Pantorrilla** | Punto más grueso | [RELLENAR] | [RELLENAR] | — | |
-| **Tobillo** | Justo encima del hueso | [RELLENAR] | [RELLENAR] | — | |
+| Zona | Cómo Medir | Derecha | Izquierda | Objetivo |
+|------|------------|---------|-----------|----------|
+| **Muslo** | Punto más grueso | XXX | XXX | +3 cm |
+| **Pantorrilla** | Punto más grueso | XXX | XXX | +1 cm |
 
-### Ratios Estéticos (Prioridad #1)
-| Ratio | Fórmula | Valor Actual | Objetivo | Notas |
-|-------|---------|--------------|----------|-------|
-| **Cintura/Hombros** | Cintura ÷ Hombros | [CALCULAR] | < 0.62 | Ratio V-taper |
-| **Cintura/Cadera** | Cintura ÷ Cadera | [CALCULAR] | < 0.90 | Salud cardiovascular |
-| **Hombros/Cintura** | Hombros ÷ Cintura | [CALCULAR] | > 1.6 | "Golden ratio" ~1.618 |
+---
+
+### Ratio V-Taper (Tu Objetivo Principal)
+
+| Ratio | Fórmula | Tu Valor | Objetivo | Significado |
+|-------|---------|----------|----------|-------------|
+| **Hombros ÷ Cintura** | Hombros / Cintura | ⏳ Calcular | **> 1.6** | Golden ratio = 1.618 |
+
+**Cómo mejorar el ratio**:
+- Opción A: Aumentar hombros (+cm deltoides)
+- Opción B: Reducir cintura (-grasa abdominal)
+- Opción C: Ambos (lo ideal)
+
+**Ejemplo**: 
+- Actual: Hombros 115cm, Cintura 85cm → Ratio = 1.35
+- Objetivo: Hombros 120cm (+5), Cintura 80cm (-5) → Ratio = 1.50
+- Ambicioso: Hombros 122cm, Cintura 78cm → Ratio = 1.56 ✨
 
 ```yaml
 MEDIDAS_FRECUENCIA:
   peso: "Diario"
-  circunferencias: "Cada 2-4 semanas"
+  circunferencias: "Cada 4 semanas"
   fotos_progreso: "Mensual (misma luz, hora, poses)"
 ```
 
@@ -224,43 +305,29 @@ MEDIDAS_FRECUENCIA:
 
 ---
 
-## 9. Lesiones y Limitaciones
+## 9. Salud y Lesiones
 
-### Actuales
-| Zona | Problema | Síntomas | Ejercicios que lo provocan |
-|------|----------|----------|---------------------------|
-| **Codo** | Dolor nervioso/tendinoso | Chispazo puntual, como calambre | Press inclinado, press francés, fondos |
+### Lesión Activa
+| Zona | Problema | Síntomas | Ejercicios a evitar | Desde |
+|------|----------|----------|---------------------|-------|
+| **Codo** | Dolor nervioso/tendinoso | Chispazo puntual, calambre | Press francés, fondos, extensión completa bajo carga | — |
 
-### Historial
-| Lesión | Fecha | Estado |
-|--------|-------|--------|
-| Pendiente registrar | — | — |
+> ⚠️ **Acción requerida**: Evaluar con profesional. Posible compresión nervio cubital o epicondilitis.
 
-> ⚠️ **Acción requerida**: Evaluar el dolor de codo con profesional. Posible compresión del nervio cubital o epicondilitis. Evitar extensión completa de codo bajo carga hasta diagnóstico.
-
----
-
-## 9. Historial Clínico
-
-### Lesiones Activas
-| Zona | Descripción | Desde | Limitación | Tratamiento |
-|------|-------------|-------|------------|-------------|
-| — | [Ninguna] | — | — | — |
-
-### Lesiones Pasadas (Relevantes)
-| Zona | Descripción | Año | Recuperación |
-|------|-------------|-----|--------------|
-| — | [Codo con daño] | — | — |
+### Historial de Lesiones
+| Zona | Descripción | Año | Estado |
+|------|-------------|-----|--------|
+| Codo | Lesión previa (detalles pendientes) | — | Crónico |
 
 ### Condiciones Médicas
-| Condición | Estado | Medicación | Impacto en Entreno |
-|-----------|--------|------------|-------------------|
-| — | [Ninguna] | — | — |
+| Condición | Medicación | Impacto en Entreno |
+|-----------|------------|-------------------|
+| Ninguna | — | — |
 
 ### Alergias
-| Tipo | Sustancia | Severidad |
-|------|-----------|-----------|
-| — | [polvo] | — |
+| Sustancia | Severidad |
+|-----------|----------|
+| Polvo | Leve |
 
 ---
 
@@ -268,14 +335,14 @@ MEDIDAS_FRECUENCIA:
 
 | Prioridad | Área | Métrica Clave | Actual | Objetivo | Plazo |
 |-----------|------|---------------|--------|----------|-------|
-| #1 | Estética | Ratio cintura/hombros | [CALC] | < 0.62 | — |
-| #2 | Postura | Desviaciones corregidas | [0]/6 | 6/6 | — |
-| #3 | Hipertrofia | Circunf. hombros | [RELLENAR] cm | [125] cm | — |
-| #3 | Hipertrofia | Circunf. bíceps | [RELLENAR] cm | [40] cm | — |
-| #4 | Flexibilidad | Test tocarse pies | [Punta de dedos en el pie] | Palmas suelo | — |
-| #5 | Estrés | FC reposo | [53] bpm | < 50 bpm | — |
-| — | Composición | Grasa corporal | [18,9] % | [15] % | — |
-| — | Composición | Peso | [78] kg | [83] kg | — |
+| #1 | Estética | Ratio cintura/hombros | ⏳ Medir | < 0.62 | 12 meses |
+| #2 | Postura | Wall angel perfecto | ❌ No puede | ✅ Ejecución limpia | 6 meses |
+| #3 | Hipertrofia | Circunf. hombros | ⏳ Medir | +5 cm | 12 meses |
+| #3 | Hipertrofia | Circunf. bíceps | ⏳ Medir | +2 cm | 12 meses |
+| #4 | Flexibilidad | Tocarse pies | ✅ Sí | Palmas suelo | 6 meses |
+| #5 | Estrés | FC reposo | 53 bpm | < 50 bpm | 12 meses |
+| — | Composición | Grasa corporal | 18.9% | 14-15% | Dic 2026 |
+| — | Composición | Peso | 78.2 kg | 80-82 kg | Ago 2027 |
 
 ---
 
