@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitBase — Manual de Usuario</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #000000; --surface: #1C1C1E; --surface2: #2C2C2E;
+            --text: #FFFFFF; --text2: rgba(235,235,245,0.6); --text3: rgba(235,235,245,0.3);
+            --accent: #FF2D55; --accent2: #FF9500; --success: #30D158;
+            --warning: #FFD60A; --error: #FF453A; --chart: #5E5CE6; --chart2: #BF5AF2;
+            --radius: 24px;
+        }
+        body { font-family: -apple-system, 'Inter', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+
+        /* Hero */
+        .hero {
+            min-height: 50vh; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; text-align: center; padding: 60px 20px;
+            background: radial-gradient(ellipse at 50% 0%, rgba(255,149,0,0.12) 0%, transparent 60%);
+        }
+        .hero h1 { font-size: clamp(2rem,5vw,3.5rem); font-weight: 800; background: linear-gradient(135deg, var(--accent2), var(--warning)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .hero p { color: var(--text2); font-size: 1.1rem; max-width: 550px; margin-top: 12px; }
+
+        /* Navigation sidebar */
+        .layout { display: flex; max-width: 1100px; margin: 0 auto; }
+        .sidebar {
+            position: sticky; top: 0; height: 100vh; width: 260px; padding: 24px 16px;
+            overflow-y: auto; border-right: 1px solid rgba(84,84,88,0.2); flex-shrink: 0;
+        }
+        .sidebar a {
+            display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+            border-radius: 12px; color: var(--text2); text-decoration: none;
+            font-size: 0.85rem; transition: all 0.2s; margin-bottom: 4px;
+        }
+        .sidebar a:hover { background: var(--surface); color: var(--text); }
+        .sidebar a.active { background: var(--surface); color: var(--accent); font-weight: 600; }
+        .sidebar .nav-icon { font-size: 1.1rem; }
+
+        .main-content { flex: 1; padding: 40px 32px; min-width: 0; }
+
+        /* Sections */
+        .manual-section { margin-bottom: 64px; scroll-margin-top: 20px; }
+        .manual-section h2 { font-size: 1.6rem; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; }
+        .manual-section h2 .sec-icon { font-size: 1.4rem; }
+        .manual-section .sec-desc { color: var(--text2); margin-bottom: 24px; font-size: 0.95rem; }
+
+        /* Cards */
+        .card { background: var(--surface); border-radius: var(--radius); padding: 24px; margin-bottom: 16px; }
+        .card h3 { font-size: 1rem; margin-bottom: 12px; }
+        .card p, .card li { color: var(--text2); font-size: 0.9rem; }
+        .card ol, .card ul { padding-left: 20px; }
+        .card li { margin-bottom: 6px; }
+
+        /* Phone mockup */
+        .phone-mock {
+            background: var(--surface2); border-radius: 20px; padding: 16px;
+            max-width: 280px; margin: 20px auto; border: 2px solid rgba(84,84,88,0.3);
+            font-family: monospace; font-size: 0.8rem; line-height: 1.6;
+        }
+        .phone-mock .screen { color: var(--text2); }
+        .phone-mock .highlight { color: var(--accent); font-weight: 600; }
+        .phone-mock .dim { color: var(--text3); }
+
+        /* RIR buttons */
+        .rir-demo { display: flex; gap: 8px; margin: 12px 0; flex-wrap: wrap; }
+        .rir-btn {
+            width: 44px; height: 44px; border-radius: 12px; border: 2px solid var(--surface2);
+            background: var(--surface); color: var(--text); font-weight: 700; font-size: 1rem;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .rir-btn:hover { border-color: var(--accent); transform: scale(1.1); }
+        .rir-btn.selected { background: var(--accent); border-color: var(--accent); }
+        .rir-legend { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; font-size: 0.8rem; color: var(--text3); }
+
+        /* Week table */
+        .week-table { width: 100%; border-collapse: separate; border-spacing: 0 4px; }
+        .week-table td, .week-table th { padding: 12px 16px; text-align: left; font-size: 0.85rem; }
+        .week-table th { color: var(--text3); font-weight: 500; font-size: 0.75rem; text-transform: uppercase; }
+        .week-table tr td { background: var(--surface); }
+        .week-table tr td:first-child { border-radius: 12px 0 0 12px; }
+        .week-table tr td:last-child { border-radius: 0 12px 12px 0; }
+        .week-table .gym { color: var(--success); font-weight: 600; }
+        .week-table .swim { color: var(--chart); font-weight: 600; }
+        .week-table .rest { color: var(--text3); }
+
+        /* Macros display */
+        .macros-bar { display: flex; gap: 12px; flex-wrap: wrap; margin: 16px 0; }
+        .macro-pill {
+            background: var(--surface2); border-radius: 100px; padding: 8px 16px;
+            font-size: 0.85rem; font-weight: 600;
+        }
+        .macro-pill.kcal { border-left: 3px solid var(--accent); }
+        .macro-pill.prot { border-left: 3px solid var(--accent2); }
+        .macro-pill.carb { border-left: 3px solid var(--warning); }
+        .macro-pill.fat { border-left: 3px solid var(--chart); }
+        .macro-pill.water { border-left: 3px solid #64D2FF; }
+
+        /* Tips grid */
+        .tips-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+        .tip-card {
+            background: var(--surface); border-radius: 16px; padding: 20px;
+            display: flex; gap: 14px; align-items: flex-start; transition: transform 0.2s;
+        }
+        .tip-card:hover { transform: translateY(-2px); }
+        .tip-card .tip-icon { font-size: 1.5rem; flex-shrink: 0; }
+        .tip-card .tip-sit { font-weight: 600; font-size: 0.85rem; margin-bottom: 4px; }
+        .tip-card .tip-ans { color: var(--text2); font-size: 0.8rem; }
+
+        /* Deload visual */
+        .deload-visual { display: flex; gap: 4px; align-items: flex-end; margin: 16px 0; height: 60px; }
+        .deload-bar { flex: 1; background: var(--success); border-radius: 4px 4px 0 0; transition: height 0.5s; }
+        .deload-bar.low { background: var(--warning); }
+
+        /* Warn box */
+        .warn-box { background: rgba(255,69,58,0.1); border-left: 3px solid var(--error); border-radius: 12px; padding: 14px 16px; margin: 12px 0; font-size: 0.85rem; color: var(--text2); }
+        .warn-box strong { color: var(--error); }
+        .info-box { background: rgba(94,92,230,0.1); border-left: 3px solid var(--chart); border-radius: 12px; padding: 14px 16px; margin: 12px 0; font-size: 0.85rem; color: var(--text2); }
+        .info-box strong { color: var(--chart); }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+            .main-content { padding: 24px 16px; }
+            .layout { display: block; }
+        }
+
+        /* Mobile nav */
+        .mobile-nav {
+            display: none; position: sticky; top: 0; z-index: 100;
+            background: var(--bg); border-bottom: 1px solid rgba(84,84,88,0.2);
+            padding: 12px; overflow-x: auto; white-space: nowrap;
+        }
+        .mobile-nav a {
+            display: inline-block; padding: 6px 14px; border-radius: 100px;
+            background: var(--surface); color: var(--text2); text-decoration: none;
+            font-size: 0.8rem; margin-right: 8px;
+        }
+        .mobile-nav a.active { background: var(--accent); color: #fff; }
+        @media (max-width: 768px) { .mobile-nav { display: block; } }
+    </style>
+</head>
+<body>
+
+<div class="hero">
+    <h1>Manual de Usuario</h1>
+    <p>Todo lo que necesitas saber para usar FitBase día a día. Navega por las secciones o léelo de arriba a abajo.</p>
+</div>
+
+<div class="mobile-nav">
+    <a href="#sec1">Primer día</a>
+    <a href="#sec2">Plan</a>
+    <a href="#sec3">Gym</a>
+    <a href="#sec4">Series</a>
+    <a href="#sec5">Progreso</a>
+    <a href="#sec6">Fallos</a>
+    <a href="#sec7">Nutrición</a>
+    <a href="#sec8">Semana</a>
+    <a href="#sec9">Deload</a>
+    <a href="#sec10">Tips</a>
+</div>
+
+<div class="layout">
+    <nav class="sidebar">
+        <a href="#sec1" class="active"><span class="nav-icon">🚀</span> Primer día</a>
+        <a href="#sec2"><span class="nav-icon">📅</span> Plan anual</a>
+        <a href="#sec3"><span class="nav-icon">🏋️</span> En el gym</a>
+        <a href="#sec4"><span class="nav-icon">✍️</span> Registrar series</a>
+        <a href="#sec5"><span class="nav-icon">📈</span> Ver progreso</a>
+        <a href="#sec6"><span class="nav-icon">⚠️</span> Si fallo un día</a>
+        <a href="#sec7"><span class="nav-icon">🍽️</span> Nutrición</a>
+        <a href="#sec8"><span class="nav-icon">📆</span> Semana tipo</a>
+        <a href="#sec9"><span class="nav-icon">🔄</span> Deload</a>
+        <a href="#sec10"><span class="nav-icon">💡</span> Tips rápidos</a>
+    </nav>
+
+    <main class="main-content">
+
+        <!-- SECCIÓN 1 -->
+        <div class="manual-section" id="sec1">
+            <h2><span class="sec-icon">🚀</span> Primer Día (31/08/2026)</h2>
+            <p class="sec-desc">Lo que necesitas hacer antes y durante tu primera sesión.</p>
+
+            <div class="card">
+                <h3>☀️ Antes de ir al gym</h3>
+                <ol>
+                    <li><strong>Abre FitBase</strong> → Verás la pantalla de mañana con tus macros</li>
+                    <li><strong>Revisa el plan</strong>: Toca "📅 Ver Plan Anual" para ver tus 11 meses</li>
+                    <li><strong>Anota tu peso</strong>: La Xiaomi sincroniza auto, o añádelo manual</li>
+                </ol>
+            </div>
+
+            <div class="card">
+                <h3>🏋️ Primera sesión (Adaptación Anatómica)</h3>
+                <ol>
+                    <li>Las primeras 4 semanas son <strong>Adaptación</strong>: pesos ligeros, RIR 4-5</li>
+                    <li>Objetivo: preparar tendones y aprender movimientos</li>
+                    <li><strong>NO</strong> busques pesos altos → ajusta al peso que puedas con RIR 4-5</li>
+                    <li>El motor aprenderá de tus registros para sugerir mejor la próxima vez</li>
+                </ol>
+                <div class="info-box"><strong>💡 RIR 4-5</strong> significa que al terminar la serie, te quedaban 4-5 repeticiones "en el tanque". Se tiene que sentir fácil.</div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN 2 -->
+        <div class="manual-section" id="sec2">
+            <h2><span class="sec-icon">📅</span> Ver tu Plan Anual</h2>
+            <p class="sec-desc">Cómo navegar los 11 meses de entrenamiento planificado.</p>
+
+            <div class="card">
+                <h3>Acceder al plan</h3>
+                <ol>
+                    <li>Pantalla principal → <strong>"📅 Ver Plan Anual"</strong></li>
+                    <li>Fases coloreadas por tipo:</li>
+                </ol>
+                <div style="display:flex; flex-wrap:wrap; gap:8px; margin: 12px 0;">
+                    <span style="background:rgba(48,209,88,0.2); color:var(--success); padding:4px 12px; border-radius:100px; font-size:0.8rem;">🟢 Volumen</span>
+                    <span style="background:rgba(255,45,85,0.2); color:var(--accent); padding:4px 12px; border-radius:100px; font-size:0.8rem;">🔴 Fuerza</span>
+                    <span style="background:rgba(255,149,0,0.2); color:var(--accent2); padding:4px 12px; border-radius:100px; font-size:0.8rem;">🟠 Definición</span>
+                    <span style="background:rgba(255,214,10,0.2); color:var(--warning); padding:4px 12px; border-radius:100px; font-size:0.8rem;">🟡 Deload</span>
+                </div>
+                <p>La fase actual está destacada. Toca una fase para ver detalles (semanas, volumen, foco muscular).</p>
+            </div>
+
+            <div class="card">
+                <h3>Resumen de fases</h3>
+                <table style="width:100%; font-size:0.85rem; color:var(--text2);">
+                    <tr><td style="padding:6px 0;"><strong style="color:var(--text)">Sep</strong></td><td>Adaptación (4 sem) — Preparar el cuerpo</td></tr>
+                    <tr><td style="padding:6px 0;"><strong style="color:var(--text)">Oct-Nov</strong></td><td>Hipertrofia I (6 sem) — Ganar músculo</td></tr>
+                    <tr><td style="padding:6px 0;"><strong style="color:var(--text)">Dic</strong></td><td>Fuerza I (4 sem) — Más peso, menos reps</td></tr>
+                    <tr><td style="padding:6px 0;"><strong style="color:var(--text)">Ene-Feb</strong></td><td>Hipertrofia II (6 sem) — Más músculo</td></tr>
+                    <tr><td style="padding:6px 0;"><strong style="color:var(--text)">Mar</strong></td><td>Metabólico (4 sem) — Definición ligera</td></tr>
+                    <tr><td style="padding:6px 0;"><strong style="color:var(--text)">Abr-May</strong></td><td>Hipertrofia III (6 sem) — Pico de volumen</td></tr>
+                    <tr><td style="padding:6px 0;"><strong style="color:var(--text)">Jun</strong></td><td>Fuerza II (4 sem) — PRs de fuerza</td></tr>
+                    <tr><td style="padding:6px 0;"><strong style="color:var(--text)">Jul</strong></td><td>Hipertrofia IV + Transición</td></tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- SECCIÓN 3 -->
+        <div class="manual-section" id="sec3">
+            <h2><span class="sec-icon">🏋️</span> Cómo Usar la App en el Gym</h2>
+            <p class="sec-desc">El flujo completo de una sesión de entrenamiento.</p>
+
+            <div class="card">
+                <h3>Iniciar sesión</h3>
+                <ol>
+                    <li>Llega al gym → Abre la app → Toca <strong>"▶ EMPEZAR ENTRENO"</strong></li>
+                    <li>Verás: tipo de sesión, ejercicios, duración estimada</li>
+                    <li>Toca <strong>"▶ EMPEZAR"</strong> → primer ejercicio</li>
+                </ol>
+            </div>
+
+            <div class="card">
+                <h3>Pantalla de ejercicio</h3>
+                <div class="phone-mock">
+                    <div class="screen">
+                        <div class="highlight">PRESS INCLINADO</div>
+                        <div style="font-size:1.5rem; text-align:center; margin:8px 0; color:var(--text)">18 kg</div>
+                        <div style="text-align:center; color:var(--text2)">10 reps objetivo</div>
+                        <div style="text-align:center; margin-top:8px;" class="dim">Serie 1 / 4</div>
+                        <div style="text-align:center; margin-top:16px; border-top:1px solid var(--surface); padding-top:8px; color:var(--accent2)">◀ swipe para completar ▶</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Flujo de cada serie</h3>
+                <ol>
+                    <li>Haz tu serie con el peso sugerido</li>
+                    <li><strong>Desliza a la izquierda</strong> al terminar</li>
+                    <li>Aparece pantalla unificada: ajusta reps + selecciona RIR (misma pantalla)</li>
+                    <li>Timer de descanso empieza automáticamente</li>
+                    <li><strong>Vibración en tu reloj</strong> (Amazfit GTS 4) cuando termine</li>
+                    <li>Sonido <strong>solo si llevas auriculares</strong> (canal multimedia, no tono)</li>
+                    <li>Si no tienes auriculares → solo vibra el reloj, silencio total en móvil</li>
+                    <li>Siguiente serie → repite hasta completar ejercicio</li>
+                    <li>La app avanza al siguiente ejercicio automáticamente</li>
+                </ol>
+            </div>
+
+            <div class="info-box"><strong>📱 Puedes salir de la app</strong> — el timer sigue en la notificación. La vibración llega a tu muñeca (reloj) cuando toca volver.</div>
+        </div>
+
+        <!-- SECCIÓN 4 -->
+        <div class="manual-section" id="sec4">
+            <h2><span class="sec-icon">✍️</span> Registrar Series (Peso, Reps, RIR)</h2>
+            <p class="sec-desc">El sistema de registro rápido y la escala RIR.</p>
+
+            <div class="card">
+                <h3>Registro rápido</h3>
+                <ol>
+                    <li>Desliza izquierda al terminar la serie</li>
+                    <li>Pantalla unificada con reps + RIR juntos:</li>
+                </ol>
+
+                <div class="rir-demo">
+                    <div class="rir-btn" onclick="selectRIR(this)">0</div>
+                    <div class="rir-btn" onclick="selectRIR(this)">1</div>
+                    <div class="rir-btn selected" onclick="selectRIR(this)">2</div>
+                    <div class="rir-btn" onclick="selectRIR(this)">3</div>
+                    <div class="rir-btn" onclick="selectRIR(this)">4+</div>
+                </div>
+                <div class="rir-legend">
+                    <span><strong>0</strong> = Fallo (no podías más)</span>
+                    <span><strong>1</strong> = Te quedaba 1 rep</span>
+                    <span><strong style="color:var(--success)">2</strong> = Te quedaban 2 (ideal hipertrofia)</span>
+                    <span><strong>3</strong> = Te quedaban 3 (cómodo)</span>
+                    <span><strong>4+</strong> = Estaba fácil</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Cambiar peso</h3>
+                <p>Mantén pulsado el número del peso → edita. El motor aprenderá y ajustará la próxima sesión.</p>
+
+                <div class="info-box"><strong>📈 Progresión automática:</strong> Si haces 1-2 reps MÁS del objetivo con RIR ≥ 2, la app sube +2.5% (ACSM 2009). También puedes subirlo manualmente desde el menú del ejercicio sin esperar a que la app lo haga.</div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN 5 -->
+        <div class="manual-section" id="sec5">
+            <h2><span class="sec-icon">📈</span> Ver tu Progreso</h2>
+            <p class="sec-desc">Métricas disponibles en la app.</p>
+
+            <div class="card">
+                <h3>En la pantalla principal</h3>
+                <ul>
+                    <li><strong>Peso</strong>: Media móvil 7 días (suaviza fluctuaciones)</li>
+                    <li><strong>Calorías</strong>: Importadas de <strong>FatSecret</strong> automáticamente (sync al abrir app)</li>
+                    <li><strong>Sueño/FC</strong>: Datos Zepp automáticos</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h3>Al final de cada sesión</h3>
+                <ul>
+                    <li><strong>Puntuación</strong> (0-100): Volumen total + completitud</li>
+                    <li><strong>PRs</strong>: Aviso si hay nuevo récord personal</li>
+                    <li><strong>Volumen total</strong>: kg × reps de toda la sesión</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h3>Mediciones (inicio + fin de fase)</h3>
+                <ul>
+                    <li>📏 Circunferencias con cinta métrica: solo el primer día y al final de cada fase</li>
+                    <li>⚖️ Composición corporal: al final de cada semana, datos extraídos del último pesaje en Zepp (peso, % grasa, kg músculo)</li>
+                    <li>💾 Todo se guarda automáticamente en tu BD (mediciones_log)</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- SECCIÓN 6 -->
+        <div class="manual-section" id="sec6">
+            <h2><span class="sec-icon">⚠️</span> Qué Hacer Si Fallo un Día</h2>
+            <p class="sec-desc">La vida pasa. Así gestiona FitBase las excepciones.</p>
+
+            <div class="card">
+                <h3>🚫 No puedo ir al gym</h3>
+                <p>No pasa nada. El volumen SEMANAL total es lo que importa (Schoenfeld 2019). La app puede redistribuir los días siguientes.</p>
+            </div>
+            <div class="card">
+                <h3>😴 Me siento fatigado</h3>
+                <p>El motor detecta FC reposo elevada o Sleep Score bajo → sugiere reducir volumen (-10% a -20%). Si estás muy mal → registra excepción de enfermedad.</p>
+            </div>
+            <div class="card">
+                <h3>✈️ Viaje o vacaciones</h3>
+                <p>Registra excepción tipo "viaje" con fechas. Al volver: semana de readaptación automática.</p>
+            </div>
+            <div class="card">
+                <h3>🤕 Lesión o dolor</h3>
+                <p>Si sientes dolor → marca botón "dolor" + zona. La app evitará ejercicios que estresen esa zona.</p>
+                <div class="warn-box"><strong>⚠️ Codo:</strong> Tu lesión ya está configurada. La app evita extensión de tríceps bajo carga. Si sientes dolor → PARA inmediatamente.</div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN 7 -->
+        <div class="manual-section" id="sec7">
+            <h2><span class="sec-icon">🍽️</span> Nutrición Día a Día</h2>
+            <p class="sec-desc">Macros objetivo y cómo registrar comidas.</p>
+
+            <div class="card">
+                <h3>Objetivos diarios (fase Bulk)</h3>
+                <div class="macros-bar">
+                    <span class="macro-pill kcal">3280 kcal</span>
+                    <span class="macro-pill prot">156g Prot</span>
+                    <span class="macro-pill carb">488g Carbs</span>
+                    <span class="macro-pill fat">78g Grasa</span>
+                    <span class="macro-pill water">3.2L Agua</span>
+                </div>
+                <p>En días de entreno: +500ml agua extra (3.7L total).</p>
+            </div>
+
+            <div class="card">
+                <h3>Registro de calorías — FatSecret</h3>
+                <ul>
+                    <li>Registra tus comidas en la app <strong>FatSecret</strong> como siempre</li>
+                    <li>FitBase <strong>importa automáticamente</strong> cada vez que abres la app</li>
+                    <li>Macros y calorías se sincronizan a tu BD de FitBase</li>
+                    <li>No necesitas registrar comidas en dos sitios — solo en FatSecret</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h3>Distribución recomendada</h3>
+                <table style="width:100%; font-size:0.85rem;">
+                    <tr style="color:var(--text3);"><td>Comida</td><td>Hora</td><td>~Proteína</td></tr>
+                    <tr><td>Desayuno</td><td style="color:var(--text2)">07:00</td><td>35g</td></tr>
+                    <tr><td>Comida</td><td style="color:var(--text2)">14:00</td><td>50g</td></tr>
+                    <tr><td>Cena</td><td style="color:var(--text2)">21:00</td><td>50g</td></tr>
+                    <tr><td>Snacks</td><td style="color:var(--text2)">Variable</td><td>21g</td></tr>
+                </table>
+            </div>
+
+            <div class="card">
+                <h3>Pre/Post entreno</h3>
+                <ul>
+                    <li><strong>2h antes:</strong> Comida con carbos + proteína</li>
+                    <li><strong>&lt;30 min después:</strong> Whey + dátiles (o comida real)</li>
+                </ul>
+            </div>
+
+            <div class="info-box"><strong>🎯 Precisión:</strong> No necesitas ser 100% exacto. La tendencia semanal importa más que el día exacto.</div>
+        </div>
+
+        <!-- SECCIÓN 8 -->
+        <div class="manual-section" id="sec8">
+            <h2><span class="sec-icon">📆</span> Semana Tipo</h2>
+            <p class="sec-desc">Distribución semanal: 4 pesas + 2 natación + 1 descanso.</p>
+
+            <table class="week-table">
+                <tr><th>Día</th><th>Actividad</th><th>Duración</th></tr>
+                <tr><td class="gym">Lunes</td><td>🏋️ PUSH (Pecho + Hombros + Tríceps)</td><td>75 min</td></tr>
+                <tr><td class="swim">Martes</td><td>🏊 Natación (clase)</td><td>60 min</td></tr>
+                <tr><td class="rest">Miércoles</td><td>😴 Descanso / Movilidad</td><td>—</td></tr>
+                <tr><td class="swim">Jueves</td><td>🏊 Natación (clase)</td><td>60 min</td></tr>
+                <tr><td class="gym">Viernes</td><td>🏋️ PULL (Espalda + Bíceps)</td><td>75 min</td></tr>
+                <tr><td class="gym">Sábado</td><td>🦵 PIERNA + POSTURA</td><td>90 min</td></tr>
+                <tr><td class="gym">Domingo</td><td>💪 UPPER (Hombros + Brazos extra)</td><td>60 min</td></tr>
+            </table>
+        </div>
+
+        <!-- SECCIÓN 9 -->
+        <div class="manual-section" id="sec9">
+            <h2><span class="sec-icon">🔄</span> Deload (cada 4 semanas)</h2>
+            <p class="sec-desc">La semana ligera que permite crecer. La app lo gestiona sola.</p>
+
+            <div class="card">
+                <h3>¿Qué cambia?</h3>
+                <ul>
+                    <li><strong>50% del volumen</strong> (la mitad de series)</li>
+                    <li><strong>RIR 4-5</strong> (pesos que sientes fáciles)</li>
+                    <li>Mismos ejercicios, mismo patrón</li>
+                    <li><strong>NO</strong> es descanso total — es recuperación activa</li>
+                </ul>
+
+                <div style="margin-top: 16px; font-size: 0.85rem; color: var(--text3);">Visualización del ciclo de carga:</div>
+                <div class="deload-visual">
+                    <div class="deload-bar" style="height:50%"></div>
+                    <div class="deload-bar" style="height:70%"></div>
+                    <div class="deload-bar" style="height:90%"></div>
+                    <div class="deload-bar low" style="height:35%"></div>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:var(--text3);">
+                    <span>Sem 1</span><span>Sem 2</span><span>Sem 3</span><span style="color:var(--warning)">DELOAD</span>
+                </div>
+            </div>
+
+            <div class="info-box"><strong>🧬 Supercompensación:</strong> El músculo crece durante el descanso, no durante el entreno. El deload permite que tu cuerpo se repare y se haga más fuerte.</div>
+        </div>
+
+        <!-- SECCIÓN 10 -->
+        <div class="manual-section" id="sec10">
+            <h2><span class="sec-icon">💡</span> Tips Rápidos</h2>
+            <p class="sec-desc">Respuestas rápidas a situaciones comunes.</p>
+
+            <div class="tips-grid">
+                <div class="tip-card">
+                    <div class="tip-icon">⚖️</div>
+                    <div><div class="tip-sit">El peso sugerido es demasiado alto</div><div class="tip-ans">Bájalo. O sube manualmente desde el menú del ejercicio. El motor aprenderá.</div></div>
+                </div>
+                <div class="tip-card">
+                    <div class="tip-icon">⏱️</div>
+                    <div><div class="tip-sit">Me sobra tiempo en la sesión</div><div class="tip-ans">No añadas ejercicios extra. El plan está calibrado.</div></div>
+                </div>
+                <div class="tip-card">
+                    <div class="tip-icon">😴</div>
+                    <div><div class="tip-sit">No dormí bien</div><div class="tip-ans">El motor ya reduce volumen si detecta mal sueño. Confía.</div></div>
+                </div>
+                <div class="tip-card">
+                    <div class="tip-icon">🌙</div>
+                    <div><div class="tip-sit">Es Ramadán</div><div class="tip-ans">La app ajusta auto: -30% volumen, entreno pre-Iftar.</div></div>
+                </div>
+                <div class="tip-card">
+                    <div class="tip-icon">📵</div>
+                    <div><div class="tip-sit">No abrí la app ayer</div><div class="tip-ans">FitBase asume que no entrenaste y redistribuye al abrir hoy.</div></div>
+                </div>
+                <div class="tip-card">
+                    <div class="tip-icon">⌚</div>
+                    <div><div class="tip-sit">No vibra el reloj</div><div class="tip-ans">Verifica que Zepp tiene permiso de notificaciones de FitBase.</div></div>
+                </div>
+                <div class="tip-card">
+                    <div class="tip-icon">🎉</div>
+                    <div><div class="tip-sit">Viernes con amigos</div><div class="tip-ans">Disfruta. Un día no arruina 11 meses de plan.</div></div>
+                </div>
+                <div class="tip-card">
+                    <div class="tip-icon">🚨</div>
+                    <div><div class="tip-sit">Dolor de codo</div><div class="tip-ans">PARA inmediatamente. La app ya evita extensión bajo carga.</div></div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<script>
+    // Sidebar active state on scroll
+    const sections = document.querySelectorAll('.manual-section');
+    const navLinks = document.querySelectorAll('.sidebar a');
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                navLinks.forEach(l => l.classList.remove('active'));
+                const id = entry.target.id;
+                const link = document.querySelector('.sidebar a[href="#' + id + '"]');
+                if (link) link.classList.add('active');
+            }
+        });
+    }, { rootMargin: '-20% 0px -70% 0px' });
+
+    sections.forEach(s => observer.observe(s));
+
+    // RIR demo
+    function selectRIR(btn) {
+        btn.parentElement.querySelectorAll('.rir-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+    }
+</script>
+</body>
+</html>

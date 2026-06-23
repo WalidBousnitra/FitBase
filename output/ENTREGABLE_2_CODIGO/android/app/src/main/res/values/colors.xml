@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Colores Light (Sistema_Diseno_Fitness.md § 1.1) -->
+<resources>
+    <!-- Base -->
+    <color name="colorBackground">#F2F2F7</color>
+    <color name="colorSurface">#FFFFFF</color>
+    <color name="colorSurfaceElevated">#FFFFFF</color>
+    <color name="colorTextPrimary">#000000</color>
+    <color name="colorTextSecondary">#993C3C43</color>
+    <color name="colorTextTertiary">#4D3C3C43</color>
+    <color name="colorSeparator">#4D3C3C43</color>
+
+    <!-- Acentos (iguales en ambos temas) -->
+    <color name="colorAccentPrimary">#FF2D55</color>
+    <color name="colorAccentSecondary">#FF9500</color>
+    <color name="colorSuccess">#30D158</color>
+    <color name="colorWarning">#FFD60A</color>
+    <color name="colorError">#FF453A</color>
+    <color name="colorChart">#5E5CE6</color>
+    <color name="colorChartSecondary">#BF5AF2</color>
+</resources>

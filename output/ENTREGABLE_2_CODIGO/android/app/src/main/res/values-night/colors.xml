@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Colores Dark - OLED True Black (Sistema_Diseno_Fitness.md § 1.2) -->
+<resources>
+    <color name="colorBackground">#000000</color>
+    <color name="colorSurface">#1C1C1E</color>
+    <color name="colorSurfaceElevated">#2C2C2E</color>
+    <color name="colorTextPrimary">#FFFFFF</color>
+    <color name="colorTextSecondary">#99EBEBF5</color>
+    <color name="colorTextTertiary">#4DEBEBF5</color>
+    <color name="colorSeparator">#A6545458</color>
+
+    <!-- Acentos (iguales) -->
+    <color name="colorAccentPrimary">#FF2D55</color>
+    <color name="colorAccentSecondary">#FF9500</color>
+    <color name="colorSuccess">#30D158</color>
+    <color name="colorWarning">#FFD60A</color>
+    <color name="colorError">#FF453A</color>
+    <color name="colorChart">#5E5CE6</color>
+    <color name="colorChartSecondary">#BF5AF2</color>
+</resources>

@@ -16,6 +16,28 @@ Este documento es la **Única Fuente de Verdad (SSOT)** del proyecto FitBase.
 > **REGLA CERO:** Tu única fuente de verdad son los archivos `.md` de este repositorio. 
 > Queda **PROHIBIDO** inferir, inventar o utilizar conocimiento pre-entrenado para lógica de negocio, ejercicios o pautas nutricionales.
 
+### Filosofía: NADA HARDCODEADO
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Este repositorio NO contiene:                               │
+│    ✗ Plan de entrenamiento predefinido                       │
+│    ✗ Ejercicios específicos hardcodeados                     │
+│    ✗ Fases (CUT/BULK) con fechas                             │
+│    ✗ Rutinas fijas                                           │
+│                                                              │
+│  Este repositorio SÍ contiene:                               │
+│    ✓ Datos del usuario (biometría, preferencias)             │
+│    ✓ Evidencia científica (papers procesados)                │
+│    ✓ Reglas de lógica (cómo usar la evidencia)               │
+│    ✓ Prompt para que la IA genere TODO dinámicamente         │
+│                                                              │
+│  DURACIÓN DEL PLAN: 11 meses (definido por usuario)          │
+└──────────────────────────────────────────────────────────────┘
+```
+
+Ver: `/PROMPT_FITBASE.md` para instrucciones de generación.
+
 ## 2. Stack Tecnológico
 
 | Componente | Tecnología | Notas |
@@ -44,66 +66,56 @@ Este documento es la **Única Fuente de Verdad (SSOT)** del proyecto FitBase.
 
 ---
 
-## 3. Mapa Estructural (42 archivos)
+## 3. Mapa Estructural
 
 ```
-/knowledge_base
-├── manifest.md              # [SYS-00] Este archivo
-├── plantilla.md             # Plantilla para crear nuevos MDs
+/FitBase-main
+├── AGENTS.md                # Instrucciones para GitHub Copilot
+├── PROMPT_FITBASE.md        # ★ PROMPT PRINCIPAL (usar este)
 │
-├── /usuario                 # Datos personales y tracking
-│   ├── prioridades.md       # [USR-01] ★ Ranking de objetivos
-│   ├── biometria.md         # [USR-02] Medidas y objetivos físicos
-│   ├── equipamiento.md      # [USR-03] Gym, cocina, dispositivos
-│   ├── /perfil
-│   │   ├── cultura.md       # [USR-PER-01] Restricciones culturales
-│   │   └── horarios.md      # [USR-PER-02] Disponibilidad y cronotipo
-│   └── /metricas
-│       ├── hardware.md      # [USR-MET-01] Zepp + Health Connect
-│       └── subjetivas.md    # [USR-MET-02] RPE, energía, estrés
-│
-├── /evidencia               # Papers científicos (1:1 con prioridades)
-│   ├── _indice_papers.md    # [EVI-00] Índice de papers procesados
-│   ├── _guia_extraccion.md  # Guía para extraer papers
-│   ├── estetica.md          # [EVI-01] P1: Estética muscular
-│   ├── postura.md           # [EVI-02] P2: Corrección postural
-│   ├── hipertrofia.md       # [EVI-03] P3: Crecimiento muscular
-│   ├── flexibilidad.md      # [EVI-04] P4: Movilidad articular
-│   ├── estres.md            # [EVI-05] P5: Cortisol y estrés
-│   ├── hormonal.md          # [EVI-06] P6: Salud hormonal
-│   ├── vitalidad.md         # [EVI-07] P7: Energía y vitalidad
-│   ├── digestivo.md         # [EVI-08] P8: Salud digestiva
-│   ├── agilidad.md          # [EVI-09] P9: Agilidad
-│   ├── cardio.md            # [EVI-10] P10: Capacidad cardiovascular
-│   ├── nutricion.md         # [EVI-11] Soporte: Ciencia nutricional
-│   ├── sueno.md             # [EVI-12] Soporte: Sueño y recuperación
-│   ├── suplementacion.md    # [EVI-13] Soporte: Suplementos
-│   ├── periodizacion.md     # [EVI-14] Soporte: Periodización y ciclos
-│   ├── lesiones.md          # [EVI-15] Soporte: Dolor y rehabilitación
-│   ├── calentamiento.md     # [EVI-16] Soporte: Warm-up y activación
-│   └── fatiga_mental.md     # [EVI-17] Soporte: Fatiga mental y rendimiento
-│
-└── /reglas                  # Lógica de negocio de la app
-    ├── /entrenamiento
-    │   ├── programacion.md  # [REG-ENT-01] Split, frecuencia, periodización
-    │   ├── ejercicios.md    # [REG-ENT-02] Inventario y selección
-    │   ├── calentamiento.md # [REG-ENT-03] Activación y movilidad
-    │   └── preferencias.md  # [REG-ENT-04] Preferencias de entrenamiento
-    ├── /nutricion
-    │   ├── motor_dieta.md   # [REG-NUT-01] Cálculo de macros
-    │   └── preferencias.md  # [REG-NUT-02] Filtros alimentarios
-    ├── /natacion
-    │   └── piscina.md       # [REG-NAT-01] Clases de natación 2x/semana
-    ├── /logica
-    │   ├── motor_pesos.md   # [REG-LOG-01] Autorregulación de cargas
-    │   ├── base_datos.md    # [REG-LOG-02] Esquema Google Sheets (14 hojas)
-    │   └── excepciones.md   # [REG-LOG-03] Viajes, enfermedad, Ramadán
-    └── /desarrollo
-        ├── PROMPT_DESARROLLO.md  # [REG-DEV-00] ★ Prompt maestro para IA
-        ├── MANUAL_DESPLIEGUE.md  # [REG-DEV-03] Guía paso a paso
-        ├── ui.md                 # [REG-DEV-01] Especificación Android
-        ├── compilador.md         # [REG-DEV-02] Reglas de código para IA
-        └── Sistema_Diseno_Fitness.md  # [REG-DEV-04] Tokens de diseño (colores, fuentes, animaciones)
+└── /knowledge_base
+    ├── manifest.md          # [SYS-00] Este archivo
+    ├── plantilla.md         # Plantilla para crear nuevos MDs
+    │
+    ├── /usuario             # MIS DATOS (rellenar)
+    │   ├── prioridades.md   # [USR-01] ★ Ranking de objetivos
+    │   ├── biometria.md     # [USR-02] Datos físicos actuales
+    │   ├── preferencias_ejercicios.md  # [USR-04] Favoritos/exclusiones
+    │   ├── equipamiento.md  # [USR-03] Gym, cocina, dispositivos
+    │   ├── /perfil
+    │   │   ├── cultura.md   # [USR-PER-01] Halal, Ramadán
+    │   │   └── horarios.md  # [USR-PER-02] Disponibilidad
+    │   └── /metricas
+    │       ├── hardware.md  # [USR-MET-01] Zepp + Health Connect
+    │       └── subjetivas.md # [USR-MET-02] RPE, energía
+    │
+    ├── /evidencia           # CIENCIA (papers procesados)
+    │   ├── _indice_papers.md
+    │   ├── hipertrofia.md   # [EVI-03] Schoenfeld: volumen, frecuencia
+    │   ├── nutricion.md     # [EVI-11] Mifflin, Helms: calorías, macros
+    │   ├── periodizacion.md # [EVI-14] Bompa: fases, ciclos
+    │   ├── postura.md       # [EVI-02] Ejercicios correctivos
+    │   └── ... (17 archivos total)
+    │
+    └── /reglas              # LÓGICA (basada en evidencia)
+        ├── /entrenamiento
+        │   ├── programacion.md  # [REG-ENT-01] Split, frecuencia
+        │   ├── seleccion_ejercicios.md # [REG-ENT-02] Reglas de selección
+        │   ├── calentamiento.md # [REG-ENT-03]
+        │   └── preferencias.md  # [REG-ENT-04]
+        ├── /nutricion
+        │   ├── motor_dieta.md   # [REG-NUT-01] Cálculo macros
+        │   └── preferencias.md  # [REG-NUT-02] Filtros alimentarios
+        ├── /natacion
+        │   └── piscina.md       # [REG-NAT-01] 2x/semana
+        ├── /logica
+        │   ├── motor_pesos.md   # [REG-LOG-01] Progresión de cargas
+        │   ├── base_datos.md    # [REG-LOG-02] Esquema Sheets (14 hojas)
+        │   └── excepciones.md   # [REG-LOG-03] Viajes, enfermedad
+        └── /desarrollo
+            ├── ui.md            # [REG-DEV-01] Especificación pantallas
+            ├── compilador.md    # [REG-DEV-02] Reglas de código
+            └── Sistema_Diseno_Fitness.md # [REG-DEV-03] Colores, diseño
 ```
 
 ---

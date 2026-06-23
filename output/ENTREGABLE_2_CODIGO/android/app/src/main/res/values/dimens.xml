@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Dimensiones base del sistema de diseño (8dp grid) -->
+<resources>
+    <!-- Grid base -->
+    <dimen name="grid_base">8dp</dimen>
+
+    <!-- Espaciado -->
+    <dimen name="padding_pantalla">20dp</dimen>
+    <dimen name="spacing_cards">16dp</dimen>
+    <dimen name="spacing_small">8dp</dimen>
+    <dimen name="spacing_large">24dp</dimen>
+
+    <!-- Radios -->
+    <dimen name="radius_card">24dp</dimen>
+    <dimen name="radius_button">100dp</dimen>
+
+    <!-- Alturas -->
+    <dimen name="height_button">56dp</dimen>
+    <dimen name="touch_target_min">44dp</dimen>
+
+    <!-- Tipografía -->
+    <dimen name="text_display_metric">36sp</dimen>
+    <dimen name="text_large_title">32sp</dimen>
+    <dimen name="text_header">22sp</dimen>
+    <dimen name="text_body">16sp</dimen>
+    <dimen name="text_caption">13sp</dimen>
+
+    <!-- Timer (número hero) -->
+    <dimen name="text_timer_hero">72sp</dimen>
+</resources>

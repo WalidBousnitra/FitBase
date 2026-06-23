@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Gradiente para botón principal CTA (Sistema_Diseno_Fitness.md § 1.3) -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <gradient
+        android:startColor="@color/colorAccentPrimary"
+        android:endColor="@color/colorAccentSecondary"
+        android:angle="90" />
+    <corners android:radius="100dp" />
+</shape>

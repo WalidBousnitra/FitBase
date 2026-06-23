@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Permisos -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Health Connect -->
+    <uses-permission android:name="android.permission.health.READ_SLEEP" />
+    <uses-permission android:name="android.permission.health.READ_HEART_RATE" />
+    <uses-permission android:name="android.permission.health.READ_STEPS" />
+
+    <application
+        android:name=".FitBaseApp"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:theme="@style/Theme.FitBase"
+        android:supportsRtl="true"
+        tools:targetApi="34">
+
+        <!-- Pantalla principal (Mañana) -->
+        <activity
+            android:name=".ui.home.HomeActivity"
+            android:exported="true"
+            android:screenOrientation="portrait">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Pantalla de entrenamiento (Gym) -->
+        <activity
+            android:name=".ui.workout.WorkoutActivity"
+            android:screenOrientation="portrait"
+            android:keepScreenOn="true" />
+
+        <!-- Pantalla resumen fin de sesión -->
+        <activity
+            android:name=".ui.summary.SummaryActivity"
+            android:screenOrientation="portrait" />
+
+        <!-- Pantalla Plan Anual -->
+        <activity
+            android:name=".ui.plan.PlanAnualActivity"
+            android:screenOrientation="portrait" />
+
+        <!-- Pantalla Plan Semanal -->
+        <activity
+            android:name=".ui.plan.PlanSemanalActivity"
+            android:screenOrientation="portrait" />
+
+        <!-- Servicio Timer (Foreground) -->
+        <service
+            android:name=".service.TimerService"
+            android:foregroundServiceType="specialUse"
+            android:exported="false" />
+
+        <!-- Health Connect -->
+        <activity-alias
+            android:name="ViewPermissionUsageActivity"
+            android:exported="true"
+            android:targetActivity=".ui.home.HomeActivity"
+            android:permission="android.permission.START_VIEW_PERMISSION_USAGE">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
+                <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
+            </intent-filter>
+        </activity-alias>
+
+    </application>
+
+    <!-- Health Connect intents -->
+    <queries>
+        <package android:name="com.google.android.apps.healthdata" />
+    </queries>
+
+</manifest>

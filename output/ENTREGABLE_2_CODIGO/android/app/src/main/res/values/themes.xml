@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Tema FitBase (Sistema_Diseno_Fitness.md) -->
+<resources>
+    <style name="Theme.FitBase" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- Colores primarios -->
+        <item name="colorPrimary">@color/colorAccentPrimary</item>
+        <item name="colorPrimaryVariant">@color/colorAccentSecondary</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+
+        <!-- Colores secundarios -->
+        <item name="colorSecondary">@color/colorChart</item>
+        <item name="colorOnSecondary">#FFFFFF</item>
+
+        <!-- Background -->
+        <item name="android:colorBackground">@color/colorBackground</item>
+        <item name="android:windowBackground">@color/colorBackground</item>
+
+        <!-- Status bar -->
+        <item name="android:statusBarColor">@color/colorBackground</item>
+        <item name="android:navigationBarColor">@color/colorBackground</item>
+
+        <!-- Sin ActionBar -->
+        <item name="windowNoTitle">true</item>
+        <item name="windowActionBar">false</item>
+    </style>
+</resources>

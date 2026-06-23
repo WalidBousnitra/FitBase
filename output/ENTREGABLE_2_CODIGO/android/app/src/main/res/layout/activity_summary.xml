@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Pantalla Fin de Sesión (ui.md § 5) -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/colorBackground"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp"
+        android:gravity="center">
+
+        <!-- Título -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="completado ✓"
+            android:textColor="@color/colorSuccess"
+            android:textSize="16sp"
+            android:layout_marginTop="32dp" />
+
+        <!-- Puntuación (anillo) -->
+        <TextView
+            android:id="@+id/tvPuntuacion"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="87"
+            android:textColor="@color/colorTextPrimary"
+            android:textSize="72sp"
+            android:textStyle="bold"
+            android:layout_marginTop="24dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="/100"
+            android:textColor="@color/colorTextSecondary"
+            android:textSize="22sp" />
+
+        <!-- Métricas -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginTop="24dp">
+
+            <TextView
+                android:id="@+id/tvTiempoTotal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="⏱ 1h 12min"
+                android:textColor="@color/colorTextPrimary"
+                android:textSize="16sp"
+                android:layout_marginEnd="24dp" />
+
+            <TextView
+                android:id="@+id/tvVolumenTotal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="📊 8,450 kg"
+                android:textColor="@color/colorTextPrimary"
+                android:textSize="16sp" />
+        </LinearLayout>
+
+        <!-- Tips Card -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardBackgroundColor="@color/colorSurface"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="0dp"
+            android:layout_marginTop="32dp"
+            xmlns:app="http://schemas.android.com/apk/res-auto">
+
+            <TextView
+                android:id="@+id/tvTips"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="20dp"
+                android:textColor="@color/colorTextPrimary"
+                android:textSize="16sp"
+                android:lineSpacingExtra="4dp" />
+        </androidx.cardview.widget.CardView>
+
+        <!-- Botón Cerrar -->
+        <Button
+            android:id="@+id/btnCerrar"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="32dp"
+            android:background="@drawable/gradient_primary_button"
+            android:text="✓ CERRAR"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+</ScrollView>
