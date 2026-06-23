@@ -16,7 +16,6 @@ import android.os.CountDownTimer;
 import android.os.IBinder;
 
 import androidx.core.app.NotificationCompat;
-import androidx.health.connect.client.HealthConnectClient;
 
 import com.fitbase.FitBaseApp;
 import com.fitbase.R;
@@ -194,17 +193,5 @@ public class TimerService extends Service {
     public void onDestroy() {
         super.onDestroy();
         if (timer != null) timer.cancel();
-    }
-}
-
-        startForeground(NOTIFICACION_ID, notifFin);
-    }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        if (timer != null) {
-            timer.cancel();
-        }
     }
 }

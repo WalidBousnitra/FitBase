@@ -12,9 +12,3 @@ public class ProgresionResponse {
     @SerializedName("total")
     public int total;
 }
-
-/** Respuesta catálogo */
-class CatalogoResponse {
-    @SerializedName("ejercicios")
-    public List<Object> ejercicios;
-}

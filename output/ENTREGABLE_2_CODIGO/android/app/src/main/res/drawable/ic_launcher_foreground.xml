@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Simple dumbbell icon for FitBase -->
+    <path
+        android:fillColor="#FF2D55"
+        android:pathData="M34,48 L34,60 L38,60 L38,48 Z"/>
+    <path
+        android:fillColor="#FF2D55"
+        android:pathData="M70,48 L70,60 L74,60 L74,48 Z"/>
+    <path
+        android:fillColor="#FF2D55"
+        android:pathData="M38,51 L70,51 L70,57 L38,57 Z"/>
+    <path
+        android:fillColor="#FF2D55"
+        android:pathData="M30,44 L30,64 L34,64 L34,44 Z"/>
+    <path
+        android:fillColor="#FF2D55"
+        android:pathData="M74,44 L74,64 L78,64 L78,44 Z"/>
+</vector>

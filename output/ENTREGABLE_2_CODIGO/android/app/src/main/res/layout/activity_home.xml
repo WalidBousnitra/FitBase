@@ -206,7 +206,38 @@
             android:background="@drawable/button_secondary"
             android:text="📅  Ver Plan Anual"
             android:textColor="@color/colorTextPrimary"
-            android:textSize="16sp" />
+            android:textSize="16sp"
+            android:layout_marginBottom="12dp" />
+
+        <!-- Banner Ausencia Detectada -->
+        <LinearLayout
+            android:id="@+id/bannerAusencia"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@color/colorSurface"
+            android:padding="16dp"
+            android:layout_marginBottom="12dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/tvAusenciaMensaje"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/colorWarning"
+                android:textSize="14sp"
+                android:text="No entrenaste ayer. Se redistribuye volumen." />
+        </LinearLayout>
+
+        <!-- Botón Registrar Ausencia Extendida -->
+        <Button
+            android:id="@+id/btnRegistrarAusencia"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:background="@drawable/button_secondary"
+            android:text="⏸  Registrar ausencia larga"
+            android:textColor="@color/colorTextSecondary"
+            android:textSize="14sp" />
 
     </LinearLayout>
 </ScrollView>

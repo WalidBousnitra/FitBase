@@ -1,6 +1,6 @@
 package com.fitbase.data.api;
 
-import com.fitbase.BuildConfig;
+import com.fitbase.util.Constants;
 
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
@@ -31,7 +31,7 @@ public class ApiClient {
                     .build();
 
             Retrofit retrofit = new Retrofit.Builder()
-                    .baseUrl(BuildConfig.BASE_URL)
+                    .baseUrl(Constants.API_BASE_URL)
                     .client(client)
                     .addConverterFactory(GsonConverterFactory.create())
                     .build();
