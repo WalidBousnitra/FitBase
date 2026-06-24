@@ -1,14 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Item de fase en lista del plan anual -->
-<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<!-- Item de fase — Linear: borde inferior fino -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/cardFase"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    app:cardBackgroundColor="@color/colorSurface"
-    app:cardCornerRadius="16dp"
-    app:cardElevation="0dp"
-    android:layout_marginBottom="8dp">
+    android:orientation="vertical"
+    android:background="@color/colorSurface"
+    android:paddingBottom="1dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -38,8 +36,8 @@
                 android:layout_height="wrap_content"
                 android:text="Hipertrofia I"
                 android:textColor="@color/colorTextPrimary"
-                android:textSize="16sp"
-                android:textStyle="bold" />
+                android:textSize="15sp"
+                android:fontFamily="sans-serif-medium" />
 
             <TextView
                 android:id="@+id/tvFaseFechas"
@@ -60,4 +58,10 @@
                 android:layout_marginTop="2dp" />
         </LinearLayout>
     </LinearLayout>
-</androidx.cardview.widget.CardView>
+
+    <!-- Separador fino -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/colorSeparator" />
+</LinearLayout>

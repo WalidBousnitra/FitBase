@@ -1,53 +1,72 @@
-# SISTEMA DE DISEÑO: FITNESS VIVO & PREMIUM
-Especificación técnica completa para UI/UX en Android (Views/XML) inspirado en Apple iOS Clean Aesthetic.
+# SISTEMA DE DISEÑO: LINEAR APP AESTHETIC
+Especificación técnica para UI/UX en Android (Views/XML).
+Estética **Linear App** — ultra limpio, plano, monocromático con **micro-accents**.
 
 > **IMPORTANTE**: Este proyecto usa **Views/XML** exclusivamente. NO usar Jetpack Compose.
 
-Este documento contiene todos los tokens de diseño, tipografías, dimensiones, reglas de espaciado, componentes gráficos clave y especificaciones detalladas de animaciones y transiciones.
+## Principios de Diseño
+
+1. **Flat & Clean**: Sin sombras, sin elevaciones, sin gradientes en estructura
+2. **Subtle Borders**: Secciones separadas por líneas finas (`1dp`, `colorSeparator`)
+3. **Monochromatic Structure**: Toda la UI en escala de grises
+4. **Micro-accents**: Naranja `#FF5722` SOLO en detalles quirúrgicos (progress line de calorías, dot de estado activo, icono seleccionado)
+5. **No Glassmorphism**: Cero transparencias, cero blur, fondos sólidos
+6. **Typography-driven**: Jerarquía por peso y tamaño de fuente, no por color
 
 ---
 
 ## 1. Arquitectura de Color (Tema DUAL: Claro + Oscuro)
 
-El sistema sigue la filosofía Apple de **colores semánticos** que se adaptan automáticamente al tema.
-
-### 1.1 Tema CLARO (Light Mode)
+### 1.1 Tema CLARO (Light Mode) — Blanco Roto
 
 | Token | Hex | Descripción |
 | :--- | :--- | :--- |
-| `colorBackground` | `#F2F2F7` | Fondo base (Apple systemGray6) |
-| `colorSurface` | `#FFFFFF` | Tarjetas y contenedores |
-| `colorSurfaceElevated` | `#FFFFFF` | Modales, bottom sheets |
-| `colorTextPrimary` | `#000000` | Títulos, métricas principales |
-| `colorTextSecondary` | `#3C3C43` α60% | Subtítulos, labels |
-| `colorTextTertiary` | `#3C3C43` α30% | Placeholders, hints |
-| `colorSeparator` | `#3C3C43` α30% | Líneas divisorias |
+| `colorBackground` | `#FAFAFA` | Fondo base (blanco roto) |
+| `colorSurface` | `#FFFFFF` | Secciones de contenido |
+| `colorSurfaceElevated` | `#F5F5F5` | Fondo secundario |
+| `colorTextPrimary` | `#1A1A1A` | Texto principal (casi negro) |
+| `colorTextSecondary` | `#6B6B6B` | Labels, subtítulos |
+| `colorTextTertiary` | `#9E9E9E` | Placeholders, hints |
+| `colorSeparator` | `#E8E8E8` | Líneas finas entre secciones |
 
-### 1.2 Tema OSCURO (Dark Mode) — **PREFERIDO**
+### 1.2 Tema OSCURO (Dark Mode) — Gris Carbón
 
 | Token | Hex | Descripción |
 | :--- | :--- | :--- |
-| `colorBackground` | `#000000` | Fondo base (Apple true black OLED) |
-| `colorSurface` | `#1C1C1E` | Tarjetas (Apple systemGray6 dark) |
-| `colorSurfaceElevated` | `#2C2C2E` | Modales, bottom sheets |
-| `colorTextPrimary` | `#FFFFFF` | Títulos, métricas principales |
-| `colorTextSecondary` | `#EBEBF5` α60% | Subtítulos, labels |
-| `colorTextTertiary` | `#EBEBF5` α30% | Placeholders, hints |
-| `colorSeparator` | `#545458` α65% | Líneas divisorias |
+| `colorBackground` | `#161616` | Fondo base (carbón sólido) |
+| `colorSurface` | `#1C1C1C` | Secciones de contenido |
+| `colorSurfaceElevated` | `#242424` | Fondo secundario |
+| `colorTextPrimary` | `#ECECEC` | Texto principal |
+| `colorTextSecondary` | `#8C8C8C` | Labels, subtítulos |
+| `colorTextTertiary` | `#5C5C5C` | Placeholders, hints |
+| `colorSeparator` | `#2E2E2E` | Líneas finas entre secciones |
 
-### 1.3 Colores de Acento (Iguales en ambos temas)
+### 1.3 Colores Funcionales — Micro-accents
 
-| Token | Hex | Uso |
-| :--- | :--- | :--- |
-| `colorAccentPrimary` | `#FF2D55` | Botones principales, enlaces |
-| `colorAccentSecondary` | `#FF9500` | Fin del gradiente |
-| `colorGradientStart` | `#FF2D55` | Gradiente botón CTA |
-| `colorGradientEnd` | `#FF9500` | Gradiente botón CTA |
-| `colorSuccess` | `#30D158` | Completado, PR, anillos cerrados |
-| `colorWarning` | `#FFD60A` | Advertencias, fatiga alta |
-| `colorError` | `#FF453A` | Errores, sobreentrenamiento |
-| `colorChart` | `#5E5CE6` | Gráficas de rendimiento |
-| `colorChartSecondary` | `#BF5AF2` | Gráficas secundarias |
+| Token | Light | Dark | Uso |
+| :--- | :--- | :--- | :--- |
+| `colorAccentPrimary` | `#FF5722` | `#FF5722` | **SOLO**: progress calorías, dot notificación, icono activo |
+| `colorAccentSecondary` | `#5C8A5C` | `#7DAF7D` | Verde apagado: etiquetas success (sutil) |
+| `colorSuccess` | `#5C8A5C` | `#7DAF7D` | Completado (tono natural muted) |
+| `colorWarning` | `#C4930A` | `#D4A832` | Advertencias (ámbar apagado) |
+| `colorError` | `#C62828` | `#E57373` | Errores (rojo oscuro) |
+| `colorChart` | `#5A8A9E` | `#7AABB8` | Gris azulado: progress agua |
+| `colorChartSecondary` | `#7BA3B3` | `#94BDC8` | Gráficas secundarias |
+
+### 1.4 Reglas de Uso del Naranja (Micro-accent)
+
+> ⚠️ El naranja `#FF5722` se usa **EXCLUSIVAMENTE** en:
+> - La línea de progreso de calorías (3dp de alto)
+> - El dot de estado activo (6dp)
+> - El icono de la pestaña seleccionada (si se añade bottom nav)
+> - **NUNCA** en fondos, botones, cards, o texto
+
+### 1.5 Botón CTA
+
+| Modo | Fondo | Texto | Esquinas |
+| :--- | :--- | :--- | :--- |
+| Light | `#1A1A1A` (sólido) | `#FAFAFA` | 8dp |
+| Dark | `#ECECEC` (sólido) | `#161616` | 8dp |
 
 ## 2. Sistema Tipográfico (Escala Android sp)
 Se recomienda la fuente **Inter** o **SF Pro**. En Android, mapear los tamaños usando `sp` y pesos definidos:

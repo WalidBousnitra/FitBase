@@ -25,7 +25,7 @@ public class FaseAdapter extends RecyclerView.Adapter<FaseAdapter.FaseViewHolder
     private final Fase faseActual;
 
     public FaseAdapter(List<Fase> fases, Fase faseActual) {
-        this.fases = fases;
+        this.fases = fases != null ? fases : new java.util.ArrayList<>();
         this.faseActual = faseActual;
     }
 
@@ -40,11 +40,13 @@ public class FaseAdapter extends RecyclerView.Adapter<FaseAdapter.FaseViewHolder
     @Override
     public void onBindViewHolder(@NonNull FaseViewHolder holder, int position) {
         Fase fase = fases.get(position);
-        holder.bind(fase, faseActual != null && fase.faseId.equals(faseActual.faseId));
+        boolean esActual = faseActual != null && fase.faseId != null
+                && fase.faseId.equals(faseActual.faseId);
+        holder.bind(fase, esActual);
     }
 
     @Override
-    public int getItemCount() { return fases.size(); }
+    public int getItemCount() { return fases != null ? fases.size() : 0; }
 
     static class FaseViewHolder extends RecyclerView.ViewHolder {
         private final TextView tvNombre;
@@ -63,9 +65,14 @@ public class FaseAdapter extends RecyclerView.Adapter<FaseAdapter.FaseViewHolder
         }
 
         void bind(Fase fase, boolean esActual) {
-            tvNombre.setText(fase.nombre);
-            tvFechas.setText(String.format("%s → %s (%d sem)", fase.fechaInicio, fase.fechaFin, fase.semanas));
-            tvRir.setText(String.format("RIR %s | %s", fase.rirRango, fase.focoMuscular));
+            tvNombre.setText(fase.nombre != null ? fase.nombre : "—");
+            tvFechas.setText(String.format("%s → %s (%d sem)",
+                    fase.fechaInicio != null ? fase.fechaInicio : "?",
+                    fase.fechaFin != null ? fase.fechaFin : "?",
+                    fase.semanas));
+            tvRir.setText(String.format("RIR %s | %s",
+                    fase.rirRango != null ? fase.rirRango : "—",
+                    fase.focoMuscular != null ? fase.focoMuscular : "—"));
 
             // Color según tipo (Sistema_Diseno_Fitness.md)
             int color = getColorPorTipo(fase.tipo);
@@ -80,14 +87,14 @@ public class FaseAdapter extends RecyclerView.Adapter<FaseAdapter.FaseViewHolder
         }
 
         private int getColorPorTipo(String tipo) {
-            if (tipo == null) return Color.parseColor("#5E5CE6");
+            if (tipo == null) return Color.parseColor("#9E9E9E");
             switch (tipo) {
-                case "VOL": return Color.parseColor("#30D158");  // Verde - Volumen
-                case "FZA": return Color.parseColor("#FF2D55");  // Rojo - Fuerza
-                case "DEF": return Color.parseColor("#FF9500");  // Naranja - Definición
-                case "MNT": return Color.parseColor("#5E5CE6");  // Morado - Mantenimiento
-                case "DELOAD": return Color.parseColor("#FFD60A"); // Amarillo - Deload
-                default: return Color.parseColor("#545458");
+                case "VOL": return Color.parseColor("#5C8A5C");  // Verde muted - Volumen
+                case "FZA": return Color.parseColor("#FF5722");  // Naranja accent - Fuerza
+                case "DEF": return Color.parseColor("#C4930A");  // Ámbar muted - Definición
+                case "MNT": return Color.parseColor("#5A8A9E");  // Gris azulado - Mantenimiento
+                case "DELOAD": return Color.parseColor("#9E9E9E"); // Gris neutro - Deload
+                default: return Color.parseColor("#6B6B6B");
             }
         }
     }

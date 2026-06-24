@@ -1,26 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Tema FitBase (Sistema_Diseno_Fitness.md) -->
+<!-- Theme: Modern Flat UI -->
 <resources>
     <style name="Theme.FitBase" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <!-- Colores primarios -->
+        <!-- Accent -->
         <item name="colorPrimary">@color/colorAccentPrimary</item>
-        <item name="colorPrimaryVariant">@color/colorAccentSecondary</item>
+        <item name="colorPrimaryVariant">@color/colorTextPrimary</item>
         <item name="colorOnPrimary">#FFFFFF</item>
 
-        <!-- Colores secundarios -->
-        <item name="colorSecondary">@color/colorChart</item>
+        <!-- Secondary: neutral -->
+        <item name="colorSecondary">@color/colorTextSecondary</item>
         <item name="colorOnSecondary">#FFFFFF</item>
 
-        <!-- Background -->
+        <!-- Surfaces -->
         <item name="android:colorBackground">@color/colorBackground</item>
         <item name="android:windowBackground">@color/colorBackground</item>
+        <item name="colorSurface">@color/colorSurface</item>
 
-        <!-- Status bar -->
+        <!-- System bars: blend with background -->
         <item name="android:statusBarColor">@color/colorBackground</item>
         <item name="android:navigationBarColor">@color/colorBackground</item>
+        <item name="android:windowLightStatusBar">true</item>
 
-        <!-- Sin ActionBar -->
+        <!-- No action bar -->
         <item name="windowNoTitle">true</item>
         <item name="windowActionBar">false</item>
+
+        <!-- Typography: system sans-serif -->
+        <item name="android:fontFamily">sans-serif</item>
     </style>
 </resources>

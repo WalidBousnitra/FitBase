@@ -36,12 +36,16 @@ public class PlanAnualActivity extends AppCompatActivity {
         viewModel.getPlanAnual().observe(this, plan -> {
             if (plan != null) {
                 // Mostrar fase actual
-                if (plan.faseActual != null) {
+                if (plan.faseActual != null && plan.faseActual.nombre != null) {
                     tvFaseActual.setText(String.format("FASE ACTUAL: %s", plan.faseActual.nombre));
+                } else {
+                    tvFaseActual.setText("PLAN ANUAL");
                 }
 
-                // Adapter de fases
-                FaseAdapter adapter = new FaseAdapter(plan.fases, plan.faseActual);
+                // Adapter de fases (null-safe)
+                FaseAdapter adapter = new FaseAdapter(
+                        plan.fases != null ? plan.fases : new java.util.ArrayList<>(),
+                        plan.faseActual);
                 rvFases.setAdapter(adapter);
             }
         });

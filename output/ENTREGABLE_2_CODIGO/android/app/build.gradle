@@ -58,6 +58,10 @@ dependencies {
     // Health Connect
     implementation 'androidx.health.connect:connect-client:1.1.0-alpha07'
 
+    // Kotlin (necesario para Health Connect coroutines bridge)
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.9.22'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3'
+
     // Animaciones Spring
     implementation 'androidx.dynamicanimation:dynamicanimation:1.0.0'
 

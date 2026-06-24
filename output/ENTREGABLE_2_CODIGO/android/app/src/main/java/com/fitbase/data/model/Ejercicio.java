@@ -67,4 +67,7 @@ public class Ejercicio {
     public void setGrupoMuscular(String grupo) { this.grupoMuscular = grupo; }
     public void setPatron(String patron) { this.patron = patron; }
     public void setPesoSugerido(float peso) { this.pesoSugerido = peso; }
+    public void setSeriesPlan(int series) { this.seriesPlan = series; }
+    public void setRepsPlan(String reps) { this.repsPlan = reps; }
+    public void setDescansoSeg(int seg) { this.descansoSeg = seg; }
 }

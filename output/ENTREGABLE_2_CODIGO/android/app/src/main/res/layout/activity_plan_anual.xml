@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Pantalla Plan Anual (ui.md § 12) -->
+<!-- Pantalla Plan Anual — Linear App Aesthetic -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@color/colorBackground"
-    android:padding="20dp">
+    android:paddingHorizontal="24dp"
+    android:paddingTop="16dp">
 
     <!-- Header -->
     <LinearLayout
@@ -13,7 +14,7 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:layout_marginBottom="16dp">
+        android:layout_marginBottom="24dp">
 
         <TextView
             android:id="@+id/btnVolver"
@@ -21,18 +22,18 @@
             android:layout_height="44dp"
             android:gravity="center"
             android:text="←"
-            android:textColor="@color/colorAccentPrimary"
-            android:textSize="22sp"
+            android:textColor="@color/colorTextPrimary"
+            android:textSize="20sp"
             android:paddingHorizontal="8dp" />
 
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="PLAN 2026-2027"
+            android:text="Plan 2026–2027"
             android:textColor="@color/colorTextPrimary"
-            android:textSize="22sp"
-            android:textStyle="bold"
+            android:textSize="20sp"
+            android:fontFamily="sans-serif-medium"
             android:textAlignment="center" />
 
         <View
@@ -41,40 +42,38 @@
     </LinearLayout>
 
     <!-- Fase actual -->
-    <androidx.cardview.widget.CardView
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:cardBackgroundColor="@color/colorSurface"
-        app:cardCornerRadius="24dp"
-        app:cardElevation="0dp"
-        android:layout_marginBottom="16dp"
-        xmlns:app="http://schemas.android.com/apk/res-auto">
+        android:orientation="vertical"
+        android:paddingBottom="16dp"
+        android:layout_marginBottom="1dp">
 
-        <LinearLayout
+        <TextView
+            android:id="@+id/tvFaseActual"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp">
+            android:text="Fase actual"
+            android:textColor="@color/colorTextPrimary"
+            android:textSize="15sp"
+            android:fontFamily="sans-serif-medium" />
 
-            <TextView
-                android:id="@+id/tvFaseActual"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="FASE ACTUAL: —"
-                android:textColor="@color/colorTextPrimary"
-                android:textSize="16sp"
-                android:textStyle="bold" />
+        <TextView
+            android:id="@+id/tvProgreso"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="11 meses · 31/08/2026 → 31/07/2027"
+            android:textColor="@color/colorTextTertiary"
+            android:textSize="13sp"
+            android:layout_marginTop="4dp" />
+    </LinearLayout>
 
-            <TextView
-                android:id="@+id/tvProgreso"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="11 meses | 31/08/2026 → 31/07/2027"
-                android:textColor="@color/colorTextSecondary"
-                android:textSize="13sp"
-                android:layout_marginTop="4dp" />
-        </LinearLayout>
-    </androidx.cardview.widget.CardView>
+    <!-- Separador -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/colorSeparator"
+        android:layout_marginBottom="8dp" />
 
     <!-- Lista de fases -->
     <androidx.recyclerview.widget.RecyclerView

@@ -2,17 +2,21 @@ package com.fitbase.ui.workout;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.dynamicanimation.animation.SpringAnimation;
+import androidx.dynamicanimation.animation.SpringForce;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.fitbase.R;
 import com.fitbase.data.model.Ejercicio;
 import com.fitbase.service.TimerService;
 import com.fitbase.ui.summary.SummaryActivity;
+import com.fitbase.util.FeedbackHelper;
 
 /**
  * Pantalla de entrenamiento en el gym.
@@ -46,11 +50,14 @@ public class WorkoutActivity extends AppCompatActivity {
     private static final int ESTADO_REGISTRO = 1;
     private static final int ESTADO_TIMER = 2;
 
+    private FeedbackHelper feedback;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_workout);
 
+        feedback = FeedbackHelper.getInstance(this);
         vincularVistas();
         viewModel = new ViewModelProvider(this).get(WorkoutViewModel.class);
         observarDatos();
@@ -103,6 +110,10 @@ public class WorkoutActivity extends AppCompatActivity {
                 int min = segundos / 60;
                 int seg = segundos % 60;
                 tvTimerCountdown.setText(String.format("%d:%02d", min, seg));
+                // Tick háptico en últimos 5 segundos
+                if (segundos <= 5) {
+                    feedback.tick();
+                }
             }
         });
 
@@ -152,6 +163,7 @@ public class WorkoutActivity extends AppCompatActivity {
         contenedor.setOnTouchListener(new SwipeListener(this) {
             @Override
             public void onSwipeLeft() {
+                feedback.tap();
                 if (estadoActual == ESTADO_EJERCICIO) {
                     mostrarRegistroRIR();
                 } else if (estadoActual == ESTADO_TIMER) {
@@ -168,8 +180,34 @@ public class WorkoutActivity extends AppCompatActivity {
         // Botones RIR
         for (int i = 0; i < botonesRir.length; i++) {
             final int rir = i;
+            aplicarScaleOnPress(botonesRir[i]);
             botonesRir[i].setOnClickListener(v -> confirmarSerie(rir));
         }
+    }
+
+    /**
+     * Scale-on-press: efecto de presión sutil (0.95) con spring bounce.
+     */
+    private void aplicarScaleOnPress(View view) {
+        view.setOnTouchListener((v, event) -> {
+            switch (event.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                    v.animate().scaleX(0.95f).scaleY(0.95f).setDuration(80).start();
+                    break;
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    SpringAnimation springX = new SpringAnimation(v, SpringAnimation.SCALE_X, 1f);
+                    springX.getSpring().setStiffness(SpringForce.STIFFNESS_MEDIUM);
+                    springX.getSpring().setDampingRatio(SpringForce.DAMPING_RATIO_MEDIUM_BOUNCY);
+                    springX.start();
+                    SpringAnimation springY = new SpringAnimation(v, SpringAnimation.SCALE_Y, 1f);
+                    springY.getSpring().setStiffness(SpringForce.STIFFNESS_MEDIUM);
+                    springY.getSpring().setDampingRatio(SpringForce.DAMPING_RATIO_MEDIUM_BOUNCY);
+                    springY.start();
+                    break;
+            }
+            return false;
+        });
     }
 
     private void mostrarRegistroRIR() {
@@ -195,6 +233,7 @@ public class WorkoutActivity extends AppCompatActivity {
      * Regla ACSM: Si completó +1-2 reps con RIR >= objetivo → motor sugiere subir peso.
      */
     private void confirmarSerie(int rirPercibido) {
+        feedback.confirm();
         int repsReales;
         try {
             repsReales = Integer.parseInt(tvRepsInput.getText().toString());
@@ -249,11 +288,14 @@ public class WorkoutActivity extends AppCompatActivity {
     }
 
     private void irAResumen() {
+        feedback.success();
         Intent intent = new Intent(this, SummaryActivity.class);
         intent.putExtra("sesion_id", viewModel.getSesionId());
-        intent.putExtra("tiempo_total", viewModel.getTiempoTotalSegundos().getValue());
+        Integer tiempoSeg = viewModel.getTiempoTotalSegundos().getValue();
+        intent.putExtra("tiempo_total", tiempoSeg != null ? tiempoSeg : 0);
         intent.putExtra("volumen_total", viewModel.getVolumenTotal());
         startActivity(intent);
+        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
         finish();
     }
 

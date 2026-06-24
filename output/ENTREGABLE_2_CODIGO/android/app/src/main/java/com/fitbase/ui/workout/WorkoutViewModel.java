@@ -60,7 +60,8 @@ public class WorkoutViewModel extends ViewModel {
             public void onResponse(Call<SesionResponse> call, Response<SesionResponse> response) {
                 if (response.isSuccessful() && response.body() != null && response.body().sesion != null) {
                     sesionId = response.body().sesion.getSesionId();
-                    ejercicios = response.body().ejercicios;
+                    ejercicios = response.body().ejercicios != null
+                            ? response.body().ejercicios : new ArrayList<>();
                     iniciarSesion();
                 }
             }
@@ -102,15 +103,18 @@ public class WorkoutViewModel extends ViewModel {
      * Envía datos al backend para el motor de progresión (ACSM 2009).
      */
     public void registrarSerie(int reps, int rirPercibido, float pesoUsado) {
+        if (indiceEjercicio >= ejercicios.size()) return;
         serieCompletadaActual++;
         volumenTotal += pesoUsado * reps;
+
+        Ejercicio ejActual = ejercicios.get(indiceEjercicio);
 
         // Enviar log al backend
         Map<String, Object> datos = new HashMap<>();
         datos.put("accion", "guardar_log");
         datos.put("sesion_id", sesionId);
-        datos.put("ejercicio_id", ejercicios.get(indiceEjercicio).getEjercicioId());
-        datos.put("plan_id", ejercicios.get(indiceEjercicio).getPlanId());
+        datos.put("ejercicio_id", ejActual.getEjercicioId());
+        datos.put("plan_id", ejActual.getPlanId());
         datos.put("num_serie", serieCompletadaActual);
         datos.put("num_peso_usado_kg", pesoUsado);
         datos.put("num_reps_completadas", reps);
@@ -133,6 +137,7 @@ public class WorkoutViewModel extends ViewModel {
     }
 
     public boolean quedanSeriesPorHacer() {
+        if (indiceEjercicio >= ejercicios.size()) return false;
         Ejercicio ej = ejercicios.get(indiceEjercicio);
         return serieCompletadaActual < ej.getSeriesPlan();
     }

@@ -1,18 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Dimensiones base del sistema de diseño (8dp grid) -->
+<!-- Design System: 8pt Grid -->
 <resources>
     <!-- Grid base -->
     <dimen name="grid_base">8dp</dimen>
 
-    <!-- Espaciado -->
-    <dimen name="padding_pantalla">20dp</dimen>
+    <!-- Espaciado (múltiplos de 8) -->
+    <dimen name="space_xs">4dp</dimen>
+    <dimen name="space_sm">8dp</dimen>
+    <dimen name="space_md">16dp</dimen>
+    <dimen name="space_lg">24dp</dimen>
+    <dimen name="space_xl">32dp</dimen>
+    <dimen name="space_2xl">48dp</dimen>
+
+    <!-- Padding de pantalla -->
+    <dimen name="padding_pantalla">24dp</dimen>
     <dimen name="spacing_cards">16dp</dimen>
     <dimen name="spacing_small">8dp</dimen>
     <dimen name="spacing_large">24dp</dimen>
 
-    <!-- Radios -->
-    <dimen name="radius_card">24dp</dimen>
-    <dimen name="radius_button">100dp</dimen>
+    <!-- Radios (Modern Flat: suaves, no pill) -->
+    <dimen name="radius_card">12dp</dimen>
+    <dimen name="radius_button">8dp</dimen>
+    <dimen name="radius_chip">6dp</dimen>
+
+    <!-- Bordes -->
+    <dimen name="border_width">1dp</dimen>
+    <dimen name="progress_height">2dp</dimen>
+
+    <!-- Componentes -->
+    <dimen name="button_height">48dp</dimen>
+    <dimen name="icon_size">20dp</dimen>
+    <dimen name="dot_size">6dp</dimen>
+</resources>
 
     <!-- Alturas -->
     <dimen name="height_button">56dp</dimen>

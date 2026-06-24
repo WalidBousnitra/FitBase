@@ -1,21 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Colores Light (Sistema_Diseno_Fitness.md § 1.1) -->
+<!-- Design System: Modern Flat UI — Micro-accents -->
 <resources>
-    <!-- Base -->
-    <color name="colorBackground">#F2F2F7</color>
+    <!-- Base: Blanco nieve / Gris piedra -->
+    <color name="colorBackground">#F8F9FA</color>
     <color name="colorSurface">#FFFFFF</color>
-    <color name="colorSurfaceElevated">#FFFFFF</color>
-    <color name="colorTextPrimary">#000000</color>
-    <color name="colorTextSecondary">#993C3C43</color>
-    <color name="colorTextTertiary">#4D3C3C43</color>
-    <color name="colorSeparator">#4D3C3C43</color>
+    <color name="colorSurfaceElevated">#F1F3F4</color>
 
-    <!-- Acentos (iguales en ambos temas) -->
-    <color name="colorAccentPrimary">#FF2D55</color>
-    <color name="colorAccentSecondary">#FF9500</color>
-    <color name="colorSuccess">#30D158</color>
-    <color name="colorWarning">#FFD60A</color>
-    <color name="colorError">#FF453A</color>
-    <color name="colorChart">#5E5CE6</color>
-    <color name="colorChartSecondary">#BF5AF2</color>
+    <!-- Texto: Monocromático -->
+    <color name="colorTextPrimary">#202124</color>
+    <color name="colorTextSecondary">#5F6368</color>
+    <color name="colorTextTertiary">#9AA0A6</color>
+
+    <!-- Bordes: Subtle Borders (1dp) -->
+    <color name="colorSeparator">#E0E0E0</color>
+
+    <!-- Micro-accent: Naranja (#FF5722) — <5% de superficie visual -->
+    <color name="colorAccentPrimary">#FF5722</color>
+    <!-- Funcionales: Tonos muted, naturales -->
+    <color name="colorAccentSecondary">#5C8A5C</color>
+    <color name="colorSuccess">#2E7D32</color>
+    <color name="colorWarning">#F57F17</color>
+    <color name="colorError">#C62828</color>
+    <color name="colorChart">#546E7A</color>
+    <color name="colorChartSecondary">#78909C</color>
 </resources>
