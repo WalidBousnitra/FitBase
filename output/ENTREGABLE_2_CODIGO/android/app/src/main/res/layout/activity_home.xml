@@ -412,6 +412,19 @@
             android:fontFamily="sans-serif-medium"
             android:textAllCaps="false" />
 
+        <!-- Progresion Metricas — texto plano con borde -->
+        <Button
+            android:id="@+id/btnProgresion"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/button_secondary"
+            android:text="Ver Progresion"
+            android:textColor="@color/colorTextPrimary"
+            android:textSize="14sp"
+            android:fontFamily="sans-serif-medium"
+            android:textAllCaps="false" />
+
         <!-- Banner Ausencia -->
         <LinearLayout
             android:id="@+id/bannerAusencia"

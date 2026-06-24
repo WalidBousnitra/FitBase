@@ -300,6 +300,18 @@ public class WorkoutActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        TimerService.setAppEnPrimerPlano(true);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        TimerService.setAppEnPrimerPlano(false);
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
         stopService(new Intent(this, TimerService.class));

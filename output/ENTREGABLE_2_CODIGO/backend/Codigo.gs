@@ -77,8 +77,11 @@ function doGet(e) {
       case 'composicion_semanal':
         resultado = getComposicionSemanal();
         break;
+      case 'progresion_metricas':
+        resultado = getProgresionMetricas(e.parameter.dias);
+        break;
       default:
-        resultado = { error: 'Acción no reconocida', acciones_validas: ['sesion_hoy', 'plan_anual', 'plan_semanal', 'metricas_hoy', 'progresion', 'catalogo', 'macros_hoy', 'check_ausencia', 'composicion_semanal'] };
+        resultado = { error: 'Acción no reconocida', acciones_validas: ['sesion_hoy', 'plan_anual', 'plan_semanal', 'metricas_hoy', 'progresion', 'catalogo', 'macros_hoy', 'check_ausencia', 'composicion_semanal', 'progresion_metricas'] };
     }
 
     return ContentService.createTextOutput(JSON.stringify(resultado))
@@ -139,6 +142,9 @@ function doPost(e) {
         break;
       case 'sync_nutricion':
         resultado = syncNutricionDesdeHealthConnect(datos);
+        break;
+      case 'vaciar_bbdd':
+        resultado = vaciarBaseDatos(datos);
         break;
       default:
         resultado = { error: 'Acción POST no reconocida' };
@@ -313,59 +319,284 @@ function getCatalogo() {
 }
 
 /**
- * Calcula macros objetivo del día actual.
- * Fuente: Motor de dieta (REG-NUT-01), Mifflin 1990, Iraki 2019
+ * Obtiene el peso más reciente del usuario desde peso_log.
+ * Fallback: 78.2 kg (biometria.md) si no hay registros.
+ */
+function getPesoActual() {
+  const hoja = getHoja(HOJAS.PESO_LOG);
+  const datos = hoja.getDataRange().getValues();
+  if (datos.length <= 1) return { peso: 78.2, grasa_pct: null, fuente: 'default' };
+
+  const cabeceras = datos[0];
+  const idxPeso = cabeceras.indexOf('num_peso_kg');
+  const idxGrasa = cabeceras.indexOf('num_grasa_pct');
+  const idxFecha = cabeceras.indexOf('date_fecha');
+
+  for (let i = datos.length - 1; i >= 1; i--) {
+    const peso = datos[i][idxPeso];
+    if (peso && peso > 0) {
+      return {
+        peso: peso,
+        grasa_pct: datos[i][idxGrasa] || null,
+        fecha: datos[i][idxFecha],
+        fuente: 'peso_log'
+      };
+    }
+  }
+  return { peso: 78.2, grasa_pct: null, fuente: 'default' };
+}
+
+/**
+ * Calcula tendencia de peso: media 7d recientes vs media 7d anteriores.
+ * Fuente: Iraki 2019 (target 0.25-0.5% BW/sem en bulk), Helms 2014 (0.5-1% en cut).
+ * Necesita ≥3 datos en cada ventana para ser fiable.
+ * Devuelve null si no hay suficientes datos (primeras ~2 semanas).
+ */
+function getTendenciaPeso() {
+  const hoja = getHoja(HOJAS.PESO_LOG);
+  const datos = hoja.getDataRange().getValues();
+  if (datos.length <= 1) return null;
+
+  const cabeceras = datos[0];
+  const idxPeso = cabeceras.indexOf('num_peso_kg');
+  const idxFecha = cabeceras.indexOf('date_fecha');
+
+  const hoy = new Date();
+  const hace7 = new Date(hoy); hace7.setDate(hace7.getDate() - 7);
+  const hace14 = new Date(hoy); hace14.setDate(hace14.getDate() - 14);
+
+  let pesosRecientes = [];
+  let pesosAnteriores = [];
+
+  for (let i = 1; i < datos.length; i++) {
+    const fecha = new Date(datos[i][idxFecha]);
+    const peso = datos[i][idxPeso];
+    if (!peso || peso <= 0) continue;
+
+    if (fecha >= hace7) {
+      pesosRecientes.push(peso);
+    } else if (fecha >= hace14) {
+      pesosAnteriores.push(peso);
+    }
+  }
+
+  if (pesosRecientes.length < 3 || pesosAnteriores.length < 3) return null;
+
+  const mediaReciente = pesosRecientes.reduce((a, b) => a + b, 0) / pesosRecientes.length;
+  const mediaAnterior = pesosAnteriores.reduce((a, b) => a + b, 0) / pesosAnteriores.length;
+  const cambioKgSemana = mediaReciente - mediaAnterior;
+  const cambioPctSemana = (cambioKgSemana / mediaAnterior) * 100;
+
+  return {
+    media_reciente: Math.round(mediaReciente * 10) / 10,
+    media_anterior: Math.round(mediaAnterior * 10) / 10,
+    cambio_kg_semana: Math.round(cambioKgSemana * 100) / 100,
+    cambio_pct_semana: Math.round(cambioPctSemana * 100) / 100,
+    datos_recientes: pesosRecientes.length,
+    datos_anteriores: pesosAnteriores.length
+  };
+}
+
+/**
+ * Obtiene los pasos de hoy desde metricas_zepp.
+ * Fuente: motor_dieta.md §6 — ajuste NEAT si > 12000 pasos.
+ */
+function getPasosHoy() {
+  const hoja = getHoja(HOJAS.METRICAS_ZEPP);
+  const datos = hoja.getDataRange().getValues();
+  if (datos.length <= 1) return 0;
+
+  const cabeceras = datos[0];
+  const idxPasos = cabeceras.indexOf('num_pasos_ayer');
+  const idxFecha = cabeceras.indexOf('date_fecha');
+  const hoy = Utilities.formatDate(new Date(), 'Europe/Madrid', 'yyyy-MM-dd');
+
+  for (let i = datos.length - 1; i >= 1; i--) {
+    const fecha = datos[i][idxFecha];
+    const fechaStr = fecha instanceof Date
+      ? Utilities.formatDate(fecha, 'Europe/Madrid', 'yyyy-MM-dd')
+      : String(fecha);
+    if (fechaStr === hoy && datos[i][idxPasos]) {
+      return datos[i][idxPasos];
+    }
+  }
+  return 0;
+}
+
+/**
+ * Obtiene el sleep score de hoy desde metricas_zepp.
+ * Fuente: motor_pesos.md §3 — sleep score < 60 afecta recomendaciones.
+ */
+function getSleepScoreHoy() {
+  const hoja = getHoja(HOJAS.METRICAS_ZEPP);
+  const datos = hoja.getDataRange().getValues();
+  if (datos.length <= 1) return null;
+
+  const cabeceras = datos[0];
+  const idxSleep = cabeceras.indexOf('num_sleep_score');
+  const idxFecha = cabeceras.indexOf('date_fecha');
+  const hoy = Utilities.formatDate(new Date(), 'Europe/Madrid', 'yyyy-MM-dd');
+
+  for (let i = datos.length - 1; i >= 1; i--) {
+    const fecha = datos[i][idxFecha];
+    const fechaStr = fecha instanceof Date
+      ? Utilities.formatDate(fecha, 'Europe/Madrid', 'yyyy-MM-dd')
+      : String(fecha);
+    if (fechaStr === hoy && datos[i][idxSleep]) {
+      return datos[i][idxSleep];
+    }
+  }
+  return null;
+}
+
+/**
+ * Calcula macros objetivo del día actual — DINÁMICO.
+ *
+ * Fuentes:
+ *  - BMR: Mifflin-St Jeor 1990 (R²=0.71)
+ *  - Macros bulk: Iraki 2019 (1.6-2.2 g/kg prot, +10-20% kcal, ≥3-5 g/kg carbs)
+ *  - Macros cut: Helms 2014 (2.3-3.1 g/kg LBM prot, -20-25%)
+ *  - Ajuste tendencia bulk: Iraki 2019 (target 0.25-0.5% BW/sem)
+ *  - Ajuste tendencia cut: Helms 2014 (target 0.5-1% BW/sem)
+ *  - NEAT/pasos: motor_dieta.md §6 (⚠️ HEURÍSTICO)
+ *  - Agua: 35ml/kg + 500ml si entrena (⚠️ HEURÍSTICO)
  */
 function getMacrosHoy() {
   const hoy = Utilities.formatDate(new Date(), 'Europe/Madrid', 'yyyy-MM-dd');
   const sesionHoy = getSesionHoy();
   const esTraining = sesionHoy.sesion !== null;
 
-  // Datos fijos usuario (biometria.md)
-  const peso = 78.2;
+  // ═══ 1. PESO REAL (no hardcodeado) ═══
+  const pesoData = getPesoActual();
+  const peso = pesoData.peso;
+  const grasaPct = pesoData.grasa_pct;
   const altura = 188;
   const edad = 24;
 
-  // BMR Mifflin-St Jeor (EVI-11)
-  const bmr = (10 * peso) + (6.25 * altura) - (5 * edad) + 5; // 1842
+  // ═══ 2. BMR Mifflin-St Jeor (EVI-11 — R²=0.71) ═══
+  const bmr = (10 * peso) + (6.25 * altura) - (5 * edad) + 5;
 
-  // TDEE
+  // ═══ 3. TDEE (⚠️ factor HEURÍSTICO) ═══
   const factorActividad = 1.55;
-  const tdee = Math.round(bmr * factorActividad); // 2855
+  const tdee = Math.round(bmr * factorActividad);
 
-  // Fase actual para determinar objetivo nutricional
+  // ═══ 4. FASE Y OBJETIVO NUTRICIONAL ═══
   const planAnual = getPlanAnual();
   const faseActual = planAnual.fase_actual;
-  let objetivoNutri = 'bulk'; // default
+  let objetivoNutri = 'bulk';
   if (faseActual) {
     objetivoNutri = faseActual.str_objetivo_nutri || 'bulk';
   }
 
-  // Ajuste calórico según fase (Iraki 2019)
-  let caloriasObjetivo;
+  // ═══ 5. SUPERÁVIT/DÉFICIT BASE (Iraki 2019, Helms 2014) ═══
+  let multiplicador;
+  let proteinaRatio;
+
   switch (objetivoNutri) {
     case 'bulk':
-      caloriasObjetivo = Math.round(tdee * 1.15); // +15%
+      multiplicador = 1.15;  // +15% default (Iraki 2019: +10-20%)
+      proteinaRatio = 2.0;   // g/kg (Iraki 2019: 1.6-2.2)
       break;
     case 'cut':
-      caloriasObjetivo = Math.round(tdee * 0.80); // -20%
+      multiplicador = 0.80;  // -20% default (Helms 2014)
+      proteinaRatio = 2.4;   // g/kg total ≈ 2.8 g/kg LBM (Helms 2014: 2.3-3.1 LBM)
       break;
     default:
-      caloriasObjetivo = tdee;
+      multiplicador = 1.05;  // +5% mantener
+      proteinaRatio = 2.0;
   }
 
-  // Macros (Iraki 2019, Helms 2014)
-  const proteinaG = Math.round(peso * 2.0); // 2.0 g/kg en bulk
-  const grasaG = Math.round(peso * 1.0);    // 1.0 g/kg
+  // ═══ 6. AJUSTE POR TENDENCIA DE PESO (Iraki 2019, Helms 2014) ═══
+  const tendencia = getTendenciaPeso();
+  let ajusteTendencia = 'sin_datos';
+  let razonTendencia = 'Menos de 2 semanas de datos — usando default';
+
+  if (tendencia) {
+    const pctSem = tendencia.cambio_pct_semana;
+
+    if (objetivoNutri === 'bulk') {
+      // Iraki 2019: target 0.25-0.5% BW/semana
+      if (pctSem > 0.5) {
+        multiplicador = 1.10; // Reducir: ganando demasiado rápido (probablemente grasa)
+        ajusteTendencia = 'reducido';
+        razonTendencia = `Ganando ${pctSem}%/sem (>0.5%) → surplus reducido a +10%`;
+      } else if (pctSem >= 0.25) {
+        // On track — no cambiar
+        ajusteTendencia = 'optimo';
+        razonTendencia = `Ganando ${pctSem}%/sem (0.25-0.5%) → en rango óptimo`;
+      } else if (pctSem >= 0) {
+        multiplicador = 1.20; // Subir: ganando demasiado lento
+        ajusteTendencia = 'aumentado';
+        razonTendencia = `Ganando ${pctSem}%/sem (<0.25%) → surplus aumentado a +20%`;
+      } else {
+        multiplicador = 1.20; // Perdiendo peso en bulk → subir
+        ajusteTendencia = 'aumentado';
+        razonTendencia = `Perdiendo peso en bulk (${pctSem}%/sem) → surplus aumentado a +20%`;
+      }
+    } else if (objetivoNutri === 'cut') {
+      // Helms 2014: target 0.5-1% BW/semana de pérdida
+      const perdidaPct = -pctSem; // convertir a positivo
+      if (perdidaPct > 1.0) {
+        multiplicador = 0.85; // Reducir déficit: perdiendo demasiado rápido (riesgo muscular)
+        ajusteTendencia = 'reducido';
+        razonTendencia = `Perdiendo ${perdidaPct}%/sem (>1%) → déficit reducido a -15%`;
+      } else if (perdidaPct >= 0.5) {
+        ajusteTendencia = 'optimo';
+        razonTendencia = `Perdiendo ${perdidaPct}%/sem (0.5-1%) → en rango óptimo`;
+      } else if (perdidaPct >= 0) {
+        multiplicador = 0.75; // Aumentar déficit: perdiendo demasiado lento
+        ajusteTendencia = 'aumentado';
+        razonTendencia = `Perdiendo ${perdidaPct}%/sem (<0.5%) → déficit aumentado a -25%`;
+      } else {
+        multiplicador = 0.75; // Ganando peso en cut → más déficit
+        ajusteTendencia = 'aumentado';
+        razonTendencia = `Ganando peso en cut (${pctSem}%/sem) → déficit aumentado a -25%`;
+      }
+    }
+    // 'mantener': no ajustar por tendencia (el objetivo es estabilidad)
+  }
+
+  // ═══ 7. PROTEÍNA CON COMPOSICIÓN CORPORAL (Helms 2014) ═══
+  // Si hay dato de grasa corporal (Zepp), usar LBM para proteína en cut
+  if (objetivoNutri === 'cut' && grasaPct && grasaPct > 0 && grasaPct < 50) {
+    const lbm = peso * (1 - grasaPct / 100);
+    // Helms 2014: 2.3-3.1 g/kg LBM → usar 2.6 (centro del rango)
+    const protPorLbm = Math.round(lbm * 2.6);
+    // Solo usar si es MAYOR que el cálculo por peso total (más conservador)
+    if (protPorLbm > Math.round(peso * proteinaRatio)) {
+      proteinaRatio = protPorLbm / peso; // convertir a ratio equivalente
+    }
+  }
+
+  // ═══ 8. CALORÍAS BASE ═══
+  let caloriasObjetivo = Math.round(tdee * multiplicador);
+
+  // ═══ 9. AJUSTE NEAT POR PASOS (motor_dieta.md §6 — ⚠️ HEURÍSTICO) ═══
+  const pasosHoy = getPasosHoy();
+  let ajusteNeat = 0;
+  let razonNeat = '';
+  if (pasosHoy > 12000) {
+    ajusteNeat = 150;
+    razonNeat = `${pasosHoy} pasos (>12k) → +150 kcal NEAT`;
+    caloriasObjetivo += ajusteNeat;
+  }
+
+  // ═══ 10. MACROS FINALES (Iraki 2019, Helms 2014) ═══
+  const proteinaG = Math.round(peso * proteinaRatio);
+  const grasaG = Math.round(peso * 1.0);    // 1.0 g/kg (Iraki 2019: 0.5-1.5)
   const calsProt = proteinaG * 4;
   const calsGrasa = grasaG * 9;
   const carbosG = Math.round((caloriasObjetivo - calsProt - calsGrasa) / 4);
 
-  // Objetivo agua (35ml/kg + 500ml si entrena)
+  // ═══ 11. AGUA (⚠️ HEURÍSTICO: 35ml/kg + 500ml si entrena) ═══
   const aguaBase = Math.round(peso * 35);
   const aguaObjetivo = esTraining ? aguaBase + 500 : aguaBase;
 
+  // ═══ 12. SLEEP SCORE (informativo — no afecta nutrición per se) ═══
+  const sleepScore = getSleepScoreHoy();
+
   return {
+    // Contrato original (Android compatible)
     fecha: hoy,
     es_dia_entreno: esTraining,
     fase: objetivoNutri,
@@ -374,8 +605,27 @@ function getMacrosHoy() {
     carbos_g: carbosG,
     grasas_g: grasaG,
     agua_ml: aguaObjetivo,
+    pasos_objetivo: 8000,
+    calorias_consumidas: 0,
+    proteina_consumida_g: 0,
+    carbos_consumidos_g: 0,
+    grasas_consumidas_g: 0,
+    agua_consumida_ml: 0,
+    pasos_actuales: pasosHoy,
     bmr: Math.round(bmr),
-    tdee: tdee
+    tdee: tdee,
+
+    // Campos nuevos (Android los ignora con Gson — no rompe nada)
+    peso_actual: peso,
+    peso_fuente: pesoData.fuente,
+    grasa_pct: grasaPct,
+    multiplicador_usado: multiplicador,
+    ajuste_tendencia: ajusteTendencia,
+    razon_tendencia: razonTendencia,
+    ajuste_neat_kcal: ajusteNeat,
+    razon_neat: razonNeat,
+    tendencia: tendencia,
+    sleep_score: sleepScore
   };
 }
 
@@ -614,7 +864,7 @@ function checkAusencia() {
  */
 function calcularRedistribucion(diasPerdidos) {
   // Volumen perdido estimado por tipo de sesión
-  const volPorTipo = { 'Push': 16, 'Pull': 16, 'Pierna': 14, 'Upper': 12 };
+  const volPorTipo = { 'Push': 21, 'Pull': 23, 'Pierna': 22, 'Hombros+Brazos': 21 };
   let volumenPerdido = 0;
   diasPerdidos.forEach(d => { volumenPerdido += volPorTipo[d.tipo] || 12; });
 
@@ -985,6 +1235,174 @@ function getUltimo1RM(ejercicioId) {
 
 // ─── INICIALIZACIÓN ───────────────────────────────────────────
 
+// ─── PROGRESIÓN DE MÉTRICAS (pantalla de seguimiento) ─────────
+
+/**
+ * Devuelve historial de métricas clave para la pantalla de progresión.
+ * Métricas: peso, grasa%, sueño (score + horas), FC reposo, HRV, pasos.
+ * @param {number} dias — últimos N días (default 30)
+ */
+function getProgresionMetricas(dias) {
+  dias = parseInt(dias) || 30;
+  const hoy = new Date();
+  const desde = new Date(hoy.getTime() - dias * 24 * 60 * 60 * 1000);
+
+  // 1. Peso + composición
+  const pesoData = [];
+  const hojaPeso = getHoja(HOJAS.PESO_LOG);
+  const datosPeso = hojaPeso.getDataRange().getValues();
+  const cabPeso = datosPeso[0];
+  for (let i = 1; i < datosPeso.length; i++) {
+    if (datosPeso[i][cabPeso.indexOf('user_id')] !== USER_ID) continue;
+    const fecha = new Date(datosPeso[i][cabPeso.indexOf('date_fecha')]);
+    if (fecha >= desde) {
+      pesoData.push({
+        fecha: Utilities.formatDate(fecha, 'Europe/Madrid', 'yyyy-MM-dd'),
+        peso_kg: datosPeso[i][cabPeso.indexOf('num_peso_kg')],
+        grasa_pct: datosPeso[i][cabPeso.indexOf('num_grasa_pct')] || null,
+        musculo_kg: datosPeso[i][cabPeso.indexOf('num_musculo_kg')] || null
+      });
+    }
+  }
+
+  // 2. Métricas Zepp (sueño, FC, HRV, estrés, pasos)
+  const zeppData = [];
+  const hojaZepp = getHoja(HOJAS.METRICAS_ZEPP);
+  const datosZepp = hojaZepp.getDataRange().getValues();
+  const cabZepp = datosZepp[0];
+  for (let i = 1; i < datosZepp.length; i++) {
+    if (datosZepp[i][cabZepp.indexOf('user_id')] !== USER_ID) continue;
+    const fecha = new Date(datosZepp[i][cabZepp.indexOf('date_fecha')]);
+    if (fecha >= desde) {
+      zeppData.push({
+        fecha: Utilities.formatDate(fecha, 'Europe/Madrid', 'yyyy-MM-dd'),
+        sleep_score: datosZepp[i][cabZepp.indexOf('num_sleep_score')] || 0,
+        sleep_horas: datosZepp[i][cabZepp.indexOf('num_sleep_horas')] || 0,
+        sleep_deep_min: datosZepp[i][cabZepp.indexOf('num_sleep_deep_min')] || 0,
+        hrv_rmssd: datosZepp[i][cabZepp.indexOf('num_hrv_rmssd')] || 0,
+        hr_reposo: datosZepp[i][cabZepp.indexOf('num_hr_reposo')] || 0,
+        stress_avg: datosZepp[i][cabZepp.indexOf('num_stress_avg')] || 0,
+        pasos: datosZepp[i][cabZepp.indexOf('num_pasos_ayer')] || 0
+      });
+    }
+  }
+
+  // 3. Volumen de entrenamiento por día
+  const volumenData = [];
+  const hojaLog = getHoja(HOJAS.EJERCICIOS_LOG);
+  const datosLog = hojaLog.getDataRange().getValues();
+  const cabLog = datosLog[0];
+  const volPorDia = {};
+  for (let i = 1; i < datosLog.length; i++) {
+    const fechaStr = datosLog[i][cabLog.indexOf('date_timestamp')];
+    if (!fechaStr) continue;
+    const fecha = new Date(fechaStr);
+    if (fecha < desde) continue;
+    const dia = Utilities.formatDate(fecha, 'Europe/Madrid', 'yyyy-MM-dd');
+    const peso = datosLog[i][cabLog.indexOf('num_peso_usado_kg')] || 0;
+    const reps = datosLog[i][cabLog.indexOf('num_reps_completadas')] || 0;
+    volPorDia[dia] = (volPorDia[dia] || 0) + (peso * reps);
+  }
+  for (const [dia, vol] of Object.entries(volPorDia)) {
+    volumenData.push({ fecha: dia, volumen_kg: Math.round(vol) });
+  }
+  volumenData.sort((a, b) => a.fecha.localeCompare(b.fecha));
+
+  return {
+    dias_solicitados: dias,
+    peso: pesoData,
+    zepp: zeppData,
+    volumen_entreno: volumenData,
+    resumen: {
+      peso_actual: pesoData.length > 0 ? pesoData[pesoData.length - 1].peso_kg : null,
+      peso_inicio: pesoData.length > 0 ? pesoData[0].peso_kg : null,
+      grasa_actual: pesoData.length > 0 ? pesoData[pesoData.length - 1].grasa_pct : null,
+      sleep_media: zeppData.length > 0
+        ? Math.round(zeppData.reduce((s, d) => s + d.sleep_score, 0) / zeppData.length)
+        : null,
+      pasos_media: zeppData.length > 0
+        ? Math.round(zeppData.reduce((s, d) => s + d.pasos, 0) / zeppData.length)
+        : null
+    }
+  };
+}
+
+// ─── VACIAR BASE DE DATOS (reset para demos) ─────────────────
+
+/**
+ * Vacía TODAS las hojas de datos (elimina filas, conserva cabeceras).
+ * CUIDADO: Irreversible. Usar solo para resetear antes de la fecha de inicio real.
+ *
+ * Requiere: datos.confirmar === 'VACIAR_TODO'
+ * Opción: datos.hojas_excluir — array de nombres de hojas que NO se vacían
+ *         (p.ej. ['ejercicios_catalogo', 'plan_anual'] para mantener el plan)
+ */
+function vaciarBaseDatos(datos) {
+  // Seguridad: requiere confirmación explícita
+  if (datos.confirmar !== 'VACIAR_TODO') {
+    return {
+      ok: false,
+      error: 'Debes enviar confirmar: "VACIAR_TODO" para proceder',
+      mensaje: 'Esto borra TODOS los datos de la BBDD (excepto cabeceras y catálogo)'
+    };
+  }
+
+  const excluir = datos.hojas_excluir || [];
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const resultados = {};
+
+  for (const [key, nombre] of Object.entries(HOJAS)) {
+    if (excluir.includes(nombre)) {
+      resultados[nombre] = 'EXCLUIDA (no vaciada)';
+      continue;
+    }
+
+    const hoja = ss.getSheetByName(nombre);
+    if (!hoja) {
+      resultados[nombre] = 'NO EXISTE';
+      continue;
+    }
+
+    const ultimaFila = hoja.getLastRow();
+    if (ultimaFila <= 1) {
+      resultados[nombre] = 'YA VACÍA (solo cabeceras)';
+      continue;
+    }
+
+    // Borrar todas las filas excepto la primera (cabeceras)
+    hoja.deleteRows(2, ultimaFila - 1);
+    resultados[nombre] = `VACIADA (${ultimaFila - 1} filas eliminadas)`;
+  }
+
+  return {
+    ok: true,
+    mensaje: 'Base de datos vaciada correctamente',
+    detalle: resultados,
+    timestamp: new Date().toISOString()
+  };
+}
+
+/**
+ * Función auxiliar para ejecutar desde el editor de Apps Script directamente.
+ * Vacía toda la BBDD excepto datos pre-generados (catálogo, plan, sesiones, ejercicios plan).
+ * EJECUTAR MANUALMENTE antes de la fecha de inicio real (31/08/2026).
+ * Solo borra LOGS (registros de uso durante pruebas).
+ */
+function resetParaInicio() {
+  const resultado = vaciarBaseDatos({
+    confirmar: 'VACIAR_TODO',
+    hojas_excluir: [
+      'ejercicios_catalogo',  // Catálogo de ejercicios (referencia)
+      'plan_anual',           // Fases del año (pre-generado)
+      'plan_semanal',         // Microciclos (pre-generado)
+      'sesiones_plan',        // 192 sesiones pre-generadas
+      'ejercicios_plan'       // 1300 ejercicios pre-generados
+    ]
+  });
+  Logger.log(JSON.stringify(resultado, null, 2));
+  return resultado;
+}
+
 /**
  * Crea todas las hojas con cabeceras.
  * Ejecutar UNA SOLA VEZ al configurar.
@@ -1024,9 +1442,341 @@ function inicializarHojas() {
   // Insertar datos iniciales del usuario
   const hojaUsuarios = ss.getSheetByName(HOJAS.USUARIOS);
   hojaUsuarios.appendRow([
-    USER_ID, 'Usuario', '2001-07-20', 188, 'M', 'bulk', 4, 'Push/Pull/Pierna/Upper',
+    USER_ID, 'Usuario', '2001-07-20', 188, 'M', 'bulk', 4, 'Push/Pierna/Pull/Hombros+Brazos',
     true, true, new Date().toISOString(), new Date().toISOString()
   ]);
 
   return { ok: true, mensaje: 'Hojas inicializadas correctamente (14 hojas)' };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PRE-GENERACIÓN DEL PLAN COMPLETO (ejecutar UNA VEZ post-inicialización)
+// Fuente: base_datos.md §7, programacion.md, ENTREGABLE_5_PLAN_EJERCICIOS.html
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Genera TODAS las sesiones del año (31/08/2026 → 31/07/2027).
+ * Pre-carga ~192 sesiones + ~1300 ejercicios.
+ * Ejecutar DESPUÉS de inicializarHojas().
+ * El usuario abre la app cualquier día y su sesión ya está lista.
+ */
+function generarPlanCompleto() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  // ═══ 1. DEFINIR FASES (plan_anual) ═══
+  const FASES = [
+    { id: 'FAS_01', nombre: 'Adaptación', tipo: 'VOL', inicio: '2026-08-31', fin: '2026-09-27', semanas: 4, rir: '4-5', foco: 'General', nutri: 'bulk', kcal: 3280 },
+    { id: 'FAS_02', nombre: 'Hipertrofia I', tipo: 'VOL', inicio: '2026-09-28', fin: '2026-11-08', semanas: 6, rir: '2-3', foco: 'Hombros Espalda', nutri: 'bulk', kcal: 3280 },
+    { id: 'FAS_03', nombre: 'Deload 1', tipo: 'DELOAD', inicio: '2026-11-09', fin: '2026-11-15', semanas: 1, rir: '4-5', foco: 'General', nutri: 'mantener', kcal: 3100 },
+    { id: 'FAS_04', nombre: 'Hipertrofia II', tipo: 'VOL', inicio: '2026-11-16', fin: '2026-12-27', semanas: 6, rir: '1-2', foco: 'Pecho Brazos', nutri: 'bulk', kcal: 3280 },
+    { id: 'FAS_05', nombre: 'Deload 2', tipo: 'DELOAD', inicio: '2026-12-28', fin: '2027-01-03', semanas: 1, rir: '4-5', foco: 'General', nutri: 'mantener', kcal: 3100 },
+    { id: 'FAS_06', nombre: 'Fuerza', tipo: 'FZA', inicio: '2027-01-04', fin: '2027-02-14', semanas: 6, rir: '1-3', foco: 'Compuestos', nutri: 'bulk', kcal: 3280 },
+    { id: 'FAS_07', nombre: 'Hipertrofia III', tipo: 'VOL', inicio: '2027-02-15', fin: '2027-03-28', semanas: 6, rir: '2-3', foco: 'Piernas Core', nutri: 'bulk', kcal: 3280 },
+    { id: 'FAS_08', nombre: 'Deload 3', tipo: 'DELOAD', inicio: '2027-03-29', fin: '2027-04-04', semanas: 1, rir: '4-5', foco: 'General', nutri: 'mantener', kcal: 3100 },
+    { id: 'FAS_09', nombre: 'Definición', tipo: 'DEF', inicio: '2027-04-05', fin: '2027-05-16', semanas: 6, rir: '1-2', foco: 'Mantener masa', nutri: 'cut', kcal: 2460 },
+    { id: 'FAS_10', nombre: 'Peak + Mantenimiento', tipo: 'MNT', inicio: '2027-05-17', fin: '2027-07-31', semanas: 11, rir: '2-3', foco: 'General', nutri: 'mantener', kcal: 3050 }
+  ];
+
+  // ═══ 2. DEFINIR TEMPLATES DE EJERCICIOS POR FASE ═══
+  // Formato: [ejercicio_id, nombre, series, reps_min, reps_max, descanso_seg, notas]
+  const TEMPLATES = {
+    PUSH_ADAPT: [
+      ['EJE_PRESS_INC', 'Press inclinado mancuernas', 3, 10, 12, 150, 'Ligero - sentir el pecho'],
+      ['EJE_CRUCES', 'Cruces polea alta', 3, 12, 15, 90, 'Contracción pico'],
+      ['EJE_PRESS_HOMB', 'Press hombro mancuernas sentado', 3, 10, 12, 120, ''],
+      ['EJE_LAT_SENT', 'Elevaciones laterales sentado', 3, 15, 15, 90, 'Peso mínimo - técnica'],
+      ['EJE_FRANC', 'Press francés banco 30°', 2, 12, 15, 90, 'Rango parcial codo'],
+      ['EJE_EXT_POLEA', 'Extensión unilateral polea', 2, 15, 15, 60, 'Peso ligero']
+    ],
+    PIERNA_ADAPT: [
+      ['EJE_SENTADILLA', 'Sentadilla barra', 3, 10, 12, 150, 'Solo barra + poco peso'],
+      ['EJE_RDL', 'RDL', 3, 10, 12, 150, 'Aprender hip hinge'],
+      ['EJE_HIP_THRUST', 'Hip thrust', 3, 12, 15, 120, 'Activación glúteo'],
+      ['EJE_EXT_QUAD', 'Extensión cuádriceps', 2, 15, 15, 90, 'Máquina ligero'],
+      ['EJE_CURL_FEM', 'Curl femoral tumbado', 2, 12, 15, 90, ''],
+      ['EJE_PLANCHA', 'Plancha', 3, 30, 45, 60, 'Core base (segundos)']
+    ],
+    PULL_ADAPT: [
+      ['EJE_DOMINADAS', 'Dominadas asistidas', 3, 6, 8, 150, 'Agarre prono ancho'],
+      ['EJE_REMO_NEUTRO', 'Remo polea agarre neutro', 3, 10, 12, 120, ''],
+      ['EJE_REMO_ROT', 'Remo unilateral con rotación', 3, 12, 12, 120, 'Aprender rotación'],
+      ['EJE_FACE_PULL', 'Face pulls', 3, 15, 20, 90, 'Postura'],
+      ['EJE_CURL_Z', 'Curl Z de pie', 3, 12, 12, 90, 'Peso muy ligero'],
+      ['EJE_ROT_EXT', 'Rotación externa hombro', 2, 15, 15, 60, 'Manguito rotador']
+    ],
+    HOMBR_ADAPT: [
+      ['EJE_LAT_POLEA', 'Elevaciones laterales polea media', 3, 15, 15, 90, ''],
+      ['EJE_LAT_SENT', 'Elevaciones laterales sentado', 2, 15, 15, 90, 'Técnica'],
+      ['EJE_CURL_PRED', 'Curl predicador', 3, 12, 12, 90, ''],
+      ['EJE_ZOTTMAN', 'Zottman curl', 2, 12, 12, 90, ''],
+      ['EJE_EXT_POLEA', 'Extensión unilateral polea', 2, 15, 15, 90, 'Rango parcial codo'],
+      ['EJE_FACE_PULL', 'Face pulls', 2, 15, 15, 60, 'Postura']
+    ],
+    PUSH_H1: [
+      ['EJE_PRESS_INC', 'Press inclinado mancuernas', 4, 8, 10, 150, 'Compuesto principal'],
+      ['EJE_CRUCES', 'Cruces polea alta', 3, 10, 12, 120, 'Aislamiento pecho'],
+      ['EJE_PRESS_HOMB', 'Press hombro mancuernas sentado', 3, 8, 10, 150, 'Deltoides ant+med'],
+      ['EJE_LAT_SENT', 'Elevaciones laterales sentado', 4, 12, 15, 90, 'SS con Press francés'],
+      ['EJE_FRANC', 'Press francés banco 30°', 4, 10, 12, 90, 'Rango parcial codo'],
+      ['EJE_EXT_POLEA', 'Extensión unilateral polea', 3, 12, 15, 0, 'SS con Laterales']
+    ],
+    PIERNA_H1: [
+      ['EJE_SENTADILLA', 'Sentadilla barra', 4, 6, 8, 180, 'Compuesto principal'],
+      ['EJE_RDL', 'RDL', 4, 8, 10, 150, 'Isquios + glúteo'],
+      ['EJE_HIP_THRUST', 'Hip thrust', 3, 10, 12, 120, 'Glúteos'],
+      ['EJE_EXT_QUAD', 'Extensión cuádriceps', 3, 12, 15, 0, 'SS con Curl femoral'],
+      ['EJE_CURL_FEM', 'Curl femoral tumbado', 3, 10, 12, 90, 'Isquios extra'],
+      ['EJE_HOLLOW', 'Hollow hold/rock', 3, 30, 45, 0, 'SS con Pallof (seg)'],
+      ['EJE_PALLOF', 'Press Pallof', 2, 12, 12, 60, 'Anti-rotación por lado']
+    ],
+    PULL_H1: [
+      ['EJE_DOMINADAS', 'Dominadas', 4, 6, 8, 150, 'Asistidas→libres'],
+      ['EJE_REMO_NEUTRO', 'Remo polea agarre neutro', 4, 8, 10, 150, 'Tirón horizontal'],
+      ['EJE_REMO_ROT', 'Remo unilateral con rotación', 3, 10, 12, 120, 'Espalda media'],
+      ['EJE_KELSO', 'Kelso shrug', 3, 12, 15, 0, 'SS con Face pulls'],
+      ['EJE_FACE_PULL', 'Face pulls', 3, 15, 20, 90, 'Postura + rear delt'],
+      ['EJE_CURL_Z', 'Curl Z de pie', 3, 8, 10, 0, 'SS con Zottman'],
+      ['EJE_ZOTTMAN', 'Zottman curl', 3, 10, 12, 90, 'Bíceps + antebrazo']
+    ],
+    HOMBR_H1: [
+      ['EJE_LAT_POLEA', 'Elevaciones laterales polea media', 4, 12, 15, 90, 'Deltoides medial'],
+      ['EJE_LAT_SENT', 'Elevaciones laterales sentado', 3, 12, 15, 0, 'SS con Curl predicador'],
+      ['EJE_CURL_PRED', 'Curl predicador', 3, 10, 12, 90, 'Bíceps pico'],
+      ['EJE_CURL_Z', 'Curl Z de pie', 3, 8, 10, 0, 'SS con Extensión polea'],
+      ['EJE_EXT_POLEA', 'Extensión unilateral polea', 3, 12, 15, 90, 'Rango parcial codo'],
+      ['EJE_ROT_EXT', 'Rotación externa hombro', 2, 15, 15, 0, 'SS con Face pulls'],
+      ['EJE_FACE_PULL', 'Face pulls', 3, 15, 20, 60, 'Postura + rear delt']
+    ],
+    PUSH_H2: [
+      ['EJE_PRESS_INC', 'Press inclinado mancuernas', 4, 8, 10, 150, 'Compuesto principal'],
+      ['EJE_CRUCES', 'Cruces polea alta', 3, 10, 12, 120, 'Aislamiento pecho'],
+      ['EJE_FONDOS', 'Fondos (lastre progresivo)', 3, 8, 10, 150, 'Especialización pecho'],
+      ['EJE_PRESS_HOMB', 'Press hombro mancuernas sentado', 3, 8, 10, 150, ''],
+      ['EJE_LAT_SENT', 'Elevaciones laterales sentado', 4, 12, 15, 0, 'SS con Press francés'],
+      ['EJE_FRANC', 'Press francés banco 30°', 4, 10, 12, 90, ''],
+      ['EJE_EXT_POLEA', 'Extensión unilateral polea', 3, 12, 15, 0, 'SS con Laterales']
+    ],
+    HOMBR_H2: [
+      ['EJE_LAT_POLEA', 'Elevaciones laterales polea media', 4, 12, 15, 90, ''],
+      ['EJE_LAT_SENT', 'Elevaciones laterales sentado', 3, 12, 15, 0, 'SS con Curl predicador'],
+      ['EJE_CURL_PRED', 'Curl predicador', 3, 10, 12, 90, ''],
+      ['EJE_CURL_Z', 'Curl Z de pie', 3, 8, 10, 0, 'SS con Extensión polea'],
+      ['EJE_EXT_POLEA', 'Extensión unilateral polea', 3, 12, 15, 90, ''],
+      ['EJE_CURL_INC', 'Curl inclinado mancuernas', 3, 10, 12, 0, 'Especialización bíceps'],
+      ['EJE_FRANC', 'Press francés banco 30°', 2, 10, 12, 90, 'Extra tríceps'],
+      ['EJE_FACE_PULL', 'Face pulls', 3, 15, 20, 60, 'Postura']
+    ],
+    PUSH_FZA: [
+      ['EJE_PRESS_INC', 'Press inclinado mancuernas', 5, 4, 6, 210, 'Carga alta'],
+      ['EJE_PRESS_HOMB', 'Press hombro mancuernas sentado', 4, 5, 7, 180, 'Pesado'],
+      ['EJE_LAT_SENT', 'Elevaciones laterales sentado', 4, 10, 12, 90, 'Mantener volumen'],
+      ['EJE_FRANC', 'Press francés banco 30°', 3, 6, 8, 120, 'Más carga menos reps']
+    ],
+    PIERNA_FZA: [
+      ['EJE_SENTADILLA', 'Sentadilla barra', 5, 4, 6, 270, 'Compuesto rey'],
+      ['EJE_RDL', 'RDL', 4, 5, 7, 180, 'Pesado'],
+      ['EJE_HIP_THRUST', 'Hip thrust', 3, 6, 8, 150, 'Carga alta'],
+      ['EJE_PLANCHA', 'Plancha lastrada', 3, 45, 60, 90, 'Core anti-extensión (seg)']
+    ],
+    PULL_FZA: [
+      ['EJE_DOMINADAS', 'Dominadas lastradas', 5, 4, 6, 210, 'Tirón vertical pesado'],
+      ['EJE_REMO_NEUTRO', 'Remo polea agarre neutro', 4, 6, 8, 180, 'Pesado'],
+      ['EJE_REMO_ROT', 'Remo unilateral con rotación', 3, 8, 10, 150, ''],
+      ['EJE_CURL_Z', 'Curl Z de pie', 3, 6, 8, 120, 'Pesado'],
+      ['EJE_FACE_PULL', 'Face pulls', 2, 15, 15, 60, 'Postura mantenimiento']
+    ],
+    HOMBR_FZA: [
+      ['EJE_PRESS_MIL', 'Press militar barra de pie', 4, 5, 7, 180, 'Compuesto hombros pesado'],
+      ['EJE_LAT_POLEA', 'Elevaciones laterales polea media', 4, 10, 12, 90, 'Volumen medial'],
+      ['EJE_CURL_PRED', 'Curl predicador', 4, 6, 8, 120, 'Pesado'],
+      ['EJE_EXT_POLEA', 'Extensión unilateral polea', 3, 8, 10, 120, '']
+    ],
+    PIERNA_H3: [
+      ['EJE_SENTADILLA', 'Sentadilla barra', 4, 6, 8, 180, 'Compuesto principal'],
+      ['EJE_RDL', 'RDL', 4, 8, 10, 150, 'Isquios'],
+      ['EJE_LEG_PRESS', 'Leg press', 3, 10, 12, 120, 'Cuádriceps extra'],
+      ['EJE_HIP_THRUST', 'Hip thrust', 3, 10, 12, 120, 'Glúteos'],
+      ['EJE_EXT_QUAD', 'Extensión cuádriceps', 3, 12, 15, 0, 'SS con Curl femoral'],
+      ['EJE_CURL_FEM', 'Curl femoral tumbado', 3, 10, 12, 90, ''],
+      ['EJE_HOLLOW', 'Hollow hold/rock', 3, 30, 45, 0, 'SS con Pallof (seg)'],
+      ['EJE_PALLOF', 'Press Pallof', 3, 12, 12, 0, 'SS con Plancha'],
+      ['EJE_PLANCHA', 'Plancha lastrada', 2, 45, 60, 60, 'Core extra (seg)']
+    ],
+    PUSH_DEF: [
+      ['EJE_PRESS_INC', 'Press inclinado mancuernas', 4, 8, 10, 150, 'Mantener carga'],
+      ['EJE_CRUCES', 'Cruces polea alta', 3, 12, 15, 0, 'SS con Press hombro'],
+      ['EJE_PRESS_HOMB', 'Press hombro mancuernas sentado', 3, 8, 10, 120, ''],
+      ['EJE_LAT_SENT', 'Elevaciones laterales sentado', 4, 15, 15, 0, 'SS con Press francés'],
+      ['EJE_FRANC', 'Press francés banco 30°', 4, 12, 15, 60, 'Reps más altas'],
+      ['EJE_EXT_POLEA', 'Extensión unilateral polea', 3, 15, 15, 0, 'SS con Laterales']
+    ]
+  };
+
+  // ═══ 3. MAPA FASE → TEMPLATES ═══
+  const FASE_TEMPLATES = {
+    'FAS_01': { push: 'PUSH_ADAPT', pierna: 'PIERNA_ADAPT', pull: 'PULL_ADAPT', hombr: 'HOMBR_ADAPT' },
+    'FAS_02': { push: 'PUSH_H1', pierna: 'PIERNA_H1', pull: 'PULL_H1', hombr: 'HOMBR_H1' },
+    'FAS_03': { push: 'PUSH_H1', pierna: 'PIERNA_H1', pull: 'PULL_H1', hombr: 'HOMBR_H1' }, // Deload = mismo template, menos series
+    'FAS_04': { push: 'PUSH_H2', pierna: 'PIERNA_H1', pull: 'PULL_H1', hombr: 'HOMBR_H2' },
+    'FAS_05': { push: 'PUSH_H2', pierna: 'PIERNA_H1', pull: 'PULL_H1', hombr: 'HOMBR_H2' }, // Deload
+    'FAS_06': { push: 'PUSH_FZA', pierna: 'PIERNA_FZA', pull: 'PULL_FZA', hombr: 'HOMBR_FZA' },
+    'FAS_07': { push: 'PUSH_H1', pierna: 'PIERNA_H3', pull: 'PULL_H1', hombr: 'HOMBR_H1' },
+    'FAS_08': { push: 'PUSH_H1', pierna: 'PIERNA_H3', pull: 'PULL_H1', hombr: 'HOMBR_H1' }, // Deload
+    'FAS_09': { push: 'PUSH_DEF', pierna: 'PIERNA_H1', pull: 'PULL_H1', hombr: 'HOMBR_H1' },
+    'FAS_10': { push: 'PUSH_H1', pierna: 'PIERNA_H1', pull: 'PULL_H1', hombr: 'HOMBR_H1' }
+  };
+
+  // ═══ 4. SPLIT SEMANAL (programacion.md) ═══
+  // LUN=Push, MAR=Nadar, MIÉ=Pierna, JUE=Nadar, VIE=Pull, SÁB=Hombros, DOM=Descanso
+  const DIAS_GYM = { 1: 'push', 3: 'pierna', 5: 'pull', 6: 'hombr' }; // 0=DOM, 1=LUN...
+
+  // ═══ 5. ESCRIBIR PLAN_ANUAL ═══
+  const hojaPlanAnual = getHoja(HOJAS.PLAN_ANUAL);
+  FASES.forEach((fase, idx) => {
+    hojaPlanAnual.appendRow([
+      fase.id, USER_ID, 2026, idx + 1, fase.nombre, fase.tipo,
+      fase.inicio, fase.fin, fase.semanas, 16, fase.rir, fase.foco, fase.nutri, ''
+    ]);
+  });
+
+  // ═══ 6. GENERAR SESIONES + EJERCICIOS ═══
+  const hojaSesiones = getHoja(HOJAS.SESIONES_PLAN);
+  const hojaEjercicios = getHoja(HOJAS.EJERCICIOS_PLAN);
+  const hojaSemanal = getHoja(HOJAS.PLAN_SEMANAL);
+
+  let sesionCount = 0;
+  let ejercicioCount = 0;
+  let semanaAño = 0;
+
+  for (const fase of FASES) {
+    const fechaInicio = new Date(fase.inicio);
+    const fechaFin = new Date(fase.fin);
+    const esDeload = fase.tipo === 'DELOAD';
+    const templates = FASE_TEMPLATES[fase.id];
+
+    // Iterar día a día dentro de la fase
+    let fechaActual = new Date(fechaInicio);
+    let semanaFase = 1;
+    let diaEnSemana = 0;
+
+    while (fechaActual <= fechaFin) {
+      const diaSemana = fechaActual.getDay(); // 0=DOM, 1=LUN...
+      const fechaStr = Utilities.formatDate(fechaActual, 'Europe/Madrid', 'yyyy-MM-dd');
+
+      // RIR de esta semana (necesita estar en scope para plan_semanal que se escribe el domingo)
+      let rirSemana = fase.rir;
+      if (!esDeload && fase.semanas >= 4) {
+        const semMod = ((semanaFase - 1) % 3); // 0, 1, 2 → ciclo de 3 semanas
+        if (semMod === 0) rirSemana = '3-4';
+        else if (semMod === 1) rirSemana = '2-3';
+        else rirSemana = '1-2';
+      }
+
+      // ¿Es día de gym?
+      if (DIAS_GYM[diaSemana]) {
+        const tipoSesion = DIAS_GYM[diaSemana]; // push/pierna/pull/hombr
+        const tipoDisplay = { push: 'Push', pierna: 'Pierna', pull: 'Pull', hombr: 'Hombros+Brazos' }[tipoSesion];
+
+        // Crear sesión
+        sesionCount++;
+        const sesionId = `SES_${fechaStr.replace(/-/g, '')}_${String(sesionCount).padStart(3, '0')}`;
+
+        hojaSesiones.appendRow([
+          sesionId, USER_ID, fechaStr, tipoDisplay, semanaFase, fase.nombre,
+          1.0, '', 75, false, '', '', new Date().toISOString()
+        ]);
+
+        // Crear ejercicios de la sesión
+        const templateName = templates[tipoSesion];
+        const ejerciciosTemplate = TEMPLATES[templateName];
+
+        if (ejerciciosTemplate) {
+          ejerciciosTemplate.forEach((ej, orden) => {
+            ejercicioCount++;
+            const planId = `PLA_${fechaStr.replace(/-/g, '')}_${String(ejercicioCount).padStart(4, '0')}`;
+
+            // En deload: reducir series ×0.6 (Bompa 2009)
+            let series = ej[2];
+            if (esDeload) {
+              series = Math.max(2, Math.ceil(series * 0.6));
+            }
+
+            const repsStr = ej[3] === ej[4] ? String(ej[3]) : `${ej[3]}-${ej[4]}`;
+
+            hojaEjercicios.appendRow([
+              planId, sesionId, ej[0], orden + 1, series, repsStr,
+              0, // num_peso_sugerido_kg = 0 (desconocido hasta primera sesión)
+              parseInt(rirSemana) || 3, // RIR numérico
+              ej[5], // descanso_seg
+              ej[6], // notas
+              false  // no es warmup
+            ]);
+          });
+        }
+      }
+
+      // Control de semana
+      if (diaSemana === 0) { // Domingo = fin de semana
+        semanaAño++;
+        // Escribir plan_semanal
+        hojaSemanal.appendRow([
+          `SEM_${String(semanaAño).padStart(3, '0')}`, fase.id, USER_ID,
+          semanaAño, semanaFase,
+          'Push', 'Natación', 'Pierna', 'Natación', 'Pull', 'Hombros+Brazos', 'Descanso',
+          rirSemana || fase.rir, esDeload
+        ]);
+        semanaFase++;
+      }
+
+      // Siguiente día
+      fechaActual.setDate(fechaActual.getDate() + 1);
+    }
+  }
+
+  // ═══ 7. ESCRIBIR CATÁLOGO DE EJERCICIOS ═══
+  const hojaCatalogo = getHoja(HOJAS.EJERCICIOS_CATALOGO);
+  const CATALOGO = [
+    ['EJE_PRESS_INC', 'Press inclinado mancuernas', 'Incline DB Press', 'Pecho', '["Hombro","Tríceps"]', 'Empuje horizontal', 'Mancuernas,Banco inclinado', true, true, false, '', ''],
+    ['EJE_CRUCES', 'Cruces polea alta', 'High Cable Fly', 'Pecho', '[]', 'Empuje horizontal', 'Poleas cruce', false, true, false, '', ''],
+    ['EJE_FONDOS', 'Fondos (lastre progresivo)', 'Weighted Dips', 'Pecho', '["Tríceps","Hombro"]', 'Empuje vertical', 'Barras paralelas', true, true, false, '', ''],
+    ['EJE_PRESS_HOMB', 'Press hombro mancuernas sentado', 'Seated DB Shoulder Press', 'Hombros', '["Tríceps"]', 'Empuje vertical', 'Mancuernas,Banco 90°', true, false, false, '', ''],
+    ['EJE_PRESS_MIL', 'Press militar barra de pie', 'Standing Barbell OHP', 'Hombros', '["Tríceps","Core"]', 'Empuje vertical', 'Barra olímpica', true, false, false, '', ''],
+    ['EJE_LAT_SENT', 'Elevaciones laterales sentado', 'Seated Lateral Raise', 'Hombros', '[]', 'Empuje lateral', 'Mancuernas,Banco', false, true, false, '', ''],
+    ['EJE_LAT_POLEA', 'Elevaciones laterales polea media', 'Cable Lateral Raise', 'Hombros', '[]', 'Empuje lateral', 'Polea', false, true, false, '', ''],
+    ['EJE_FRANC', 'Press francés banco 30°', 'Incline Skullcrusher', 'Tríceps', '[]', 'Extensión', 'Barra Z,Banco 30°', false, true, false, '', ''],
+    ['EJE_EXT_POLEA', 'Extensión unilateral polea', 'Single Arm Cable Extension', 'Tríceps', '[]', 'Extensión', 'Polea alta', false, true, false, '', ''],
+    ['EJE_SENTADILLA', 'Sentadilla barra', 'Barbell Squat', 'Cuádriceps', '["Glúteos","Isquios"]', 'Extensión rodilla', 'Barra,Rack', true, true, false, '', ''],
+    ['EJE_RDL', 'RDL', 'Romanian Deadlift', 'Isquios', '["Glúteos","Espalda baja"]', 'Extensión cadera', 'Barra o Mancuernas', true, true, false, '', ''],
+    ['EJE_HIP_THRUST', 'Hip thrust', 'Barbell Hip Thrust', 'Glúteos', '["Isquios"]', 'Extensión cadera', 'Barra,Banco', true, true, false, '', ''],
+    ['EJE_LEG_PRESS', 'Leg press', 'Leg Press', 'Cuádriceps', '["Glúteos"]', 'Extensión rodilla', 'Leg press máquina', true, false, false, '', ''],
+    ['EJE_EXT_QUAD', 'Extensión cuádriceps', 'Leg Extension', 'Cuádriceps', '[]', 'Extensión rodilla', 'Máquina extensión', false, false, false, '', ''],
+    ['EJE_CURL_FEM', 'Curl femoral tumbado', 'Lying Leg Curl', 'Isquios', '[]', 'Flexión rodilla', 'Máquina curl', false, false, false, '', ''],
+    ['EJE_DOMINADAS', 'Dominadas', 'Pull-ups', 'Espalda', '["Bíceps"]', 'Tirón vertical', 'Barra dominadas', true, true, false, '', ''],
+    ['EJE_REMO_NEUTRO', 'Remo polea agarre neutro', 'Neutral Grip Cable Row', 'Espalda', '["Bíceps"]', 'Tirón horizontal', 'Polea,Agarre neutro', true, true, false, '', ''],
+    ['EJE_REMO_ROT', 'Remo unilateral con rotación', 'Single Arm Row w/ Rotation', 'Espalda', '["Bíceps","Core"]', 'Tirón horizontal', 'Mancuerna', true, true, false, '', ''],
+    ['EJE_KELSO', 'Kelso shrug', 'Kelso Shrug', 'Espalda', '[]', 'Tirón', 'Banco + mancuernas', false, true, false, '', ''],
+    ['EJE_FACE_PULL', 'Face pulls', 'Face Pulls', 'Hombros', '["Trapecios"]', 'Tirón horizontal', 'Polea + cuerda', false, false, false, '', ''],
+    ['EJE_CURL_Z', 'Curl Z de pie', 'EZ Bar Curl', 'Bíceps', '[]', 'Flexión codo', 'Barra Z', false, true, false, '', ''],
+    ['EJE_ZOTTMAN', 'Zottman curl', 'Zottman Curl', 'Bíceps', '["Antebrazo"]', 'Flexión codo', 'Mancuernas', false, true, false, '', ''],
+    ['EJE_CURL_PRED', 'Curl predicador', 'Preacher Curl', 'Bíceps', '[]', 'Flexión codo', 'Máquina predicador', false, true, false, '', ''],
+    ['EJE_CURL_INC', 'Curl inclinado mancuernas', 'Incline DB Curl', 'Bíceps', '[]', 'Flexión codo', 'Mancuernas,Banco 45°', false, false, false, '', ''],
+    ['EJE_ROT_EXT', 'Rotación externa hombro', 'External Rotation', 'Manguito rotador', '[]', 'Rotación externa', 'Mancuerna o Polea', false, false, false, '', ''],
+    ['EJE_HOLLOW', 'Hollow hold/rock', 'Hollow Hold', 'Core', '[]', 'Anti-extensión', 'Suelo', false, true, false, '', ''],
+    ['EJE_PALLOF', 'Press Pallof', 'Pallof Press', 'Core', '[]', 'Anti-rotación', 'Polea', false, true, false, '', ''],
+    ['EJE_PLANCHA', 'Plancha (lastrada)', 'Weighted Plank', 'Core', '[]', 'Anti-extensión', 'Suelo,Disco', false, false, false, '', '']
+  ];
+
+  CATALOGO.forEach(ej => hojaCatalogo.appendRow(ej));
+
+  // ═══ 8. RESULTADO ═══
+  Logger.log(`Plan generado: ${sesionCount} sesiones, ${ejercicioCount} ejercicios, ${CATALOGO.length} en catálogo`);
+  return {
+    ok: true,
+    mensaje: 'Plan completo generado',
+    sesiones: sesionCount,
+    ejercicios: ejercicioCount,
+    catalogo: CATALOGO.length,
+    fases: FASES.length,
+    periodo: '31/08/2026 → 31/07/2027'
+  };
 }

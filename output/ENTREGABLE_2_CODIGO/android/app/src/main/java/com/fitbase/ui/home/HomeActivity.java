@@ -17,6 +17,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.fitbase.R;
 import com.fitbase.ui.plan.PlanAnualActivity;
+import com.fitbase.ui.progression.ProgressionActivity;
 import com.fitbase.ui.workout.WorkoutActivity;
 import com.fitbase.util.FeedbackHelper;
 
@@ -56,6 +57,7 @@ public class HomeActivity extends AppCompatActivity {
     private TextView tvFaseInfo;
     private View btnEmpezarEntreno;
     private View btnPlanAnual;
+    private View btnProgresion;
     private View btnRegistrarAusencia;
     private View bannerDemo;
     private View bannerAusencia;
@@ -106,6 +108,7 @@ public class HomeActivity extends AppCompatActivity {
         tvFaseInfo = findViewById(R.id.tvFaseInfo);
         btnEmpezarEntreno = findViewById(R.id.btnEmpezarEntreno);
         btnPlanAnual = findViewById(R.id.btnPlanAnual);
+        btnProgresion = findViewById(R.id.btnProgresion);
         btnRegistrarAusencia = findViewById(R.id.btnRegistrarAusencia);
         bannerDemo = findViewById(R.id.bannerDemo);
         bannerAusencia = findViewById(R.id.bannerAusencia);
@@ -193,18 +196,18 @@ public class HomeActivity extends AppCompatActivity {
         // Aplicar scale-on-press a botones interactivos
         aplicarScaleOnPress(btnEmpezarEntreno);
         aplicarScaleOnPress(btnPlanAnual);
+        aplicarScaleOnPress(btnProgresion);
         aplicarScaleOnPress(btnRegistrarAusencia);
 
         btnEmpezarEntreno.setOnClickListener(v -> {
-            if (Boolean.TRUE.equals(viewModel.isModoDemo().getValue())) {
-                feedback.error();
-                android.widget.Toast.makeText(this,
-                        "🔒 Entrenamiento disponible el 31/08/2026\nPasos y calorías son datos reales de hoy",
-                        android.widget.Toast.LENGTH_LONG).show();
-                return;
-            }
             feedback.tap();
             Intent intent = new Intent(this, WorkoutActivity.class);
+            if (Boolean.TRUE.equals(viewModel.isModoDemo().getValue())) {
+                // Demo: permitir entrenamiento pero avisar que es prueba
+                android.widget.Toast.makeText(this,
+                        "Modo demo — datos se guardan en BBDD para verificar funcionamiento",
+                        android.widget.Toast.LENGTH_SHORT).show();
+            }
             startActivity(intent);
             overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
         });
@@ -212,6 +215,13 @@ public class HomeActivity extends AppCompatActivity {
         btnPlanAnual.setOnClickListener(v -> {
             feedback.tap();
             Intent intent = new Intent(this, PlanAnualActivity.class);
+            startActivity(intent);
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
+        });
+
+        btnProgresion.setOnClickListener(v -> {
+            feedback.tap();
+            Intent intent = new Intent(this, ProgressionActivity.class);
             startActivity(intent);
             overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
         });

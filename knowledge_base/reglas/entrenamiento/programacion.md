@@ -197,17 +197,23 @@ Las cargas diarias son calculadas por `motor_pesos.md` basándose en:
 - **SÍ cuenta como cardio** bajo impacto
 - Considerar menor volumen de hombros en días post-natación
 
-### Distribución Semanal Ejemplo
+### Distribución Semanal (DEFINITIVA)
+
+> Split PPL + Hombros/Brazos (4 gym + 2 natación + 1 descanso)
+> Justificación: prioridad V-taper (prioridades.md) requiere 14-18 ser/sem hombros+espalda → imposible con solo 2 Upper days.
+
 ```yaml
 SEMANA_TIPO:
-  lunes: GYM (Upper)
-  martes: NATACIÓN
-  miercoles: GYM (Lower)
-  jueves: NATACIÓN
-  viernes: GYM (Upper)
-  sabado: GYM (Lower) o descanso
+  lunes: GYM (PUSH - Pecho + Hombros + Tríceps)
+  martes: NATACIÓN (clase)
+  miercoles: GYM (PIERNA + Core)
+  jueves: NATACIÓN (clase)
+  viernes: GYM (PULL - Espalda + Bíceps + Postura)
+  sabado: GYM (HOMBROS + BRAZOS + Postura)
   domingo: DESCANSO
 ```
+
+> **Nota**: Este split es FIJO todo el año. Lo que cambia por fase son los ejercicios específicos, series, reps y RIR (ver base_datos.md §7 - Pre-Generación).
 
 ---
 

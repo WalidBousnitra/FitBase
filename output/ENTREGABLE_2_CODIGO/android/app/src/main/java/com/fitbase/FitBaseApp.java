@@ -5,6 +5,8 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import androidx.appcompat.app.AppCompatDelegate;
 
+import com.fitbase.data.local.SyncManager;
+
 /**
  * Clase Application de FitBase.
  * Configura tema oscuro y canal de notificaciones.
@@ -24,6 +26,10 @@ public class FitBaseApp extends Application {
 
         // Crear canales de notificación
         crearCanalesNotificacion();
+
+        // Sincronizar operaciones pendientes al abrir la app + al recuperar red
+        SyncManager.sincronizar(this);
+        SyncManager.registrarCallbackConectividad(this);
     }
 
     private void crearCanalesNotificacion() {

@@ -18,11 +18,11 @@ public final class Constants {
     public static final int EDAD = 24;
     public static final String SEXO = "M";
 
-    // Macros por defecto - Bulk (motor_dieta.md, Iraki 2019)
-    public static final int CALORIAS_BULK = 3280;
-    public static final int PROTEINA_G = 156;
-    public static final int CARBOS_G = 488;
-    public static final int GRASAS_G = 78;
+    // Macros FALLBACK (solo si el backend no responde — el backend calcula dinámicamente)
+    public static final int CALORIAS_FALLBACK = 3280;
+    public static final int PROTEINA_FALLBACK_G = 156;
+    public static final int CARBOS_FALLBACK_G = 488;
+    public static final int GRASAS_FALLBACK_G = 78;
 
     // Timer defaults (Schoenfeld 2016)
     public static final int DESCANSO_COMPUESTO_SEG = 180; // 3 min
@@ -35,5 +35,5 @@ public final class Constants {
     // Agua base (35ml/kg)
     public static final int AGUA_BASE_ML = 2700;
     public static final int AGUA_ENTRENO_EXTRA_ML = 500;
-    public static final String API_BASE_URL = "https://script.google.com/macros/s/AKfycbw79e-xq-qeGB-NaoAqkeYaS_qPD-C-ZkFfkOqqZE5jvgH3aM72mVt-Lkixhp38QfV80Q/exec";
+    public static final String API_BASE_URL = "https://script.google.com/macros/s/AKfycbw79e-xq-qeGB-NaoAqkeYaS_qPD-C-ZkFfkOqqZE5jvgH3aM72mVt-Lkixhp38QfV80Q/";
 }

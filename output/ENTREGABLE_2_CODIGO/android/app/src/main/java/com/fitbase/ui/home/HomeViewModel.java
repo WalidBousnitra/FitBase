@@ -14,6 +14,7 @@ import com.fitbase.data.model.Ejercicio;
 import com.fitbase.data.model.MacrosResponse;
 import com.fitbase.data.model.Sesion;
 import com.fitbase.data.model.SesionResponse;
+import com.fitbase.util.Constants;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -92,12 +93,12 @@ public class HomeViewModel extends AndroidViewModel {
             // DEMO: leer datos REALES de Health Connect (pasos Zepp + calorías FatSecret)
             // Objetivos fijos hasta que empiece el programa
             MacrosResponse base = new MacrosResponse();
-            base.caloriasObjetivo = 3280;
-            base.proteinaG = 156;
-            base.carbosG = 488;
-            base.grasasG = 78;
+            base.caloriasObjetivo = Constants.CALORIAS_FALLBACK;
+            base.proteinaG = Constants.PROTEINA_FALLBACK_G;
+            base.carbosG = Constants.CARBOS_FALLBACK_G;
+            base.grasasG = Constants.GRASAS_FALLBACK_G;
             base.aguaMl = 3200;
-            base.pasosObjetivo = 8000;
+            base.pasosObjetivo = Constants.PASOS_OBJETIVO;
             base.esDiaEntreno = true;
             base.fase = "pre-programa";
 
@@ -120,24 +121,38 @@ public class HomeViewModel extends AndroidViewModel {
             return;
         }
 
-        // MODO REAL: backend devuelve datos consolidados (HC + Sheets)
+        // MODO REAL: backend devuelve objetivos, HC devuelve consumido
         ApiClient.getApi().getMacrosHoy("macros_hoy").enqueue(new Callback<MacrosResponse>() {
             @Override
             public void onResponse(Call<MacrosResponse> call, Response<MacrosResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    macros.postValue(response.body());
+                    MacrosResponse objetivos = response.body();
+                    // Merge con datos reales de Health Connect (pasos Zepp + nutrición FatSecret)
+                    if (HealthConnectReader.isAvailable(getApplication())) {
+                        HealthConnectReader reader = new HealthConnectReader(getApplication());
+                        reader.leerDatosHoy(datos -> {
+                            objetivos.pasosActuales = datos.pasos;
+                            objetivos.caloriasConsumidas = datos.caloriasConsumidas;
+                            objetivos.proteinaConsumidaG = datos.proteinaG;
+                            objetivos.carbosConsumidosG = datos.carbosG;
+                            objetivos.grasasConsumidasG = datos.grasasG;
+                            macros.postValue(objetivos);
+                        });
+                    } else {
+                        macros.postValue(objetivos);
+                    }
                 }
             }
 
             @Override
             public void onFailure(Call<MacrosResponse> call, Throwable t) {
                 MacrosResponse fallback = new MacrosResponse();
-                fallback.caloriasObjetivo = 3280;
-                fallback.proteinaG = 156;
-                fallback.carbosG = 488;
-                fallback.grasasG = 78;
+                fallback.caloriasObjetivo = Constants.CALORIAS_FALLBACK;
+                fallback.proteinaG = Constants.PROTEINA_FALLBACK_G;
+                fallback.carbosG = Constants.CARBOS_FALLBACK_G;
+                fallback.grasasG = Constants.GRASAS_FALLBACK_G;
                 fallback.aguaMl = 3200;
-                fallback.pasosObjetivo = 8000;
+                fallback.pasosObjetivo = Constants.PASOS_OBJETIVO;
                 macros.postValue(fallback);
             }
         });

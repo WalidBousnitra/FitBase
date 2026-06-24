@@ -3,548 +3,399 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FitBase — Plan de Entrenamiento (11 meses)</title>
+    <title>FitBase — Plan de Entrenamiento y Nutrición</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
-            --bg: #000000;
-            --surface: #1C1C1E;
-            --surface2: #2C2C2E;
-            --text: #FFFFFF;
-            --text2: rgba(235,235,245,0.6);
-            --text3: rgba(235,235,245,0.3);
-            --accent: #FF2D55;
-            --accent2: #FF9500;
-            --success: #30D158;
-            --warning: #FFD60A;
-            --error: #FF453A;
-            --chart: #5E5CE6;
-            --chart2: #BF5AF2;
-            --radius: 24px;
+            --bg: #121212; --surface: #1E1E1E; --surface2: #2C2C2C;
+            --text: #E8EAED; --text2: #9AA0A6; --text3: #5F6368;
+            --accent: #FF5722; --success: #81C784; --warning: #FFB74D;
+            --error: #EF5350; --chart: #78909C;
+            --radius: 12px;
         }
-        body {
-            font-family: -apple-system, 'Inter', 'SF Pro', sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            line-height: 1.5;
-            overflow-x: hidden;
-        }
-        /* Hero */
-        .hero {
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            padding: 40px 20px;
-            background: radial-gradient(ellipse at 50% 0%, rgba(255,45,85,0.15) 0%, transparent 60%);
-        }
-        .hero h1 {
-            font-size: clamp(2.5rem, 6vw, 4rem);
-            font-weight: 800;
-            background: linear-gradient(135deg, var(--accent), var(--accent2));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 16px;
-        }
-        .hero p { font-size: 1.2rem; color: var(--text2); max-width: 600px; }
-        .hero-stats {
-            display: flex; gap: 32px; margin-top: 48px; flex-wrap: wrap; justify-content: center;
-        }
-        .hero-stat {
-            text-align: center;
-        }
-        .hero-stat .num { font-size: 2.5rem; font-weight: 800; color: var(--text); }
-        .hero-stat .label { font-size: 0.85rem; color: var(--text2); margin-top: 4px; }
+        body { font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
 
-        /* Sections */
-        section { padding: 80px 20px; max-width: 1200px; margin: 0 auto; }
-        .section-title {
-            font-size: 2rem; font-weight: 700; margin-bottom: 12px;
+        .hero {
+            min-height: 50vh; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; text-align: center;
+            padding: 80px 20px; border-bottom: 1px solid var(--surface2);
         }
-        .section-subtitle { color: var(--text2); margin-bottom: 40px; font-size: 1rem; }
+        .hero h1 { font-size: clamp(2.2rem,6vw,3.5rem); font-weight: 200; letter-spacing: -1px; }
+        .hero .subtitle { color: var(--text2); margin-top: 16px; font-size: 1.1rem; }
+        .hero .dates { margin-top: 24px; display: flex; gap: 12px; align-items: center; font-size: 0.85rem; }
+        .hero .date-pill { background: var(--surface); border-radius: 20px; padding: 6px 16px; color: var(--text2); }
+        .hero .date-pill strong { color: var(--text); }
+        .hero .arrow { color: var(--text3); }
+
+        section { max-width: 900px; margin: 0 auto; padding: 48px 20px; }
+        .section-title { font-size: 1.6rem; font-weight: 300; margin-bottom: 8px; }
+        .section-desc { color: var(--text2); margin-bottom: 28px; font-size: 0.9rem; }
+
+        /* Cards */
+        .cards-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 20px; }
+        .stat-card { background: var(--surface); border-radius: var(--radius); padding: 20px; }
+        .stat-card .label { font-size: 0.75rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+        .stat-card .value { font-size: 1.8rem; font-weight: 300; }
+        .stat-card .unit { font-size: 0.85rem; color: var(--text2); }
+
+        /* Macros */
+        .macros-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin: 16px 0; }
+        .macro-card { background: var(--surface); border-radius: var(--radius); padding: 16px; text-align: center; }
+        .macro-card .macro-val { font-size: 1.4rem; font-weight: 300; margin: 4px 0; }
+        .macro-card .macro-name { font-size: 0.75rem; color: var(--text3); text-transform: uppercase; }
+        .macro-card.accent { border-top: 3px solid var(--accent); }
+        .macro-card.prot { border-top: 3px solid var(--warning); }
+        .macro-card.carb { border-top: 3px solid var(--chart); }
+        .macro-card.fat { border-top: 3px solid var(--text3); }
+        .macro-card.water { border-top: 3px solid #64B5F6; }
 
         /* Timeline */
-        .timeline { position: relative; padding-left: 40px; }
-        .timeline::before {
-            content: ''; position: absolute; left: 16px; top: 0; bottom: 0;
-            width: 2px; background: linear-gradient(to bottom, var(--accent), var(--chart), var(--success));
+        .timeline { position: relative; margin: 24px 0; padding-left: 28px; }
+        .timeline::before { content: ''; position: absolute; left: 10px; top: 0; bottom: 0; width: 2px; background: var(--surface2); }
+        .tl-item { position: relative; margin-bottom: 20px; }
+        .tl-dot {
+            position: absolute; left: -24px; top: 4px; width: 12px; height: 12px;
+            border-radius: 50%; background: var(--surface2); border: 2px solid var(--bg);
         }
-        .timeline-item {
-            position: relative; margin-bottom: 32px;
-            background: var(--surface); border-radius: var(--radius); padding: 24px;
-            cursor: pointer; transition: transform 0.3s, box-shadow 0.3s;
-        }
-        .timeline-item:hover {
-            transform: translateX(8px);
-            box-shadow: 0 8px 32px rgba(255,45,85,0.1);
-        }
-        .timeline-item::before {
-            content: ''; position: absolute; left: -32px; top: 28px;
-            width: 12px; height: 12px; border-radius: 50%;
-            border: 2px solid var(--accent); background: var(--bg);
-        }
-        .timeline-item.active::before { background: var(--accent); }
-        .timeline-item .phase-tag {
-            display: inline-block; padding: 4px 12px; border-radius: 100px;
-            font-size: 0.75rem; font-weight: 600; margin-bottom: 8px;
-        }
-        .tag-vol { background: rgba(48,209,88,0.2); color: var(--success); }
-        .tag-fza { background: rgba(255,45,85,0.2); color: var(--accent); }
-        .tag-def { background: rgba(255,149,0,0.2); color: var(--accent2); }
-        .tag-aa { background: rgba(94,92,230,0.2); color: var(--chart); }
-        .tag-deload { background: rgba(255,214,10,0.2); color: var(--warning); }
-        .tag-trans { background: rgba(84,84,88,0.3); color: var(--text2); }
-        .timeline-item h3 { font-size: 1.1rem; margin-bottom: 4px; }
-        .timeline-item .dates { color: var(--text2); font-size: 0.85rem; }
-        .timeline-item .details {
-            max-height: 0; overflow: hidden; transition: max-height 0.4s ease;
-            margin-top: 0;
-        }
-        .timeline-item.open .details { max-height: 500px; margin-top: 16px; }
-        .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .detail-card {
-            background: var(--surface2); border-radius: 12px; padding: 12px;
-        }
-        .detail-card .label { font-size: 0.75rem; color: var(--text3); }
-        .detail-card .value { font-size: 1rem; font-weight: 600; margin-top: 2px; }
+        .tl-item.active .tl-dot { background: var(--accent); }
+        .tl-item.done .tl-dot { background: var(--success); }
+        .tl-phase { font-weight: 500; font-size: 0.95rem; }
+        .tl-dates { color: var(--text3); font-size: 0.8rem; margin-top: 2px; }
+        .tl-desc { color: var(--text2); font-size: 0.85rem; margin-top: 4px; }
 
-        /* Macros Card */
-        .macros-section { background: var(--surface); border-radius: var(--radius); padding: 40px; margin-bottom: 60px; }
-        .macros-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 24px; margin-top: 24px; }
-        .macro-card { text-align: center; }
-        .macro-ring {
-            width: 120px; height: 120px; border-radius: 50%; margin: 0 auto 12px;
-            display: flex; align-items: center; justify-content: center;
-            position: relative;
+        /* Week split */
+        .week-split { margin: 16px 0; }
+        .week-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+        .day-chip {
+            padding: 8px 14px; border-radius: 8px; font-size: 0.8rem; font-weight: 500;
+            background: var(--surface); border: 1px solid var(--surface2);
         }
-        .macro-ring svg { position: absolute; width: 100%; height: 100%; transform: rotate(-90deg); }
-        .macro-ring circle {
-            fill: none; stroke-width: 8; stroke-linecap: round;
-        }
-        .macro-ring .bg { stroke: var(--surface2); }
-        .macro-ring .fill { stroke-dasharray: 314; transition: stroke-dashoffset 1.5s ease; }
-        .macro-ring .num { font-size: 1.5rem; font-weight: 700; z-index: 1; }
-        .macro-ring .unit { font-size: 0.7rem; color: var(--text2); z-index: 1; }
+        .day-chip.gym { border-color: var(--success); color: var(--success); }
+        .day-chip.swim { border-color: var(--chart); color: var(--chart); }
+        .day-chip.rest { border-color: var(--text3); color: var(--text3); }
 
-        /* Split semanal */
-        .week-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
-        .day-card {
-            background: var(--surface); border-radius: 16px; padding: 16px 8px;
-            text-align: center; transition: transform 0.2s;
-        }
-        .day-card:hover { transform: scale(1.05); }
-        .day-card .day-name { font-size: 0.75rem; color: var(--text3); margin-bottom: 8px; }
-        .day-card .day-type { font-size: 0.85rem; font-weight: 600; }
-        .day-card .day-icon { font-size: 1.5rem; margin-bottom: 4px; }
-        .day-card.gym { border: 1px solid rgba(48,209,88,0.3); }
-        .day-card.swim { border: 1px solid rgba(94,92,230,0.3); }
-        .day-card.rest { border: 1px solid rgba(84,84,88,0.2); }
+        /* Volume bars */
+        .vol-list { margin: 16px 0; }
+        .vol-item { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+        .vol-label { width: 100px; font-size: 0.8rem; color: var(--text2); text-align: right; flex-shrink: 0; }
+        .vol-bar-bg { flex: 1; height: 8px; background: var(--surface2); border-radius: 4px; overflow: hidden; }
+        .vol-bar { height: 100%; border-radius: 4px; background: var(--success); transition: width 1s ease; }
+        .vol-val { width: 50px; font-size: 0.75rem; color: var(--text3); }
 
-        /* Volumen bars */
-        .vol-bars { margin-top: 24px; }
-        .vol-bar-item { display: flex; align-items: center; margin-bottom: 12px; }
-        .vol-bar-label { width: 100px; font-size: 0.85rem; color: var(--text2); }
-        .vol-bar-track {
-            flex: 1; height: 8px; background: var(--surface2); border-radius: 4px;
-            overflow: hidden; margin: 0 12px;
-        }
-        .vol-bar-fill {
-            height: 100%; border-radius: 4px; transition: width 1.5s ease;
-            background: linear-gradient(90deg, var(--accent), var(--accent2));
-        }
-        .vol-bar-value { font-size: 0.85rem; font-weight: 600; width: 60px; }
+        /* Evidence */
+        .evidence-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 10px; }
+        .evidence-card { background: var(--surface); border-radius: var(--radius); padding: 16px; }
+        .evidence-card .ev-title { font-size: 0.85rem; font-weight: 500; margin-bottom: 6px; }
+        .evidence-card .ev-desc { font-size: 0.8rem; color: var(--text2); }
+        .evidence-card .ev-source { font-size: 0.7rem; color: var(--text3); margin-top: 8px; font-style: italic; }
 
         /* Footer */
-        .footer { text-align: center; padding: 40px; color: var(--text3); font-size: 0.8rem; }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .week-grid { grid-template-columns: repeat(4, 1fr); }
-            .detail-grid { grid-template-columns: 1fr; }
-            .hero-stats { gap: 20px; }
-        }
+        .footer { text-align: center; padding: 40px; color: var(--text3); font-size: 0.8rem; border-top: 1px solid var(--surface2); }
 
         /* Animations */
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate { opacity: 0; }
-        .animate.visible { animation: fadeInUp 0.6s ease forwards; }
+        .fade-in { opacity: 0; transform: translateY(20px); transition: all 0.6s ease; }
+        .fade-in.visible { opacity: 1; transform: translateY(0); }
     </style>
 </head>
 <body>
 
-<!-- HERO -->
 <div class="hero">
-    <h1>FitBase Plan</h1>
-    <p>11 meses de entrenamiento periodizado basado en evidencia científica. Personalizado para tu cuerpo, tus prioridades y tu vida.</p>
-    <div class="hero-stats">
-        <div class="hero-stat"><div class="num">11</div><div class="label">MESES</div></div>
-        <div class="hero-stat"><div class="num">48</div><div class="label">SEMANAS</div></div>
-        <div class="hero-stat"><div class="num">3280</div><div class="label">KCAL/DÍA</div></div>
-        <div class="hero-stat"><div class="num">78.2</div><div class="label">KG INICIO</div></div>
+    <h1>Plan FitBase</h1>
+    <div class="subtitle">Entrenamiento + Nutrición · 11 meses · Basado en evidencia</div>
+    <div class="dates">
+        <span class="date-pill"><strong>Inicio</strong> 31/08/2026</span>
+        <span class="arrow">→</span>
+        <span class="date-pill"><strong>Fin</strong> 31/07/2027</span>
     </div>
 </div>
 
 <!-- NUTRICIÓN -->
-<section>
-    <h2 class="section-title animate">🍽️ Nutrición Diaria</h2>
-    <p class="section-subtitle animate">Basado en Mifflin-St Jeor (1990) + Iraki (2019). Fase actual: <strong style="color:var(--success)">Bulk limpio (+15%)</strong></p>
+<section class="fade-in">
+    <h2 class="section-title">Nutrición</h2>
+    <p class="section-desc">Bulk controlado — superávit de +300 kcal (Iraki 2019, Helms 2014)</p>
 
-    <div class="macros-section animate">
-        <div style="text-align:center; margin-bottom: 8px;">
-            <span style="font-size: 3rem; font-weight: 800;">3280</span>
-            <span style="color: var(--text2); font-size: 1.2rem;"> kcal</span>
+    <div class="macros-grid">
+        <div class="macro-card accent">
+            <div class="macro-name">Calorías</div>
+            <div class="macro-val">3280</div>
+            <div class="macro-name">kcal/día</div>
         </div>
-        <div style="text-align:center; color: var(--text3); font-size:0.85rem; margin-bottom: 24px;">
-            BMR 1842 × Factor 1.55 = TDEE 2855 + 15% superávit
+        <div class="macro-card prot">
+            <div class="macro-name">Proteína</div>
+            <div class="macro-val">156g</div>
+            <div class="macro-name">2g/kg</div>
         </div>
-        <div class="macros-grid">
-            <div class="macro-card">
-                <div class="macro-ring">
-                    <svg viewBox="0 0 120 120"><circle class="bg" cx="60" cy="60" r="50"/><circle class="fill" cx="60" cy="60" r="50" style="stroke:var(--accent); stroke-dashoffset: 254;"/></svg>
-                    <div><div class="num">156</div><div class="unit">g prot</div></div>
-                </div>
-                <div style="color:var(--text2); font-size:0.8rem; margin-top:4px;">2.0 g/kg</div>
-            </div>
-            <div class="macro-card">
-                <div class="macro-ring">
-                    <svg viewBox="0 0 120 120"><circle class="bg" cx="60" cy="60" r="50"/><circle class="fill" cx="60" cy="60" r="50" style="stroke:var(--accent2); stroke-dashoffset: 60;"/></svg>
-                    <div><div class="num">488</div><div class="unit">g carbs</div></div>
-                </div>
-                <div style="color:var(--text2); font-size:0.8rem; margin-top:4px;">6.2 g/kg</div>
-            </div>
-            <div class="macro-card">
-                <div class="macro-ring">
-                    <svg viewBox="0 0 120 120"><circle class="bg" cx="60" cy="60" r="50"/><circle class="fill" cx="60" cy="60" r="50" style="stroke:var(--chart); stroke-dashoffset: 248;"/></svg>
-                    <div><div class="num">78</div><div class="unit">g grasa</div></div>
-                </div>
-                <div style="color:var(--text2); font-size:0.8rem; margin-top:4px;">1.0 g/kg</div>
-            </div>
-            <div class="macro-card">
-                <div class="macro-ring">
-                    <svg viewBox="0 0 120 120"><circle class="bg" cx="60" cy="60" r="50"/><circle class="fill" cx="60" cy="60" r="50" style="stroke:var(--success); stroke-dashoffset: 180;"/></svg>
-                    <div><div class="num">3.2</div><div class="unit">L agua</div></div>
-                </div>
-                <div style="color:var(--text2); font-size:0.8rem; margin-top:4px;">35ml/kg + 500</div>
-            </div>
+        <div class="macro-card carb">
+            <div class="macro-name">Carbos</div>
+            <div class="macro-val">488g</div>
+            <div class="macro-name">60%</div>
+        </div>
+        <div class="macro-card fat">
+            <div class="macro-name">Grasa</div>
+            <div class="macro-val">78g</div>
+            <div class="macro-name">22%</div>
+        </div>
+        <div class="macro-card water">
+            <div class="macro-name">Agua</div>
+            <div class="macro-val">3.2L</div>
+            <div class="macro-name">objetivo</div>
+        </div>
+    </div>
+
+    <div style="background:var(--surface); border-radius:var(--radius); padding:16px; font-size:0.85rem; color:var(--text2); margin-top:12px;">
+        <strong style="color:var(--text)">Registro:</strong> FatSecret → Health Connect → FitBase (automático).<br>
+        <strong style="color:var(--text)">Fase Definición:</strong> se reduce a 2460 kcal (-20%), proteína sube a 2.4g/kg para preservar músculo.
+    </div>
+</section>
+
+<!-- DISTRIBUCIÓN SEMANAL -->
+<section class="fade-in">
+    <h2 class="section-title">Distribución Semanal</h2>
+    <p class="section-desc">4 sesiones de pesas + 2 natación + 1 descanso</p>
+
+    <div class="week-split">
+        <div class="week-row">
+            <div class="day-chip gym">LUN · Push</div>
+            <div class="day-chip swim">MAR · Nadar</div>
+            <div class="day-chip gym">MIÉ · Pierna</div>
+            <div class="day-chip swim">JUE · Nadar</div>
+            <div class="day-chip gym">VIE · Pull</div>
+            <div class="day-chip gym">SÁB · Hombros+Brazos</div>
+            <div class="day-chip rest">DOM · Descanso</div>
+        </div>
+    </div>
+
+    <div class="cards-row" style="margin-top:16px;">
+        <div class="stat-card">
+            <div class="label">Sesiones pesas</div>
+            <div class="value">4<span class="unit">/sem</span></div>
+        </div>
+        <div class="stat-card">
+            <div class="label">Natación</div>
+            <div class="value">2<span class="unit">/sem</span></div>
+        </div>
+        <div class="stat-card">
+            <div class="label">Duración media</div>
+            <div class="value">75<span class="unit"> min</span></div>
+        </div>
+        <div class="stat-card">
+            <div class="label">Descanso activo</div>
+            <div class="value">1<span class="unit"> día/sem</span></div>
         </div>
     </div>
 </section>
 
-<!-- SPLIT SEMANAL -->
-<section>
-    <h2 class="section-title animate">📅 Semana Tipo</h2>
-    <p class="section-subtitle animate">4 días pesas + 2 natación + 1 descanso. Frecuencia 2×/músculo (Schoenfeld 2019)</p>
+<!-- VOLUMEN POR MÚSCULO -->
+<section class="fade-in">
+    <h2 class="section-title">Volumen Semanal</h2>
+    <p class="section-desc">Series/semana por grupo muscular (fase Hipertrofia I)</p>
 
-    <div class="week-grid animate">
-        <div class="day-card gym"><div class="day-icon">🏋️</div><div class="day-name">LUN</div><div class="day-type">PUSH</div></div>
-        <div class="day-card swim"><div class="day-icon">🏊</div><div class="day-name">MAR</div><div class="day-type">Natación</div></div>
-        <div class="day-card rest"><div class="day-icon">😴</div><div class="day-name">MIÉ</div><div class="day-type">Descanso</div></div>
-        <div class="day-card swim"><div class="day-icon">🏊</div><div class="day-name">JUE</div><div class="day-type">Natación</div></div>
-        <div class="day-card gym"><div class="day-icon">🏋️</div><div class="day-name">VIE</div><div class="day-type">PULL</div></div>
-        <div class="day-card gym"><div class="day-icon">🦵</div><div class="day-name">SÁB</div><div class="day-type">PIERNA</div></div>
-        <div class="day-card gym"><div class="day-icon">💪</div><div class="day-name">DOM</div><div class="day-type">UPPER</div></div>
+    <div class="vol-list">
+        <div class="vol-item"><span class="vol-label">Pecho</span><div class="vol-bar-bg"><div class="vol-bar" style="width:75%;"></div></div><span class="vol-val">15 ser</span></div>
+        <div class="vol-item"><span class="vol-label">Espalda</span><div class="vol-bar-bg"><div class="vol-bar" style="width:80%;"></div></div><span class="vol-val">16 ser</span></div>
+        <div class="vol-item"><span class="vol-label">Hombros</span><div class="vol-bar-bg"><div class="vol-bar" style="width:60%;"></div></div><span class="vol-val">12 ser</span></div>
+        <div class="vol-item"><span class="vol-label">Bíceps</span><div class="vol-bar-bg"><div class="vol-bar" style="width:50%;"></div></div><span class="vol-val">10 ser</span></div>
+        <div class="vol-item"><span class="vol-label">Tríceps</span><div class="vol-bar-bg"><div class="vol-bar" style="width:50%;"></div></div><span class="vol-val">10 ser</span></div>
+        <div class="vol-item"><span class="vol-label">Cuádriceps</span><div class="vol-bar-bg"><div class="vol-bar" style="width:60%;"></div></div><span class="vol-val">12 ser</span></div>
+        <div class="vol-item"><span class="vol-label">Isquios</span><div class="vol-bar-bg"><div class="vol-bar" style="width:50%;"></div></div><span class="vol-val">10 ser</span></div>
+        <div class="vol-item"><span class="vol-label">Glúteos</span><div class="vol-bar-bg"><div class="vol-bar" style="width:40%;"></div></div><span class="vol-val">8 ser</span></div>
+        <div class="vol-item"><span class="vol-label">Core</span><div class="vol-bar-bg"><div class="vol-bar" style="width:35%;"></div></div><span class="vol-val">7 ser</span></div>
+    </div>
+
+    <div style="font-size:0.8rem; color:var(--text3); margin-top:8px;">
+        Volumen aumenta progresivamente cada mesociclo (+2 ser/grupo). Deload = -40% de volumen total.
     </div>
 </section>
 
-<!-- VOLUMEN SEMANAL -->
-<section>
-    <h2 class="section-title animate">📊 Volumen Semanal (series/músculo)</h2>
-    <p class="section-subtitle animate">Prioridades: P1 Estética (V-taper) → P2 Postura → P3 Hipertrofia (Schoenfeld 2017: 10+ series óptimo)</p>
+<!-- FASES / TIMELINE -->
+<section class="fade-in">
+    <h2 class="section-title">Periodización</h2>
+    <p class="section-desc">10 fases en 11 meses (Bompa 2009, Schoenfeld 2021)</p>
 
-    <div class="vol-bars animate">
-        <div class="vol-bar-item">
-            <span class="vol-bar-label">Hombros</span>
-            <div class="vol-bar-track"><div class="vol-bar-fill" data-width="90"></div></div>
-            <span class="vol-bar-value">16-18</span>
+    <div class="timeline">
+        <div class="tl-item active">
+            <div class="tl-dot"></div>
+            <div class="tl-phase">1. Adaptación</div>
+            <div class="tl-dates">31 ago – 27 sep (4 sem)</div>
+            <div class="tl-desc">Preparación tendones/ligamentos. RIR 4-5. Pesos ligeros.</div>
         </div>
-        <div class="vol-bar-item">
-            <span class="vol-bar-label">Espalda</span>
-            <div class="vol-bar-track"><div class="vol-bar-fill" data-width="90"></div></div>
-            <span class="vol-bar-value">16-18</span>
+        <div class="tl-item">
+            <div class="tl-dot"></div>
+            <div class="tl-phase">2. Hipertrofia I</div>
+            <div class="tl-dates">28 sep – 8 nov (6 sem)</div>
+            <div class="tl-desc">Volumen medio-alto. RIR 2-3. Rango 8-12 reps.</div>
         </div>
-        <div class="vol-bar-item">
-            <span class="vol-bar-label">Bíceps</span>
-            <div class="vol-bar-track"><div class="vol-bar-fill" data-width="70"></div></div>
-            <span class="vol-bar-value">12-14</span>
+        <div class="tl-item">
+            <div class="tl-dot"></div>
+            <div class="tl-phase">3. Deload 1</div>
+            <div class="tl-dates">9 nov – 15 nov (1 sem)</div>
+            <div class="tl-desc">-40% volumen, misma intensidad. Recuperar fatiga.</div>
         </div>
-        <div class="vol-bar-item">
-            <span class="vol-bar-label">Tríceps</span>
-            <div class="vol-bar-track"><div class="vol-bar-fill" data-width="60"></div></div>
-            <span class="vol-bar-value">10-12</span>
+        <div class="tl-item">
+            <div class="tl-dot"></div>
+            <div class="tl-phase">4. Hipertrofia II — Pecho y Brazos</div>
+            <div class="tl-dates">16 nov – 27 dic (6 sem)</div>
+            <div class="tl-desc">Especialización: +3 series pecho/bíceps. RIR 1-2.</div>
         </div>
-        <div class="vol-bar-item">
-            <span class="vol-bar-label">Pecho</span>
-            <div class="vol-bar-track"><div class="vol-bar-fill" data-width="60"></div></div>
-            <span class="vol-bar-value">10-12</span>
+        <div class="tl-item">
+            <div class="tl-dot"></div>
+            <div class="tl-phase">5. Deload 2</div>
+            <div class="tl-dates">28 dic – 3 ene (1 sem)</div>
+            <div class="tl-desc">-40% volumen. Coincide con vacaciones.</div>
         </div>
-        <div class="vol-bar-item">
-            <span class="vol-bar-label">Cuádriceps</span>
-            <div class="vol-bar-track"><div class="vol-bar-fill" data-width="55"></div></div>
-            <span class="vol-bar-value">10-12</span>
+        <div class="tl-item">
+            <div class="tl-dot"></div>
+            <div class="tl-phase">6. Fuerza</div>
+            <div class="tl-dates">4 ene – 14 feb (6 sem)</div>
+            <div class="tl-desc">Rango 4-6 reps. Cargas altas. RIR 1-3. Descansos largos (3-4 min).</div>
         </div>
-        <div class="vol-bar-item">
-            <span class="vol-bar-label">Isquios</span>
-            <div class="vol-bar-track"><div class="vol-bar-fill" data-width="45"></div></div>
-            <span class="vol-bar-value">8-10</span>
+        <div class="tl-item">
+            <div class="tl-dot"></div>
+            <div class="tl-phase">7. Hipertrofia III — Piernas y Core</div>
+            <div class="tl-dates">15 feb – 28 mar (6 sem)</div>
+            <div class="tl-desc">Especialización inferior. Sentadilla, prensa, deadlift.</div>
         </div>
-        <div class="vol-bar-item">
-            <span class="vol-bar-label">Core</span>
-            <div class="vol-bar-track"><div class="vol-bar-fill" data-width="40"></div></div>
-            <span class="vol-bar-value">6-8</span>
+        <div class="tl-item">
+            <div class="tl-dot"></div>
+            <div class="tl-phase">8. Deload 3</div>
+            <div class="tl-dates">29 mar – 4 abr (1 sem)</div>
+            <div class="tl-desc">-40% volumen. Prepara definición.</div>
         </div>
-    </div>
-</section>
-
-<!-- TIMELINE DE FASES -->
-<section>
-    <h2 class="section-title animate">🗓️ Plan Anual — 11 Meses</h2>
-    <p class="section-subtitle animate">Periodización ondulante (Bompa 2019). Clic en cada fase para ver detalles.</p>
-
-    <div class="timeline animate">
-        <div class="timeline-item" onclick="togglePhase(this)">
-            <span class="phase-tag tag-aa">ADAPTACIÓN</span>
-            <h3>Adaptación Anatómica</h3>
-            <div class="dates">Sem 1-4 · 31/08 – 27/09/2026</div>
-            <div class="details">
-                <div class="detail-grid">
-                    <div class="detail-card"><div class="label">Volumen</div><div class="value">8-10 series/sem</div></div>
-                    <div class="detail-card"><div class="label">RIR</div><div class="value">4-5 (ligero)</div></div>
-                    <div class="detail-card"><div class="label">Reps</div><div class="value">12-15</div></div>
-                    <div class="detail-card"><div class="label">Nutrición</div><div class="value">Bulk (+15%)</div></div>
-                    <div class="detail-card"><div class="label">Objetivo</div><div class="value">Preparar tendones y aprender movimientos</div></div>
-                    <div class="detail-card"><div class="label">Foco</div><div class="value">Todos los grupos, postura</div></div>
-                </div>
-            </div>
+        <div class="tl-item">
+            <div class="tl-dot"></div>
+            <div class="tl-phase">9. Definición</div>
+            <div class="tl-dates">5 abr – 16 may (6 sem)</div>
+            <div class="tl-desc">Déficit -20% kcal. Volumen mantenido, intensidad alta. Cardio HIIT 2x/sem.</div>
         </div>
-
-        <div class="timeline-item" onclick="togglePhase(this)">
-            <span class="phase-tag tag-vol">VOLUMEN</span>
-            <h3>Hipertrofia I</h3>
-            <div class="dates">Sem 5-10 · 28/09 – 08/11/2026</div>
-            <div class="details">
-                <div class="detail-grid">
-                    <div class="detail-card"><div class="label">Volumen</div><div class="value">14-18 series/sem</div></div>
-                    <div class="detail-card"><div class="label">RIR</div><div class="value">2-3</div></div>
-                    <div class="detail-card"><div class="label">Reps</div><div class="value">8-12</div></div>
-                    <div class="detail-card"><div class="label">Nutrición</div><div class="value">Bulk (+15%)</div></div>
-                    <div class="detail-card"><div class="label">Objetivo</div><div class="value">Máxima hipertrofia (Schoenfeld)</div></div>
-                    <div class="detail-card"><div class="label">Foco</div><div class="value">Hombros, Espalda (V-taper)</div></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="timeline-item" onclick="togglePhase(this)">
-            <span class="phase-tag tag-deload">DELOAD</span>
-            <h3>Descarga 1</h3>
-            <div class="dates">Sem 11 · 09/11 – 15/11/2026</div>
-            <div class="details">
-                <div class="detail-grid">
-                    <div class="detail-card"><div class="label">Volumen</div><div class="value">50% (-40-50%)</div></div>
-                    <div class="detail-card"><div class="label">RIR</div><div class="value">4-5</div></div>
-                    <div class="detail-card"><div class="label">Objetivo</div><div class="value">Supercompensación</div></div>
-                    <div class="detail-card"><div class="label">Nutrición</div><div class="value">Mantenimiento</div></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="timeline-item" onclick="togglePhase(this)">
-            <span class="phase-tag tag-fza">FUERZA</span>
-            <h3>Fuerza I</h3>
-            <div class="dates">Sem 12-15 · 16/11 – 13/12/2026</div>
-            <div class="details">
-                <div class="detail-grid">
-                    <div class="detail-card"><div class="label">Volumen</div><div class="value">10-12 series/sem</div></div>
-                    <div class="detail-card"><div class="label">RIR</div><div class="value">1-2</div></div>
-                    <div class="detail-card"><div class="label">Reps</div><div class="value">4-6</div></div>
-                    <div class="detail-card"><div class="label">Nutrición</div><div class="value">Mantenimiento</div></div>
-                    <div class="detail-card"><div class="label">Objetivo</div><div class="value">Aumentar fuerza para más hipertrofia</div></div>
-                    <div class="detail-card"><div class="label">Descanso</div><div class="value">3-5 min (ACSM 2009)</div></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="timeline-item" onclick="togglePhase(this)">
-            <span class="phase-tag tag-vol">VOLUMEN</span>
-            <h3>Hipertrofia II</h3>
-            <div class="dates">Sem 17-22 · 21/12 – 31/01/2027</div>
-            <div class="details">
-                <div class="detail-grid">
-                    <div class="detail-card"><div class="label">Volumen</div><div class="value">14-18 series/sem</div></div>
-                    <div class="detail-card"><div class="label">RIR</div><div class="value">2-3</div></div>
-                    <div class="detail-card"><div class="label">Reps</div><div class="value">8-12</div></div>
-                    <div class="detail-card"><div class="label">Nutrición</div><div class="value">Bulk (+15%)</div></div>
-                    <div class="detail-card"><div class="label">Foco</div><div class="value">Hombros, Bíceps, Espalda</div></div>
-                    <div class="detail-card"><div class="label">Nota</div><div class="value">Con base de fuerza mejorada</div></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="timeline-item" onclick="togglePhase(this)">
-            <span class="phase-tag tag-def">METABÓLICO</span>
-            <h3>Definición / Metabólico</h3>
-            <div class="dates">Sem 24-27 · 08/02 – 07/03/2027</div>
-            <div class="details">
-                <div class="detail-grid">
-                    <div class="detail-card"><div class="label">Volumen</div><div class="value">12-16 series/sem</div></div>
-                    <div class="detail-card"><div class="label">RIR</div><div class="value">1-2</div></div>
-                    <div class="detail-card"><div class="label">Reps</div><div class="value">12-15</div></div>
-                    <div class="detail-card"><div class="label">Nutrición</div><div class="value">DÉFICIT (-20%) ≈ 2284 kcal</div></div>
-                    <div class="detail-card"><div class="label">Descanso</div><div class="value">60-90s (cortos)</div></div>
-                    <div class="detail-card"><div class="label">Proteína</div><div class="value">2.3-3.1 g/kg LBM (Helms)</div></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="timeline-item" onclick="togglePhase(this)">
-            <span class="phase-tag tag-vol">VOLUMEN</span>
-            <h3>Hipertrofia III</h3>
-            <div class="dates">Sem 29-34 · 15/03 – 25/04/2027</div>
-            <div class="details">
-                <div class="detail-grid">
-                    <div class="detail-card"><div class="label">Volumen</div><div class="value">14-18 series/sem</div></div>
-                    <div class="detail-card"><div class="label">RIR</div><div class="value">2-3</div></div>
-                    <div class="detail-card"><div class="label">Nutrición</div><div class="value">Bulk (+15%)</div></div>
-                    <div class="detail-card"><div class="label">Foco</div><div class="value">Máximo V-taper</div></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="timeline-item" onclick="togglePhase(this)">
-            <span class="phase-tag tag-fza">FUERZA</span>
-            <h3>Fuerza II</h3>
-            <div class="dates">Sem 36-39 · 03/05 – 30/05/2027</div>
-            <div class="details">
-                <div class="detail-grid">
-                    <div class="detail-card"><div class="label">Volumen</div><div class="value">10-12 series/sem</div></div>
-                    <div class="detail-card"><div class="label">RIR</div><div class="value">1-2</div></div>
-                    <div class="detail-card"><div class="label">Reps</div><div class="value">4-6</div></div>
-                    <div class="detail-card"><div class="label">Objetivo</div><div class="value">PRs de fuerza</div></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="timeline-item" onclick="togglePhase(this)">
-            <span class="phase-tag tag-vol">VOLUMEN</span>
-            <h3>Hipertrofia IV</h3>
-            <div class="dates">Sem 41-46 · 07/06 – 18/07/2027</div>
-            <div class="details">
-                <div class="detail-grid">
-                    <div class="detail-card"><div class="label">Volumen</div><div class="value">14-18 series/sem</div></div>
-                    <div class="detail-card"><div class="label">RIR</div><div class="value">2-3</div></div>
-                    <div class="detail-card"><div class="label">Nutrición</div><div class="value">Bulk (+15%)</div></div>
-                    <div class="detail-card"><div class="label">Objetivo</div><div class="value">Fase final — Consolidar ganancias</div></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="timeline-item" onclick="togglePhase(this)">
-            <span class="phase-tag tag-trans">TRANSICIÓN</span>
-            <h3>Transición</h3>
-            <div class="dates">Sem 48 · 26/07 – 31/07/2027</div>
-            <div class="details">
-                <div class="detail-grid">
-                    <div class="detail-card"><div class="label">Volumen</div><div class="value">6-8 series/sem</div></div>
-                    <div class="detail-card"><div class="label">RIR</div><div class="value">4-5</div></div>
-                    <div class="detail-card"><div class="label">Objetivo</div><div class="value">Recuperación activa, evaluación final</div></div>
-                    <div class="detail-card"><div class="label">Métricas</div><div class="value">Fotos, circunferencias, PRs finales</div></div>
-                </div>
-            </div>
+        <div class="tl-item">
+            <div class="tl-dot"></div>
+            <div class="tl-phase">10. Peak + Mantenimiento</div>
+            <div class="tl-dates">17 may – 31 jul (11 sem)</div>
+            <div class="tl-desc">Mantener forma. Superávit mínimo (+100). Volumen medio. Disfrutar verano.</div>
         </div>
     </div>
 </section>
 
 <!-- EVIDENCIA -->
-<section>
-    <h2 class="section-title animate">📚 Evidencia Científica</h2>
-    <p class="section-subtitle animate">Cada decisión del plan se basa en papers publicados</p>
-    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap:16px;" class="animate">
-        <div style="background:var(--surface); border-radius:16px; padding:20px;">
-            <div style="color:var(--accent); font-weight:600; font-size:0.8rem;">VOLUMEN</div>
-            <div style="margin-top:8px; font-weight:600;">Schoenfeld et al. (2017)</div>
-            <div style="color:var(--text2); font-size:0.85rem; margin-top:4px;">10+ series/semana = +9.8% hipertrofia. Relación dosis-respuesta.</div>
+<section class="fade-in">
+    <h2 class="section-title">Base Científica</h2>
+    <p class="section-desc">31 papers procesados → decisiones de programación. Highlights:</p>
+
+    <div class="evidence-grid">
+        <div class="evidence-card">
+            <div class="ev-title">Volumen óptimo para hipertrofia</div>
+            <div class="ev-desc">10-20 series/músculo/semana maximiza ganancias. Más allá de 20 → fatiga sin beneficio.</div>
+            <div class="ev-source">Schoenfeld et al. 2017, 2019</div>
         </div>
-        <div style="background:var(--surface); border-radius:16px; padding:20px;">
-            <div style="color:var(--chart); font-weight:600; font-size:0.8rem;">FRECUENCIA</div>
-            <div style="margin-top:8px; font-weight:600;">Schoenfeld et al. (2019)</div>
-            <div style="color:var(--text2); font-size:0.85rem; margin-top:4px;">Frecuencia NO afecta si volumen igualado. 2×/sem para distribuir.</div>
+        <div class="evidence-card">
+            <div class="ev-title">Frecuencia ≥2x/semana</div>
+            <div class="ev-desc">Entrenar cada músculo 2+ veces/semana es superior a 1x para hipertrofia.</div>
+            <div class="ev-source">Schoenfeld et al. 2016</div>
         </div>
-        <div style="background:var(--surface); border-radius:16px; padding:20px;">
-            <div style="color:var(--success); font-weight:600; font-size:0.8rem;">DESCANSO</div>
-            <div style="margin-top:8px; font-weight:600;">Schoenfeld et al. (2016)</div>
-            <div style="color:var(--text2); font-size:0.85rem; margin-top:4px;">3 min > 1 min para hipertrofia Y fuerza.</div>
+        <div class="evidence-card">
+            <div class="ev-title">RIR como indicador de intensidad</div>
+            <div class="ev-desc">RIR 1-3 = zona óptima para hipertrofia. RIR 0 solo para series finales.</div>
+            <div class="ev-source">Helms et al. 2016</div>
         </div>
-        <div style="background:var(--surface); border-radius:16px; padding:20px;">
-            <div style="color:var(--accent2); font-weight:600; font-size:0.8rem;">PERIODIZACIÓN</div>
-            <div style="margin-top:8px; font-weight:600;">Bompa & Buzzichelli (2019)</div>
-            <div style="color:var(--text2); font-size:0.85rem; margin-top:4px;">Fases secuenciales: AA → Hipertrofia → Fuerza → Metabólico.</div>
+        <div class="evidence-card">
+            <div class="ev-title">Progresión de cargas</div>
+            <div class="ev-desc">+2.5% cuando se excede rango objetivo con RIR ≥ 2. Progresión lineal en principiantes.</div>
+            <div class="ev-source">ACSM 2009, Bompa 2009</div>
         </div>
-        <div style="background:var(--surface); border-radius:16px; padding:20px;">
-            <div style="color:var(--warning); font-weight:600; font-size:0.8rem;">NUTRICIÓN</div>
-            <div style="margin-top:8px; font-weight:600;">Iraki et al. (2019) + Mifflin (1990)</div>
-            <div style="color:var(--text2); font-size:0.85rem; margin-top:4px;">Bulk: +10-20%, Proteína 1.6-2.2g/kg. Calorías vía FatSecret (sync automático).</div>
+        <div class="evidence-card">
+            <div class="ev-title">Deload cada 4-6 semanas</div>
+            <div class="ev-desc">Reducir volumen -40% permite supercompensación y previene lesiones.</div>
+            <div class="ev-source">Bompa 2009, Smith 2004</div>
         </div>
-        <div style="background:var(--surface); border-radius:16px; padding:20px;">
-            <div style="color:var(--chart2); font-weight:600; font-size:0.8rem;">POSTURA</div>
-            <div style="margin-top:8px; font-weight:600;">Ruivo et al. (2016)</div>
-            <div style="color:var(--text2); font-size:0.85rem; margin-top:4px;">16 semanas de fuerza + estiramientos = mejora significativa.</div>
+        <div class="evidence-card">
+            <div class="ev-title">Proteína para hipertrofia</div>
+            <div class="ev-desc">1.6-2.2 g/kg/día óptimo. Distribuir en 4-5 comidas (0.4g/kg/comida).</div>
+            <div class="ev-source">Helms 2014, Iraki 2019</div>
+        </div>
+        <div class="evidence-card">
+            <div class="ev-title">Sueño y recuperación</div>
+            <div class="ev-desc">7-9h, Sleep Score < 60 → reducir volumen. HRV bajo = fatiga acumulada.</div>
+            <div class="ev-source">Fullagar 2015</div>
+        </div>
+        <div class="evidence-card">
+            <div class="ev-title">Stretching post-entrenamiento</div>
+            <div class="ev-desc">30-60s estático post-sesión. No antes de pesas (reduce fuerza -5.4%).</div>
+            <div class="ev-source">Page 2012, Bandy 1997</div>
         </div>
     </div>
 </section>
 
-<!-- CHECKPOINTS & MEDICIONES -->
-<section>
-    <h2 class="section-title animate">📐 Mediciones & Composición</h2>
-    <p class="section-subtitle animate">Circunferencias solo al inicio y al final de cada fase. Composición corporal semanal vía Zepp.</p>
-    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap:16px;" class="animate">
-        <div style="background:var(--surface); border-radius:16px; padding:20px;">
-            <div style="color:var(--success); font-weight:600; font-size:0.8rem;">CIRCUNFERENCIAS</div>
-            <div style="margin-top:8px; font-weight:600;">Solo inicio + fin de fase</div>
-            <div style="color:var(--text2); font-size:0.85rem; margin-top:4px;">Hombros, pecho, cintura, cadera, bícep, muslo. Sin fotos.</div>
+<!-- MEDICIONES -->
+<section class="fade-in">
+    <h2 class="section-title">Mediciones y Seguimiento</h2>
+    <p class="section-desc">Datos automáticos (Zepp) + manuales (cinta).</p>
+
+    <div class="cards-row">
+        <div class="stat-card">
+            <div class="label">Peso (Zepp)</div>
+            <div class="value">Diario</div>
+            <div class="unit">Automático al pesarte</div>
         </div>
-        <div style="background:var(--surface); border-radius:16px; padding:20px;">
-            <div style="color:var(--chart); font-weight:600; font-size:0.8rem;">COMPOSICIÓN CORPORAL</div>
-            <div style="margin-top:8px; font-weight:600;">Semanal (Zepp auto)</div>
-            <div style="color:var(--text2); font-size:0.85rem; margin-top:4px;">Peso, % grasa, kg músculo. Último pesaje de la semana extraído de Zepp.</div>
+        <div class="stat-card">
+            <div class="label">Circunferencias</div>
+            <div class="value">Cada fase</div>
+            <div class="unit">Cinta métrica manual</div>
         </div>
-        <div style="background:var(--surface); border-radius:16px; padding:20px;">
-            <div style="color:var(--accent2); font-weight:600; font-size:0.8rem;">CALORÍAS</div>
-            <div style="margin-top:8px; font-weight:600;">FatSecret → Health Connect</div>
-            <div style="color:var(--text2); font-size:0.85rem; margin-top:4px;">Registra en FatSecret → Health Connect → FitBase lee automáticamente macros y calorías.</div>
+        <div class="stat-card">
+            <div class="label">HRV / FC reposo</div>
+            <div class="value">Diario</div>
+            <div class="unit">Amazfit GTS 4 → HC</div>
         </div>
+        <div class="stat-card">
+            <div class="label">Fotos</div>
+            <div class="value">Mensual</div>
+            <div class="unit">Mismo sitio, misma luz</div>
+        </div>
+    </div>
+
+    <div style="background:var(--surface); border-radius:var(--radius); padding:16px; font-size:0.85rem; color:var(--text2); margin-top:12px;">
+        <strong style="color:var(--text)">Pantalla "Progresión":</strong> En la app, <em>Home → Ver Progresión</em>, puedes ver gráficas de 7/30/90 días de: peso, grasa, sleep score, HRV, FC reposo, pasos y volumen de entrenamiento.
+    </div>
+</section>
+
+<!-- GARANTÍA DATOS -->
+<section class="fade-in">
+    <h2 class="section-title">Garantía de Datos</h2>
+    <p class="section-desc">Tus registros nunca se pierden — aunque no haya red.</p>
+
+    <div class="cards-row">
+        <div class="stat-card">
+            <div class="label">Backend</div>
+            <div class="value" style="font-size:1.2rem;">Google Sheets</div>
+            <div class="unit">15 hojas · tu Google Drive</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">Cola Offline</div>
+            <div class="value" style="font-size:1.2rem;">Room (SQLite)</div>
+            <div class="unit">FIFO · autosync al volver la red</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">Reintentos</div>
+            <div class="value">50</div>
+            <div class="unit">por operación fallida</div>
+        </div>
+    </div>
+
+    <div style="background:rgba(129,199,132,0.08); border-left:3px solid var(--success); border-radius:8px; padding:16px; font-size:0.85rem; color:var(--text2); margin-top:12px;">
+        <strong style="color:var(--success)">No vas a acabar con una BBDD vacía.</strong> Cada serie, cada pesaje, cada comida se guarda localmente si falla la red y se sincroniza después. Es imposible perder datos.
     </div>
 </section>
 
 <div class="footer">
-    FitBase © 2026 · Generado desde /knowledge_base/ · Toda lógica basada en evidencia
+    FitBase © 2026 · Plan de Entrenamiento v2.0 · 31 papers · 15 hojas BBDD · Actualizado 24/06/2026
 </div>
 
 <script>
-    function togglePhase(el) {
-        el.classList.toggle('open');
-    }
-
-    // Scroll animations
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('visible');
-                // Animate volume bars
-                entry.target.querySelectorAll('.vol-bar-fill').forEach(bar => {
-                    bar.style.width = bar.dataset.width + '%';
-                });
-            }
-        });
+    const faders = document.querySelectorAll('.fade-in');
+    const obs = new IntersectionObserver((entries) => {
+        entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
     }, { threshold: 0.1 });
-
-    document.querySelectorAll('.animate').forEach(el => observer.observe(el));
-
-    // Init bars at 0
-    document.querySelectorAll('.vol-bar-fill').forEach(bar => { bar.style.width = '0%'; });
+    faders.forEach(f => obs.observe(f));
 </script>
 </body>
 </html>

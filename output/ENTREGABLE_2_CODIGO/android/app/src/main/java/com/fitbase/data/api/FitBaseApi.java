@@ -7,6 +7,7 @@ import com.fitbase.data.model.PlanAnualResponse;
 import com.fitbase.data.model.PlanSemanalResponse;
 import com.fitbase.data.model.ProgresionResponse;
 import com.fitbase.data.model.SesionResponse;
+import com.fitbase.data.model.MetricasProgresionResponse;
 import com.fitbase.data.model.MetricasResponse;
 import com.fitbase.data.model.GenericResponse;
 
@@ -58,6 +59,12 @@ public interface FitBaseApi {
 
     @GET("exec")
     Call<Object> getComposicionSemanal(@Query("accion") String accion);
+
+    @GET("exec")
+    Call<MetricasProgresionResponse> getProgresionMetricas(
+            @Query("accion") String accion,
+            @Query("dias") int dias
+    );
 
     // ─── POST ─────────────────────────────────────────────
 

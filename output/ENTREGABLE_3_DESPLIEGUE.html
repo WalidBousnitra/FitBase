@@ -3,132 +3,166 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FitBase — Guía de Despliegue</title>
+    <title>FitBase — Guía de Despliegue Completo (desde cero)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
-            --bg: #000000; --surface: #1C1C1E; --surface2: #2C2C2E;
-            --text: #FFFFFF; --text2: rgba(235,235,245,0.6); --text3: rgba(235,235,245,0.3);
-            --accent: #FF2D55; --accent2: #FF9500; --success: #30D158;
-            --warning: #FFD60A; --error: #FF453A; --chart: #5E5CE6; --chart2: #BF5AF2;
-            --radius: 24px;
+            --bg: #121212; --surface: #1E1E1E; --surface2: #2C2C2C;
+            --text: #E8EAED; --text2: #9AA0A6; --text3: #5F6368;
+            --accent: #FF5722; --success: #81C784; --warning: #FFB74D;
+            --error: #EF5350; --chart: #78909C;
+            --radius: 12px;
         }
-        body { font-family: -apple-system, 'Inter', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+        body { font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
 
         .hero {
-            min-height: 50vh; display: flex; flex-direction: column;
+            min-height: 40vh; display: flex; flex-direction: column;
             justify-content: center; align-items: center; text-align: center; padding: 60px 20px;
-            background: radial-gradient(ellipse at 50% 0%, rgba(48,209,88,0.12) 0%, transparent 60%);
+            border-bottom: 1px solid var(--surface2);
         }
-        .hero h1 { font-size: clamp(2rem,5vw,3.5rem); font-weight: 800; background: linear-gradient(135deg, var(--success), #64D2FF); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .hero p { color: var(--text2); font-size: 1.1rem; max-width: 600px; margin-top: 12px; }
+        .hero h1 { font-size: clamp(2rem,5vw,3rem); font-weight: 300; color: var(--text); }
+        .hero p { color: var(--text2); font-size: 1rem; max-width: 600px; margin-top: 12px; }
+        .hero .status { margin-top: 24px; padding: 8px 20px; border-radius: 20px; background: rgba(129,199,132,0.15); border: 1px solid var(--success); color: var(--success); font-size: 0.85rem; font-weight: 500; }
 
-        /* Progress bar */
         .progress-container {
             position: sticky; top: 0; z-index: 100; background: var(--bg);
-            padding: 16px 20px; border-bottom: 1px solid rgba(84,84,88,0.3);
+            padding: 16px 20px; border-bottom: 1px solid var(--surface2);
         }
-        .progress-bar { height: 4px; background: var(--surface2); border-radius: 2px; overflow: hidden; }
-        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--success), #64D2FF); width: 0%; transition: width 0.5s ease; border-radius: 2px; }
+        .progress-bar { height: 3px; background: var(--surface2); border-radius: 2px; overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--success); width: 0%; transition: width 0.5s ease; border-radius: 2px; }
         .progress-text { text-align: center; font-size: 0.8rem; color: var(--text3); margin-top: 8px; }
 
         section { max-width: 800px; margin: 0 auto; padding: 40px 20px; }
 
-        /* Steps */
         .step {
-            background: var(--surface); border-radius: var(--radius); padding: 28px;
-            margin-bottom: 20px; position: relative; border-left: 3px solid var(--surface2);
-            transition: border-color 0.3s, transform 0.3s;
+            background: var(--surface); border-radius: var(--radius); padding: 24px;
+            margin-bottom: 16px; position: relative; border-left: 3px solid var(--surface2);
+            transition: border-color 0.3s;
         }
         .step.done { border-left-color: var(--success); }
-        .step.active { border-left-color: var(--accent); transform: translateX(4px); }
+        .step.active { border-left-color: var(--accent); }
         .step-header { display: flex; align-items: center; gap: 16px; cursor: pointer; }
         .step-number {
-            width: 36px; height: 36px; border-radius: 50%; display: flex;
-            align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem;
+            width: 32px; height: 32px; border-radius: 50%; display: flex;
+            align-items: center; justify-content: center; font-weight: 600; font-size: 0.85rem;
             background: var(--surface2); color: var(--text2); flex-shrink: 0; transition: all 0.3s;
         }
-        .step.done .step-number { background: var(--success); color: #000; }
+        .step.done .step-number { background: var(--success); color: var(--bg); }
         .step.active .step-number { background: var(--accent); color: #fff; }
-        .step-title { font-size: 1.1rem; font-weight: 600; }
-        .step-time { margin-left: auto; font-size: 0.8rem; color: var(--text3); background: var(--surface2); padding: 4px 10px; border-radius: 100px; }
+        .step-title { font-size: 1rem; font-weight: 500; }
+        .step-time { margin-left: auto; font-size: 0.75rem; color: var(--text3); background: var(--surface2); padding: 4px 10px; border-radius: 100px; }
         .step-body { margin-top: 20px; display: none; }
         .step.open .step-body { display: block; animation: fadeIn 0.3s ease; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
         .step-body p { color: var(--text2); font-size: 0.9rem; margin-bottom: 12px; }
         .step-body ol, .step-body ul { color: var(--text2); padding-left: 20px; margin-bottom: 16px; font-size: 0.9rem; }
-        .step-body li { margin-bottom: 6px; }
+        .step-body li { margin-bottom: 8px; }
+        .step-body li strong { color: var(--text); }
 
-        /* Code blocks with copy */
         .code-block {
-            background: var(--bg); border-radius: 12px; padding: 16px; margin: 12px 0;
-            position: relative; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem;
-            overflow-x: auto; border: 1px solid rgba(84,84,88,0.2);
+            background: var(--bg); border-radius: 8px; padding: 16px; margin: 12px 0;
+            position: relative; font-family: 'Consolas', 'JetBrains Mono', monospace; font-size: 0.8rem;
+            overflow-x: auto; border: 1px solid var(--surface2);
         }
-        .code-block code { color: var(--chart); white-space: pre; }
+        .code-block code { color: var(--success); white-space: pre; }
         .copy-btn {
             position: absolute; top: 8px; right: 8px; background: var(--surface2);
             border: none; color: var(--text2); padding: 4px 10px; border-radius: 6px;
             font-size: 0.7rem; cursor: pointer; transition: all 0.2s;
         }
         .copy-btn:hover { background: var(--accent); color: #fff; }
-        .copy-btn.copied { background: var(--success); color: #000; }
+        .copy-btn.copied { background: var(--success); color: var(--bg); }
 
-        /* Checkbox */
         .check-item {
             display: flex; align-items: center; gap: 12px; padding: 8px 0;
             cursor: pointer; font-size: 0.9rem; color: var(--text2);
         }
         .check-item input[type="checkbox"] { display: none; }
         .check-box {
-            width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--text3);
+            width: 20px; height: 20px; border-radius: 6px; border: 2px solid var(--text3);
             display: flex; align-items: center; justify-content: center; transition: all 0.2s; flex-shrink: 0;
         }
         .check-item input:checked + .check-box { background: var(--success); border-color: var(--success); }
-        .check-item input:checked + .check-box::after { content: '✓'; color: #000; font-weight: 700; font-size: 0.8rem; }
+        .check-item input:checked + .check-box::after { content: '✓'; color: var(--bg); font-weight: 700; font-size: 0.7rem; }
         .check-item input:checked ~ .check-label { text-decoration: line-through; color: var(--text3); }
 
-        /* Warning / tip box */
-        .tip-box { background: rgba(255,214,10,0.1); border-left: 3px solid var(--warning); border-radius: 12px; padding: 14px 16px; margin: 12px 0; font-size: 0.85rem; color: var(--text2); }
+        .tip-box { background: rgba(255,183,77,0.1); border-left: 3px solid var(--warning); border-radius: 8px; padding: 14px 16px; margin: 12px 0; font-size: 0.85rem; color: var(--text2); }
         .tip-box strong { color: var(--warning); }
+        .info-box { background: rgba(129,199,132,0.1); border-left: 3px solid var(--success); border-radius: 8px; padding: 14px 16px; margin: 12px 0; font-size: 0.85rem; color: var(--text2); }
+        .info-box strong { color: var(--success); }
+        .error-box { background: rgba(239,83,80,0.1); border-left: 3px solid var(--error); border-radius: 8px; padding: 14px 16px; margin: 12px 0; font-size: 0.85rem; color: var(--text2); }
+        .error-box strong { color: var(--error); }
 
-        .footer { text-align: center; padding: 40px; color: var(--text3); font-size: 0.8rem; }
+        .arch-diagram { background: var(--surface2); border-radius: var(--radius); padding: 24px; margin: 16px 0; text-align: center; font-size: 0.85rem; color: var(--text2); }
+        .arch-row { display: flex; justify-content: center; align-items: center; gap: 8px; margin: 8px 0; flex-wrap: wrap; }
+        .arch-box { background: var(--surface); border: 1px solid var(--surface2); border-radius: 8px; padding: 8px 16px; font-size: 0.8rem; }
+        .arch-arrow { color: var(--text3); }
+
+        .footer { text-align: center; padding: 40px; color: var(--text3); font-size: 0.8rem; border-top: 1px solid var(--surface2); }
     </style>
 </head>
 <body>
 
 <div class="hero">
     <h1>Despliegue FitBase</h1>
-    <p>7 pasos para tener la app corriendo. Marca cada checkbox y avanza en orden.</p>
+    <p>Guía paso a paso para montar todo desde cero. No tienes BBDD, no tienes nada desplegado. Aquí lo hacemos todo.</p>
+    <div class="status">Estado: TODO POR HACER — Empezar desde el paso 1</div>
 </div>
 
 <div class="progress-container">
     <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
-    <div class="progress-text" id="progressText">0 de 7 pasos completados</div>
+    <div class="progress-text" id="progressText">0 de 10 pasos completados</div>
 </div>
 
 <section>
 
+    <!-- Arquitectura -->
+    <div class="arch-diagram">
+        <div style="font-weight:500; color:var(--text); margin-bottom:12px;">Arquitectura FitBase</div>
+        <div class="arch-row">
+            <div class="arch-box">Android (Java 17)</div>
+            <span class="arch-arrow">→</span>
+            <div class="arch-box">Retrofit (HTTPS)</div>
+            <span class="arch-arrow">→</span>
+            <div class="arch-box">Apps Script (Web App)</div>
+            <span class="arch-arrow">→</span>
+            <div class="arch-box">Google Sheets (15 hojas)</div>
+        </div>
+        <div class="arch-row" style="margin-top:12px;">
+            <div class="arch-box">Health Connect</div>
+            <span class="arch-arrow">←</span>
+            <div class="arch-box">Zepp (Amazfit GTS 4)</div>
+        </div>
+        <div class="arch-row">
+            <div class="arch-box">Health Connect</div>
+            <span class="arch-arrow">←</span>
+            <div class="arch-box">FatSecret (nutrición)</div>
+        </div>
+        <div class="arch-row" style="margin-top:12px;">
+            <div class="arch-box" style="border-color:var(--success)">Room (SQLite local)</div>
+            <span class="arch-arrow">= cola offline si falla la red</span>
+        </div>
+    </div>
+
     <!-- PASO 1 -->
-    <div class="step" id="step1">
+    <div class="step open active" id="step1">
         <div class="step-header" onclick="toggleStep(this.parentElement)">
             <div class="step-number">1</div>
             <div class="step-title">Crear Google Sheet</div>
-            <div class="step-time">~5 min</div>
+            <div class="step-time">~2 min</div>
         </div>
         <div class="step-body">
-            <p>Creamos la hoja de cálculo que será la base de datos.</p>
+            <p>Esta Sheet será tu base de datos.</p>
             <ol>
-                <li>Ir a <strong>sheets.new</strong> en el navegador</li>
-                <li>Renombrar a <strong>FitBase_BD</strong></li>
+                <li>Abre <strong>sheets.new</strong> en el navegador</li>
+                <li>Renombra a <strong>FitBase_BD</strong></li>
+                <li>No crees hojas manualmente — el script lo hará</li>
             </ol>
-
-            <div class="tip-box"><strong>💡 No necesitas copiar el ID:</strong> El script se crea desde esta misma Sheet, así que ya está vinculado automáticamente.</div>
-
+            <div class="info-box"><strong>El script se crea DESDE esta Sheet</strong> → queda vinculado automáticamente. No necesitas copiar ningún ID.</div>
             <label class="check-item" onclick="updateProgress()">
                 <input type="checkbox"><div class="check-box"></div>
-                <span class="check-label">Sheet creada y renombrada</span>
+                <span class="check-label">Sheet creada y renombrada a FitBase_BD</span>
             </label>
         </div>
     </div>
@@ -137,49 +171,20 @@
     <div class="step" id="step2">
         <div class="step-header" onclick="toggleStep(this.parentElement)">
             <div class="step-number">2</div>
-            <div class="step-title">Inicializar las 14 Hojas</div>
-            <div class="step-time">~3 min</div>
+            <div class="step-title">Crear Apps Script y pegar Codigo.gs</div>
+            <div class="step-time">~5 min</div>
         </div>
         <div class="step-body">
-            <p>El backend creará automáticamente las 15 hojas con sus headers al ejecutar <code>inicializarHojas()</code>.</p>
-            <div class="tip-box"><strong>⚡ Tip:</strong> No crees las hojas manualmente. El script lo hace con los headers correctos.</div>
-
-            <p>Las 15 hojas que se generarán:</p>
-            <div class="code-block">
-                <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
-                <code>usuarios, metricas_zepp, peso_log, sesiones_plan,
-ejercicios_plan, ejercicios_log, progresion_log,
-comidas_log, hidratacion_log, suplementos_log,
-excepciones_log, plan_anual, plan_semanal,
-ejercicios_catalogo, mediciones_log</code>
-            </div>
-
-            <label class="check-item" onclick="updateProgress()">
-                <input type="checkbox"><div class="check-box"></div>
-                <span class="check-label">Entendido — se ejecutará en paso 4</span>
-            </label>
-        </div>
-    </div>
-
-    <!-- PASO 2.5: FatSecret via Health Connect -->
-    <div class="step" id="step2b">
-        <div class="step-header" onclick="toggleStep(this.parentElement)">
-            <div class="step-number">2b</div>
-            <div class="step-title">Configurar FatSecret + Health Connect</div>
-            <div class="step-time">~3 min</div>
-        </div>
-        <div class="step-body">
-            <p>FitBase lee calorías/macros de <strong>Health Connect</strong>, donde FatSecret las deposita.</p>
             <ol>
-                <li>Instalar <strong>FatSecret</strong> en el móvil (Google Play, cuenta normal)</li>
-                <li>En FatSecret: Ajustes → <strong>Apps conectadas → Health Connect → Activar</strong></li>
-                <li>Dar permiso de escritura de Nutrición a FatSecret</li>
-                <li>En FitBase (al instalar): dar permiso de <strong>lectura</strong> de Nutrición en Health Connect</li>
+                <li>Desde la Sheet: <strong>Extensiones → Apps Script</strong></li>
+                <li>Se abre el editor. Borra todo el contenido</li>
+                <li>Pega el contenido COMPLETO del archivo <code>backend/Codigo.gs</code></li>
+                <li>Guarda (Ctrl+S)</li>
             </ol>
-            <div class="tip-box"><strong>🔗 Flujo:</strong> Tú registras comidas en FatSecret → FatSecret escribe en Health Connect → FitBase lee de Health Connect → Envía a Sheets. No necesitas cuenta de platform.fatsecret.com (esa es solo para devs).</div>
+            <div class="tip-box"><strong>El archivo Codigo.gs está en:</strong><br><code>output/ENTREGABLE_2_CODIGO/backend/Codigo.gs</code></div>
             <label class="check-item" onclick="updateProgress()">
                 <input type="checkbox"><div class="check-box"></div>
-                <span class="check-label">FatSecret conectado a Health Connect</span>
+                <span class="check-label">Codigo.gs pegado y guardado en Apps Script</span>
             </label>
         </div>
     </div>
@@ -188,22 +193,30 @@ ejercicios_catalogo, mediciones_log</code>
     <div class="step" id="step3">
         <div class="step-header" onclick="toggleStep(this.parentElement)">
             <div class="step-number">3</div>
-            <div class="step-title">Crear Apps Script</div>
-            <div class="step-time">~5 min</div>
+            <div class="step-title">Ejecutar inicializarHojas()</div>
+            <div class="step-time">~2 min</div>
         </div>
         <div class="step-body">
+            <p>Esto crea las 15 hojas con cabeceras + inserta tu usuario.</p>
             <ol>
-                <li>Desde la Sheet: <strong>Extensiones → Apps Script</strong></li>
-                <li>Borrar todo el contenido del editor</li>
-                <li>Pegar el contenido completo de <code>Codigo.gs</code></li>
-                <li>Guardar (Ctrl+S)</li>
+                <li>En el editor Apps Script, en el dropdown de funciones selecciona: <strong>inicializarHojas</strong></li>
+                <li>Clic en <strong>▶ Ejecutar</strong></li>
+                <li>Acepta permisos (tu cuenta de Google)</li>
+                <li>Vuelve a la Sheet → verifica que hay 15 pestañas</li>
             </ol>
-
-            <div class="tip-box"><strong>🔗 Vinculado automáticamente:</strong> Al crear el script desde la Sheet, ya está asociado. No necesitas configurar ningún ID manualmente.</div>
-
+            <div class="tip-box"><strong>Permisos:</strong> Google te pide autorizar. Como tú eres el owner, clic "Avanzado → Ir a FitBase (no seguro)" → Permitir.</div>
+            <p>Las 15 hojas que se crean:</p>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+                <code>usuarios, metricas_zepp, peso_log, sesiones_plan,
+ejercicios_plan, ejercicios_log, progresion_log,
+comidas_log, hidratacion_log, suplementos_log,
+excepciones_log, plan_anual, plan_semanal,
+ejercicios_catalogo, mediciones_log</code>
+            </div>
             <label class="check-item" onclick="updateProgress()">
                 <input type="checkbox"><div class="check-box"></div>
-                <span class="check-label">Codigo.gs pegado y guardado</span>
+                <span class="check-label">15 hojas creadas con cabeceras</span>
             </label>
         </div>
     </div>
@@ -212,21 +225,41 @@ ejercicios_catalogo, mediciones_log</code>
     <div class="step" id="step4">
         <div class="step-header" onclick="toggleStep(this.parentElement)">
             <div class="step-number">4</div>
-            <div class="step-title">Ejecutar inicializarHojas()</div>
-            <div class="step-time">~2 min</div>
+            <div class="step-title">Ejecutar generarPlanCompleto()</div>
+            <div class="step-time">~3 min</div>
         </div>
         <div class="step-body">
+            <p>Esto pre-genera <strong>TODAS las sesiones del año</strong>: 192 sesiones + 1300 ejercicios. Cuando abras la app cualquier día, tu sesión ya estará lista.</p>
             <ol>
-                <li>En el editor Apps Script, seleccionar función: <strong>inicializarHojas</strong></li>
-                <li>Clic en <strong>▶️ Ejecutar</strong></li>
-                <li>Aceptar permisos (tu cuenta de Google)</li>
-                <li>Verificar en la Sheet que aparecen las 15 pestañas</li>
+                <li>En Apps Script, selecciona función: <strong>generarPlanCompleto</strong></li>
+                <li>Clic <strong>▶ Ejecutar</strong></li>
+                <li>Espera ~30 segundos (genera mucho dato)</li>
+                <li>Vuelve a la Sheet → verifica:</li>
             </ol>
-            <div class="tip-box"><strong>🔐 Permisos:</strong> Google te pedirá autorizar. Como eres el owner, clic en "Avanzado → Ir a FitBase (no seguro)" para aprobar.</div>
-
+            <ul>
+                <li><strong>plan_anual</strong>: 10 filas (10 fases con fechas)</li>
+                <li><strong>plan_semanal</strong>: ~48 filas (una por semana)</li>
+                <li><strong>sesiones_plan</strong>: ~192 filas (4 sesiones/semana × 48 semanas)</li>
+                <li><strong>ejercicios_plan</strong>: ~1300 filas (ejercicios de cada sesión)</li>
+                <li><strong>ejercicios_catalogo</strong>: ~27 filas (ejercicios únicos)</li>
+            </ul>
+            <div class="info-box"><strong>Los ejercicios concretos están en:</strong><br><code>ENTREGABLE_5_PLAN_EJERCICIOS.html</code> → todos los templates, macros por fase y CSV copiable. La función <code>generarPlanCompleto()</code> usa estos templates internamente.</div>
+            <div class="tip-box"><strong>¿Por qué pre-generar?</strong> Así no dependes de ningún trigger diario. El 31 de agosto de 2026 abres la app y ya tienes tu sesión de Adaptación con todos los ejercicios. El 15 de enero de 2027 abres y tienes tu sesión de Fuerza. Sin internet, sin IA, sin nada extra.</div>
             <label class="check-item" onclick="updateProgress()">
                 <input type="checkbox"><div class="check-box"></div>
-                <span class="check-label">15 hojas creadas con headers</span>
+                <span class="check-label">plan_anual tiene 10 fases con fechas correctas</span>
+            </label>
+            <label class="check-item" onclick="updateProgress()">
+                <input type="checkbox"><div class="check-box"></div>
+                <span class="check-label">sesiones_plan tiene ~192 sesiones (31/08/2026 → 31/07/2027)</span>
+            </label>
+            <label class="check-item" onclick="updateProgress()">
+                <input type="checkbox"><div class="check-box"></div>
+                <span class="check-label">ejercicios_plan tiene ~1300 filas de ejercicios</span>
+            </label>
+            <label class="check-item" onclick="updateProgress()">
+                <input type="checkbox"><div class="check-box"></div>
+                <span class="check-label">ejercicios_catalogo tiene ~27 ejercicios</span>
             </label>
         </div>
     </div>
@@ -242,18 +275,16 @@ ejercicios_catalogo, mediciones_log</code>
             <ol>
                 <li>En Apps Script: <strong>Implementar → Nueva implementación</strong></li>
                 <li>Tipo: <strong>Aplicación web</strong></li>
-                <li>Ejecutar como: <strong>Yo</strong></li>
+                <li>Ejecutar como: <strong>Yo (tu email)</strong></li>
                 <li>Acceso: <strong>Cualquier persona</strong></li>
                 <li>Clic <strong>Implementar</strong></li>
-                <li>Copiar la URL de implementación</li>
+                <li><strong>COPIA la URL</strong> que te da</li>
             </ol>
             <div class="code-block">
                 <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
-                <code>https://script.google.com/macros/s/TU_DEPLOY_ID/exec</code>
+                <code>https://script.google.com/macros/s/TU_DEPLOY_ID_AQUI/exec</code>
             </div>
-
-            <div class="tip-box"><strong>📋 Guardar:</strong> Esta URL es tu API_BASE_URL. La necesitarás en el siguiente paso.</div>
-
+            <div class="error-box"><strong>IMPORTANTE:</strong> Cada vez que modifiques Codigo.gs, necesitas hacer "Nueva implementación" para que los cambios se apliquen. La URL cambia con cada deploy.</div>
             <label class="check-item" onclick="updateProgress()">
                 <input type="checkbox"><div class="check-box"></div>
                 <span class="check-label">Web App desplegada y URL copiada</span>
@@ -265,35 +296,40 @@ ejercicios_catalogo, mediciones_log</code>
     <div class="step" id="step6">
         <div class="step-header" onclick="toggleStep(this.parentElement)">
             <div class="step-number">6</div>
-            <div class="step-title">Configurar Android</div>
+            <div class="step-title">Configurar Android Studio</div>
             <div class="step-time">~10 min</div>
         </div>
         <div class="step-body">
             <ol>
-                <li>Abrir el proyecto Android en Android Studio</li>
-                <li>En <code>util/Constants.java</code>, pegar tu URL:</li>
+                <li>Abre el proyecto Android en Android Studio:<br><code>output/ENTREGABLE_2_CODIGO/android/</code></li>
+                <li>Espera a que Gradle sincronice (puede tardar la primera vez)</li>
+                <li>Abre <strong>util/Constants.java</strong> y pega tu URL:</li>
             </ol>
             <div class="code-block">
                 <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
                 <code>public static final String API_BASE_URL =
-    "https://script.google.com/macros/s/TU_DEPLOY_ID/exec";</code>
+    "https://script.google.com/macros/s/TU_DEPLOY_ID/";</code>
             </div>
-            <ol start="3">
-                <li><strong>Sync Gradle</strong> (barra superior → Sync Now)</li>
-                <li>Verificar: Min SDK 26, Target SDK 34, Java 17</li>
+            <ol start="4">
+                <li>Verifica en <code>build.gradle</code>:</li>
             </ol>
-
             <div class="code-block">
                 <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
                 <code>compileSdk = 34
 minSdk = 26
 targetSdk = 34
-sourceCompatibility = JavaVersion.VERSION_17</code>
+Java 17
+Room 2.6.1 (cache offline)
+Retrofit 2.9.0
+Health Connect 1.1.0-alpha07</code>
             </div>
-
             <label class="check-item" onclick="updateProgress()">
                 <input type="checkbox"><div class="check-box"></div>
-                <span class="check-label">URL configurada + Gradle sincronizado</span>
+                <span class="check-label">URL configurada en Constants.java</span>
+            </label>
+            <label class="check-item" onclick="updateProgress()">
+                <input type="checkbox"><div class="check-box"></div>
+                <span class="check-label">Gradle sincronizado sin errores</span>
             </label>
         </div>
     </div>
@@ -302,42 +338,185 @@ sourceCompatibility = JavaVersion.VERSION_17</code>
     <div class="step" id="step7">
         <div class="step-header" onclick="toggleStep(this.parentElement)">
             <div class="step-number">7</div>
-            <div class="step-title">Build & Run</div>
+            <div class="step-title">Configurar Health Connect + FatSecret + Zepp</div>
+            <div class="step-time">~5 min</div>
+        </div>
+        <div class="step-body">
+            <p>Estas apps externas alimentan datos a FitBase via Health Connect.</p>
+            <ol>
+                <li><strong>Zepp</strong> (reloj Amazfit): Ya lo tienes. Verifica que sincroniza sueño/peso/pasos a Health Connect.</li>
+                <li><strong>FatSecret</strong>: Instala → Ajustes → Apps conectadas → Health Connect → Activar escritura de Nutrición.</li>
+                <li><strong>Health Connect</strong>: Dale a FitBase permiso de LECTURA de: Steps, Heart Rate, Sleep, Nutrition.</li>
+            </ol>
+            <div class="info-box"><strong>Flujo:</strong> Tú registras comidas en FatSecret → FatSecret → Health Connect → FitBase lee al abrir → Envía a Sheets.</div>
+            <label class="check-item" onclick="updateProgress()">
+                <input type="checkbox"><div class="check-box"></div>
+                <span class="check-label">FatSecret + Zepp conectados a Health Connect</span>
+            </label>
+        </div>
+    </div>
+
+    <!-- PASO 8 -->
+    <div class="step" id="step8">
+        <div class="step-header" onclick="toggleStep(this.parentElement)">
+            <div class="step-number">8</div>
+            <div class="step-title">Build, instalar y probar</div>
             <div class="step-time">~5 min</div>
         </div>
         <div class="step-body">
             <ol>
-                <li>Conectar dispositivo físico (USB debugging) o emulador API 26+</li>
-                <li>Clic <strong>▶️ Run 'app'</strong></li>
-                <li>Verificar pantalla de inicio con macros del día</li>
-                <li>Probar una sesión de entrenamiento demo</li>
+                <li>Conecta tu móvil por USB (USB Debugging activado)</li>
+                <li>En Android Studio: <strong>▶ Run 'app'</strong></li>
+                <li>La app se instala y abre</li>
+                <li>Debería mostrar la pantalla Home con banner "Demo activa"</li>
+                <li><strong>Prueba:</strong> Toca "Empezar entreno" → haz una serie → registra RIR</li>
+                <li>Ve a tu Google Sheet → hoja <strong>ejercicios_log</strong> → debería haber una fila nueva</li>
             </ol>
-            <div class="tip-box"><strong>✅ Validación:</strong> Si ves los macros (3280 kcal, 156g P, 488g C, 78g G) y la sesión planificada, ¡todo funciona!</div>
+            <div class="info-box"><strong>La demo ESCRIBE en la BBDD real.</strong> Puedes verificar que todo funciona. Antes del inicio real (31/08/2026) ejecutas <code>resetParaInicio()</code> para limpiar.</div>
 
-            <p style="margin-top:16px; font-weight:600;">Checklist final:</p>
+            <p style="margin-top:16px; font-weight:500; color:var(--text);">Checklist de verificación:</p>
             <label class="check-item" onclick="updateProgress()">
                 <input type="checkbox"><div class="check-box"></div>
-                <span class="check-label">App compila sin errores</span>
+                <span class="check-label">App compila y abre sin crash</span>
             </label>
             <label class="check-item" onclick="updateProgress()">
                 <input type="checkbox"><div class="check-box"></div>
-                <span class="check-label">Home muestra macros y sesión del día</span>
+                <span class="check-label">Home muestra macros (3280 kcal objetivo)</span>
             </label>
             <label class="check-item" onclick="updateProgress()">
                 <input type="checkbox"><div class="check-box"></div>
-                <span class="check-label">Timer vibra en reloj Amazfit (no en móvil)</span>
+                <span class="check-label">Puedo iniciar entreno y registrar serie</span>
             </label>
             <label class="check-item" onclick="updateProgress()">
                 <input type="checkbox"><div class="check-box"></div>
-                <span class="check-label">Sonido solo con auriculares conectados</span>
+                <span class="check-label">Los datos aparecen en Google Sheet (ejercicios_log)</span>
             </label>
             <label class="check-item" onclick="updateProgress()">
                 <input type="checkbox"><div class="check-box"></div>
-                <span class="check-label">FatSecret sync vía Health Connect funciona</span>
+                <span class="check-label">Timer muestra cuenta atrás (Dynamic Island style)</span>
             </label>
             <label class="check-item" onclick="updateProgress()">
                 <input type="checkbox"><div class="check-box"></div>
-                <span class="check-label">Logs se guardan en Sheets</span>
+                <span class="check-label">Timer dentro de la app = silencio total</span>
+            </label>
+            <label class="check-item" onclick="updateProgress()">
+                <input type="checkbox"><div class="check-box"></div>
+                <span class="check-label">Pantalla "Ver Progresión" carga (aunque con 0 datos)</span>
+            </label>
+        </div>
+    </div>
+
+    <!-- PASO 9 -->
+    <div class="step" id="step9">
+        <div class="step-header" onclick="toggleStep(this.parentElement)">
+            <div class="step-number">9</div>
+            <div class="step-title">Antes del inicio real: resetParaInicio()</div>
+            <div class="step-time">~1 min</div>
+        </div>
+        <div class="step-body">
+            <p>Cuando estés satisfecho de que todo funciona y se acerque el 31/08/2026:</p>
+            <ol>
+                <li>Ve a Apps Script</li>
+                <li>Selecciona función: <strong>resetParaInicio</strong></li>
+                <li>Clic <strong>▶ Ejecutar</strong></li>
+                <li>Esto borra TODOS los logs de prueba pero mantiene:</li>
+            </ol>
+            <ul>
+                <li>✅ <strong>ejercicios_catalogo</strong> (tus ejercicios)</li>
+                <li>✅ <strong>plan_anual</strong> (tus fases)</li>
+                <li>✅ <strong>plan_semanal</strong> (tus microciclos)</li>
+                <li>✅ <strong>sesiones_plan</strong> (192 sesiones pre-generadas)</li>
+                <li>✅ <strong>ejercicios_plan</strong> (1300 ejercicios pre-generados)</li>
+                <li>❌ Todo lo demás se vacía (peso_log, métricas, comidas, ejercicios_log...)</li>
+            </ul>
+            <div class="error-box"><strong>IRREVERSIBLE.</strong> Solo ejecútalo cuando estés listo para empezar "de verdad" el 31/08/2026. Los datos de prueba se pierden.</div>
+            <div class="tip-box"><strong>También existe vaciarBaseDatos()</strong> vía POST desde la app o cualquier cliente REST, pero requiere enviar <code>confirmar: "VACIAR_TODO"</code> como seguridad.</div>
+            <label class="check-item" onclick="updateProgress()">
+                <input type="checkbox"><div class="check-box"></div>
+                <span class="check-label">Entendido — ejecutaré resetParaInicio cuando empiece</span>
+            </label>
+        </div>
+    </div>
+
+    <!-- RESUMEN FINAL -->
+    <div style="background:var(--surface); border-radius:var(--radius); padding:24px; margin-top:32px;">
+        <h3 style="font-size:1rem; margin-bottom:16px;">Resumen de lo que tienes desplegado:</h3>
+        <table style="width:100%; font-size:0.85rem; color:var(--text2);">
+            <tr><td style="padding:8px 0; color:var(--text); font-weight:500;">Backend</td><td>Google Apps Script (Web App)</td></tr>
+            <tr><td style="padding:8px 0; color:var(--text); font-weight:500;">Base de datos</td><td>Google Sheets (15 hojas)</td></tr>
+            <tr><td style="padding:8px 0; color:var(--text); font-weight:500;">Frontend</td><td>Android nativo (Java 17, minSdk 26)</td></tr>
+            <tr><td style="padding:8px 0; color:var(--text); font-weight:500;">Cache offline</td><td>Room (SQLite) — cola de reintentos si cae la red</td></tr>
+            <tr><td style="padding:8px 0; color:var(--text); font-weight:500;">Métricas</td><td>Health Connect ← Zepp + FatSecret</td></tr>
+            <tr><td style="padding:8px 0; color:var(--text); font-weight:500;">Notificaciones</td><td>Timer Dynamic Island + vibración reloj (Zepp)</td></tr>
+            <tr><td style="padding:8px 0; color:var(--text); font-weight:500;">Pantallas</td><td>Home, Entreno, Timer, Resumen, Plan Anual, Progresión</td></tr>
+        </table>
+    </div>
+
+    <!-- PASO 10: PREPARACIÓN PERSONAL -->
+    <div class="step" id="step10">
+        <div class="step-header" onclick="toggleStep(this.parentElement)">
+            <div class="step-number">10</div>
+            <div class="step-title">Preparación personal (hábitos fuera de la app)</div>
+            <div class="step-time">~15 min</div>
+        </div>
+        <div class="step-body">
+            <p>La app no puede hacer todo por ti. Estas son cosas que tú tienes que configurar en tu vida para sacarle el máximo provecho:</p>
+
+            <div style="margin-top:16px; font-weight:500; color:var(--text);">Recordatorios a poner en el reloj/móvil:</div>
+            <ul>
+                <li><strong>Pesarte cada mañana</strong> — Alarma/recordatorio diario a las <strong>7:30 AM</strong> (antes de comer, después de ir al baño). La báscula Zepp sincroniza automático, pero tienes que acordarte de subirte.</li>
+                <li><strong>Registrar comidas en FatSecret</strong> — Ponlo justo después de cada comida. Si no puedes, al menos 1 vez al día antes de dormir como repaso.</li>
+                <li><strong>Cargar el reloj</strong> — Cada 4-5 días. Pon un recordatorio recurrente (p.ej. "Cargar Amazfit" cada jueves noche).</li>
+                <li><strong>Fotos de progreso mensuales</strong> — El día 1 de cada mes, mismo espejo, misma luz, mañana en ayunas.</li>
+                <li><strong>Mediciones con cinta</strong> — Solo al inicio del plan (31/08/2026) y al final de cada fase. Pon recordatorio en el calendario para esas fechas.</li>
+            </ul>
+
+            <div style="margin-top:20px; font-weight:500; color:var(--text);">Material que necesitas tener listo:</div>
+            <ul>
+                <li><strong>Báscula inteligente</strong> — Que sincronice con Zepp (la Amazfit Smart Scale funciona directo)</li>
+                <li><strong>Cinta métrica flexible</strong> — Para circunferencias (hombros, pecho, cintura, cadera, bíceps, muslo, pantorrilla)</li>
+                <li><strong>Mochila de gym</strong> — Con toalla, botella 1L, auriculares (BT para el timer si sales de la app)</li>
+                <li><strong>Bañador + gafas + gorro</strong> — Para los 2 días de natación (mar/jue)</li>
+            </ul>
+
+            <div style="margin-top:20px; font-weight:500; color:var(--text);">Cosas a preparar la semana antes del inicio (24-30 agosto):</div>
+            <ul>
+                <li><strong>Comprobar horarios de piscina</strong> — Confirmar que tienes clase MAR y JUE</li>
+                <li><strong>Comprar suplementos</strong> — Whey, creatina, vitamina D+K, omega-3, magnesio (ver motor_dieta.md)</li>
+                <li><strong>Hacer la primera medición con cinta</strong> — 7 circunferencias + fotos front/lateral/back</li>
+                <li><strong>Primera semana de FatSecret</strong> — Practica registrar comidas unos días para coger el hábito antes del día 1</li>
+            </ul>
+
+            <div class="tip-box"><strong>Truco para el peso:</strong> Deja la báscula al lado del baño. Rutina: levantarte → baño → báscula → ducha. Así nunca se te olvida.</div>
+            <div class="info-box"><strong>El dato más importante es el PESO diario.</strong> Todo lo demás (grasa, HRV, pasos) se recoge automáticamente del reloj. Pero si no te pesas, la app no puede calcular tendencias ni ajustar macros.</div>
+
+            <label class="check-item" onclick="updateProgress()">
+                <input type="checkbox"><div class="check-box"></div>
+                <span class="check-label">Recordatorio "Pesarme" puesto a las 7:30 AM</span>
+            </label>
+            <label class="check-item" onclick="updateProgress()">
+                <input type="checkbox"><div class="check-box"></div>
+                <span class="check-label">FatSecret instalado y vinculado a Health Connect</span>
+            </label>
+            <label class="check-item" onclick="updateProgress()">
+                <input type="checkbox"><div class="check-box"></div>
+                <span class="check-label">Recordatorio "Cargar reloj" cada jueves noche</span>
+            </label>
+            <label class="check-item" onclick="updateProgress()">
+                <input type="checkbox"><div class="check-box"></div>
+                <span class="check-label">Cinta métrica comprada/localizada</span>
+            </label>
+            <label class="check-item" onclick="updateProgress()">
+                <input type="checkbox"><div class="check-box"></div>
+                <span class="check-label">Horarios piscina confirmados (MAR/JUE)</span>
+            </label>
+            <label class="check-item" onclick="updateProgress()">
+                <input type="checkbox"><div class="check-box"></div>
+                <span class="check-label">Suplementos comprados</span>
+            </label>
+            <label class="check-item" onclick="updateProgress()">
+                <input type="checkbox"><div class="check-box"></div>
+                <span class="check-label">Medición inicial + fotos hechas</span>
             </label>
         </div>
     </div>
@@ -345,11 +524,10 @@ sourceCompatibility = JavaVersion.VERSION_17</code>
 </section>
 
 <div class="footer">
-    FitBase © 2026 · Guía de Despliegue v1.0 · Datos desde /knowledge_base/
+    FitBase © 2026 · Guía de Despliegue v2.0 · Actualizado 24/06/2026
 </div>
 
 <script>
-    // Toggle steps
     function toggleStep(el) {
         const wasOpen = el.classList.contains('open');
         document.querySelectorAll('.step').forEach(s => s.classList.remove('open', 'active'));
@@ -358,28 +536,21 @@ sourceCompatibility = JavaVersion.VERSION_17</code>
         }
     }
 
-    // Auto-open first
-    document.getElementById('step1').classList.add('open', 'active');
-
-    // Copy code
     function copyCode(btn) {
         const code = btn.parentElement.querySelector('code').textContent;
         navigator.clipboard.writeText(code);
-        btn.textContent = '✓ Copiado';
+        btn.textContent = '✓';
         btn.classList.add('copied');
         setTimeout(() => { btn.textContent = 'Copiar'; btn.classList.remove('copied'); }, 2000);
     }
 
-    // Progress
     function updateProgress() {
         setTimeout(() => {
             const total = document.querySelectorAll('.check-item input').length;
             const done = document.querySelectorAll('.check-item input:checked').length;
             const pct = Math.round((done / total) * 100);
             document.getElementById('progressFill').style.width = pct + '%';
-            document.getElementById('progressText').textContent = done + ' de ' + total + ' tareas completadas';
-
-            // Update step status
+            document.getElementById('progressText').textContent = done + ' de ' + total + ' completados';
             document.querySelectorAll('.step').forEach(step => {
                 const checks = step.querySelectorAll('.check-item input');
                 if (checks.length > 0) {

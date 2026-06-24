@@ -20,6 +20,9 @@
     <color name="colorAccentSecondary">#5C8A5C</color>
     <color name="colorSuccess">#2E7D32</color>
     <color name="colorWarning">#F57F17</color>
+    <!-- Aliases for direct R.color usage -->
+    <color name="success">#2E7D32</color>
+    <color name="warning">#F57F17</color>
     <color name="colorError">#C62828</color>
     <color name="colorChart">#546E7A</color>
     <color name="colorChartSecondary">#78909C</color>

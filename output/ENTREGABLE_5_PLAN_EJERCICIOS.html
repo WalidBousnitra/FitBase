@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitBase — Plan de Ejercicios Concreto</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #121212; --surface: #1E1E1E; --surface2: #2C2C2C;
+            --text: #E8EAED; --text2: #9AA0A6; --text3: #5F6368;
+            --accent: #FF5722; --success: #81C784; --warning: #FFB74D;
+            --error: #EF5350; --chart: #78909C;
+            --radius: 12px;
+        }
+        body { font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; padding-bottom: 60px; }
+
+        .hero { min-height: 35vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 60px 20px; border-bottom: 1px solid var(--surface2); }
+        .hero h1 { font-size: clamp(1.8rem,5vw,2.8rem); font-weight: 200; }
+        .hero p { color: var(--text2); margin-top: 12px; max-width: 600px; font-size: 0.95rem; }
+
+        section { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
+        h2 { font-size: 1.4rem; font-weight: 400; margin-bottom: 8px; }
+        .sec-desc { color: var(--text2); font-size: 0.9rem; margin-bottom: 24px; }
+
+        .phase-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 24px; position: sticky; top: 0; z-index: 10; background: var(--bg); padding: 12px 0; }
+        .phase-tab { padding: 8px 16px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; border: 1px solid var(--surface2); color: var(--text2); background: var(--surface); transition: all 0.2s; font-weight: 500; }
+        .phase-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+        .phase-tab:hover { border-color: var(--text3); }
+
+        .day-block { background: var(--surface); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
+        .day-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+        .day-name { font-size: 1.1rem; font-weight: 500; }
+        .day-focus { font-size: 0.8rem; color: var(--text3); background: var(--surface2); padding: 4px 12px; border-radius: 100px; }
+        .day-meta { font-size: 0.75rem; color: var(--text3); margin-top: 4px; }
+
+        .ex-table { width: 100%; border-collapse: separate; border-spacing: 0 3px; }
+        .ex-table th { text-align: left; font-size: 0.7rem; color: var(--text3); text-transform: uppercase; padding: 4px 8px; font-weight: 500; }
+        .ex-table td { padding: 10px 8px; background: var(--bg); font-size: 0.85rem; }
+        .ex-table tr td:first-child { border-radius: 6px 0 0 6px; font-weight: 500; }
+        .ex-table tr td:last-child { border-radius: 0 6px 6px 0; }
+        .ex-table .ss { color: var(--warning); font-size: 0.7rem; font-weight: 600; }
+
+        .volume-summary { background: var(--surface2); border-radius: 8px; padding: 14px; margin-top: 16px; font-size: 0.8rem; }
+        .volume-summary strong { color: var(--text); }
+        .vol-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
+        .vol-chip { background: var(--surface); padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; }
+
+        .phase-content { display: none; }
+        .phase-content.active { display: block; }
+
+        .info-box { background: rgba(129,199,132,0.08); border-left: 3px solid var(--success); border-radius: 8px; padding: 14px 16px; margin: 16px 0; font-size: 0.85rem; color: var(--text2); }
+        .info-box strong { color: var(--success); }
+        .warn-box { background: rgba(255,183,77,0.08); border-left: 3px solid var(--warning); border-radius: 8px; padding: 14px 16px; margin: 16px 0; font-size: 0.85rem; color: var(--text2); }
+        .warn-box strong { color: var(--warning); }
+
+        .changes-list { margin: 12px 0; padding-left: 20px; font-size: 0.85rem; color: var(--text2); }
+        .changes-list li { margin-bottom: 6px; }
+        .changes-list li strong { color: var(--text); }
+
+        .footer { text-align: center; padding: 40px; color: var(--text3); font-size: 0.8rem; border-top: 1px solid var(--surface2); max-width: 900px; margin: 0 auto; }
+    </style>
+</head>
+<body>
+
+<div class="hero">
+    <h1>Ejercicios por Día y Fase</h1>
+    <p>Plan concreto generado desde la knowledge base. Split PPL + Hombros/Brazos (4 gym + 2 natación + 1 descanso).</p>
+</div>
+
+<section>
+    <h2>Fuentes de verdad</h2>
+    <div class="sec-desc">Cada decisión viene de un archivo concreto del knowledge_base.</div>
+    <div class="info-box">
+        <strong>Reglas aplicadas:</strong><br>
+        • Split: <code>programacion.md</code> §12 → PPL variante (4 días, prioridad upper)<br>
+        • Volumen: <code>programacion.md</code> §3 → Schoenfeld 2017 (10+ ser/grupo/sem)<br>
+        • Prioridad: <code>prioridades.md</code> → Hombros > Bíceps > Espalda > Tríceps > Pecho<br>
+        • Ejercicios: <code>preferencias_ejercicios.md</code> → Favoritos + Exclusiones<br>
+        • Equipamiento: <code>equipamiento.md</code> → Fitness Park (inventario completo)<br>
+        • Descanso: <code>programacion.md</code> §5 → Schoenfeld 2016 (3 min > 1 min)<br>
+        • Intensidad: <code>motor_pesos.md</code> §6 → RIR progresivo (Helms 2016)<br>
+        • Postura: <code>evidencia/postura.md</code> → Face pulls, rotación ext., Wall Angel prep<br>
+        • Lesiones: <code>seleccion_ejercicios.md</code> §6 → Codo: evitar extensión completa bajo carga
+    </div>
+</section>
+
+<section>
+    <h2>Split Semanal</h2>
+    <div style="display:grid; grid-template-columns: repeat(7, 1fr); gap:6px; margin:16px 0; text-align:center; font-size:0.75rem;">
+        <div style="background:var(--accent); color:#fff; padding:10px 4px; border-radius:8px;"><strong>LUN</strong><br>PUSH</div>
+        <div style="background:var(--chart); color:#fff; padding:10px 4px; border-radius:8px;"><strong>MAR</strong><br>Nadar</div>
+        <div style="background:var(--success); color:var(--bg); padding:10px 4px; border-radius:8px;"><strong>MIÉ</strong><br>PIERNA</div>
+        <div style="background:var(--chart); color:#fff; padding:10px 4px; border-radius:8px;"><strong>JUE</strong><br>Nadar</div>
+        <div style="background:var(--warning); color:var(--bg); padding:10px 4px; border-radius:8px;"><strong>VIE</strong><br>PULL</div>
+        <div style="background:#9C27B0; color:#fff; padding:10px 4px; border-radius:8px;"><strong>SÁB</strong><br>HOMBR+BRZ</div>
+        <div style="background:var(--surface2); padding:10px 4px; border-radius:8px; color:var(--text3);"><strong>DOM</strong><br>Descanso</div>
+    </div>
+</section>
+
+<section>
+    <h2>Plan por Fase</h2>
+    <p class="sec-desc">Selecciona la fase para ver cómo cambian ejercicios, reps y volumen.</p>
+
+    <div class="phase-tabs">
+        <div class="phase-tab active" onclick="showPhase('adapt')">Adaptación</div>
+        <div class="phase-tab" onclick="showPhase('hiper1')">Hipertrofia I</div>
+        <div class="phase-tab" onclick="showPhase('hiper2')">Hipertrofia II</div>
+        <div class="phase-tab" onclick="showPhase('fuerza')">Fuerza</div>
+        <div class="phase-tab" onclick="showPhase('hiper3')">Hipertrofia III</div>
+        <div class="phase-tab" onclick="showPhase('defin')">Definición</div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- ADAPTACIÓN -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="phase-content active" id="phase-adapt">
+        <div class="warn-box"><strong>ADAPTACIÓN (4 semanas) — 31 ago → 27 sep</strong><br>RIR 4-5 en TODO. Pesos ligeros. Objetivo: preparar tendones, aprender movimientos. Volumen reducido (-20% vs Hipertrofia I).</div>
+
+        <!-- LUNES -->
+        <div class="day-block">
+            <div class="day-header">
+                <div><div class="day-name">Lunes — PUSH</div><div class="day-meta">Pecho + Hombros + Tríceps · ~60 min · RIR 4-5</div></div>
+                <div class="day-focus">16 sets</div>
+            </div>
+            <table class="ex-table">
+                <tr><th>#</th><th>Ejercicio</th><th>Series</th><th>Reps</th><th>Desc.</th><th>Nota</th></tr>
+                <tr><td>1</td><td>Press inclinado mancuernas</td><td>3</td><td>10-12</td><td>2.5'</td><td>Ligero, sentir el pecho</td></tr>
+                <tr><td>2</td><td>Cruces polea alta</td><td>3</td><td>12-15</td><td>1.5'</td><td>Contracción pico</td></tr>
+                <tr><td>3</td><td>Press hombro mancuernas sentado</td><td>3</td><td>10-12</td><td>2'</td><td>Sin dolor de hombro</td></tr>
+                <tr><td>4</td><td>Elevaciones laterales sentado</td><td>3</td><td>15</td><td>1.5'</td><td>Peso mínimo, técnica</td></tr>
+                <tr><td>5</td><td>Press francés banco 30°</td><td>2</td><td>12-15</td><td>1.5'</td><td>⚠️ Rango parcial, codo</td></tr>
+                <tr><td>6</td><td>Extensión unilateral polea</td><td>2</td><td>15</td><td>1'</td><td>Peso ligero</td></tr>
+            </table>
+        </div>
+
+        <!-- MIÉRCOLES -->
+        <div class="day-block">
+            <div class="day-header">
+                <div><div class="day-name">Miércoles — PIERNA + CORE</div><div class="day-meta">Cuádriceps + Isquios + Glúteos + Core · ~60 min · RIR 4-5</div></div>
+                <div class="day-focus">16 sets</div>
+            </div>
+            <table class="ex-table">
+                <tr><th>#</th><th>Ejercicio</th><th>Series</th><th>Reps</th><th>Desc.</th><th>Nota</th></tr>
+                <tr><td>1</td><td>Sentadilla barra</td><td>3</td><td>10-12</td><td>2.5'</td><td>Solo barra + discos ligeros</td></tr>
+                <tr><td>2</td><td>RDL</td><td>3</td><td>10-12</td><td>2.5'</td><td>Aprender hip hinge</td></tr>
+                <tr><td>3</td><td>Hip thrust</td><td>3</td><td>12-15</td><td>2'</td><td>Activación glúteo</td></tr>
+                <tr><td>4</td><td>Extensión cuádriceps</td><td>2</td><td>15</td><td>1.5'</td><td>Máquina, ligero</td></tr>
+                <tr><td>5</td><td>Curl femoral tumbado</td><td>2</td><td>12-15</td><td>1.5'</td><td>—</td></tr>
+                <tr><td>6</td><td>Plancha</td><td>3</td><td>30-45s</td><td>1'</td><td>Core base</td></tr>
+            </table>
+        </div>
+
+        <!-- VIERNES -->
+        <div class="day-block">
+            <div class="day-header">
+                <div><div class="day-name">Viernes — PULL</div><div class="day-meta">Espalda + Bíceps + Postura · ~65 min · RIR 4-5</div></div>
+                <div class="day-focus">17 sets</div>
+            </div>
+            <table class="ex-table">
+                <tr><th>#</th><th>Ejercicio</th><th>Series</th><th>Reps</th><th>Desc.</th><th>Nota</th></tr>
+                <tr><td>1</td><td>Dominadas (asistidas si necesario)</td><td>3</td><td>6-8</td><td>2.5'</td><td>Agarre prono ancho</td></tr>
+                <tr><td>2</td><td>Remo polea agarre neutro</td><td>3</td><td>10-12</td><td>2'</td><td>Favorito</td></tr>
+                <tr><td>3</td><td>Remo unilateral con rotación</td><td>3</td><td>12</td><td>2'</td><td>Aprender rotación</td></tr>
+                <tr><td>4</td><td>Face pulls</td><td>3</td><td>15-20</td><td>1.5'</td><td>Postura: retracción escapular</td></tr>
+                <tr><td>5</td><td>Curl Z de pie</td><td>3</td><td>12</td><td>1.5'</td><td>Peso muy ligero</td></tr>
+                <tr><td>6</td><td>Rotación externa hombro</td><td>2</td><td>15</td><td>1'</td><td>Postura: manguito rotador</td></tr>
+            </table>
+        </div>
+
+        <!-- SÁBADO -->
+        <div class="day-block">
+            <div class="day-header">
+                <div><div class="day-name">Sábado — HOMBROS + BRAZOS</div><div class="day-meta">Deltoides + Bíceps + Tríceps + Postura · ~55 min · RIR 4-5</div></div>
+                <div class="day-focus">14 sets</div>
+            </div>
+            <table class="ex-table">
+                <tr><th>#</th><th>Ejercicio</th><th>Series</th><th>Reps</th><th>Desc.</th><th>Nota</th></tr>
+                <tr><td>1</td><td>Elevaciones laterales polea media</td><td>3</td><td>15</td><td>1.5'</td><td>Favorito, ligero</td></tr>
+                <tr><td>2</td><td>Elevaciones laterales sentado</td><td>2</td><td>15</td><td>1.5'</td><td>Técnica</td></tr>
+                <tr><td>3</td><td>Curl predicador</td><td>3</td><td>12</td><td>1.5'</td><td>Favorito</td></tr>
+                <tr><td>4</td><td>Zottman curl</td><td>2</td><td>12</td><td>1.5'</td><td>Bíceps + antebrazo</td></tr>
+                <tr><td>5</td><td>Extensión unilateral polea</td><td>2</td><td>15</td><td>1.5'</td><td>Codo: rango parcial</td></tr>
+                <tr><td>6</td><td>Face pulls</td><td>2</td><td>15</td><td>1'</td><td>Postura</td></tr>
+            </table>
+        </div>
+
+        <div class="volume-summary">
+            <strong>Volumen semanal (Adaptación — reducido 20%):</strong>
+            <div class="vol-row">
+                <span class="vol-chip">Hombros: 13 ser</span>
+                <span class="vol-chip">Espalda: 12 ser</span>
+                <span class="vol-chip">Bíceps: 8 ser</span>
+                <span class="vol-chip">Tríceps: 6 ser</span>
+                <span class="vol-chip">Pecho: 6 ser</span>
+                <span class="vol-chip">Cuádriceps: 5 ser</span>
+                <span class="vol-chip">Isquios: 5 ser</span>
+                <span class="vol-chip">Core: 3 ser</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- HIPERTROFIA I -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="phase-content" id="phase-hiper1">
+        <div class="info-box"><strong>HIPERTROFIA I (6 semanas) — 28 sep → 8 nov</strong><br>Volumen medio-alto. RIR progresivo: sem1=RIR 3-4, sem2=RIR 2-3, sem3=RIR 1-2, sem4=RIR 3-4, sem5=RIR 2-3, sem6=RIR 1-2. Rango 8-12 reps.</div>
+
+        <!-- LUNES -->
+        <div class="day-block">
+            <div class="day-header">
+                <div><div class="day-name">Lunes — PUSH</div><div class="day-meta">Pecho + Hombros + Tríceps · ~75 min · RIR 2-3</div></div>
+                <div class="day-focus">21 sets</div>
+            </div>
+            <table class="ex-table">
+                <tr><th>#</th><th>Ejercicio</th><th>Series</th><th>Reps</th><th>Desc.</th><th>Nota</th></tr>
+                <tr><td>1</td><td>Press inclinado mancuernas</td><td>4</td><td>8-10</td><td>2.5'</td><td>Compuesto principal</td></tr>
+                <tr><td>2</td><td>Cruces polea alta</td><td>3</td><td>10-12</td><td>2'</td><td>Aislamiento pecho</td></tr>
+                <tr><td>3</td><td>Press hombro mancuernas sentado</td><td>3</td><td>8-10</td><td>2.5'</td><td>Deltoides ant+med</td></tr>
+                <tr><td>4</td><td>Elevaciones laterales sentado</td><td>4</td><td>12-15</td><td>1.5'</td><td><span class="ss">SS con #5</span></td></tr>
+                <tr><td>5</td><td>Press francés banco 30°</td><td>4</td><td>10-12</td><td>1.5'</td><td>⚠️ Rango parcial, codo</td></tr>
+                <tr><td>6</td><td>Extensión unilateral polea</td><td>3</td><td>12-15</td><td>—</td><td><span class="ss">SS con #4 (rondas 2-4)</span></td></tr>
+            </table>
+        </div>
+
+        <!-- MIÉRCOLES -->
+        <div class="day-block">
+            <div class="day-header">
+                <div><div class="day-name">Miércoles — PIERNA + CORE</div><div class="day-meta">Cuádriceps + Isquios + Glúteos + Core · ~75 min · RIR 2-3</div></div>
+                <div class="day-focus">22 sets</div>
+            </div>
+            <table class="ex-table">
+                <tr><th>#</th><th>Ejercicio</th><th>Series</th><th>Reps</th><th>Desc.</th><th>Nota</th></tr>
+                <tr><td>1</td><td>Sentadilla barra</td><td>4</td><td>6-8</td><td>3'</td><td>Compuesto principal</td></tr>
+                <tr><td>2</td><td>RDL</td><td>4</td><td>8-10</td><td>2.5'</td><td>Isquios + glúteo</td></tr>
+                <tr><td>3</td><td>Hip thrust</td><td>3</td><td>10-12</td><td>2'</td><td>Glúteos</td></tr>
+                <tr><td>4</td><td>Extensión cuádriceps</td><td>3</td><td>12-15</td><td>—</td><td><span class="ss">SS con #5</span></td></tr>
+                <tr><td>5</td><td>Curl femoral tumbado</td><td>3</td><td>10-12</td><td>1.5'</td><td>Isquios extra</td></tr>
+                <tr><td>6</td><td>Hollow hold / rock</td><td>3</td><td>30-45s</td><td>—</td><td><span class="ss">SS con #7</span></td></tr>
+                <tr><td>7</td><td>Press Pallof</td><td>2</td><td>12/lado</td><td>1'</td><td>Anti-rotación</td></tr>
+            </table>
+        </div>
+
+        <!-- VIERNES -->
+        <div class="day-block">
+            <div class="day-header">
+                <div><div class="day-name">Viernes — PULL</div><div class="day-meta">Espalda + Bíceps + Postura · ~80 min · RIR 2-3</div></div>
+                <div class="day-focus">23 sets</div>
+            </div>
+            <table class="ex-table">
+                <tr><th>#</th><th>Ejercicio</th><th>Series</th><th>Reps</th><th>Desc.</th><th>Nota</th></tr>
+                <tr><td>1</td><td>Dominadas (asistidas→libres)</td><td>4</td><td>6-8</td><td>2.5'</td><td>Tirón vertical</td></tr>
+                <tr><td>2</td><td>Remo polea agarre neutro</td><td>4</td><td>8-10</td><td>2.5'</td><td>Tirón horizontal</td></tr>
+                <tr><td>3</td><td>Remo unilateral con rotación</td><td>3</td><td>10-12</td><td>2'</td><td>Espalda media</td></tr>
+                <tr><td>4</td><td>Kelso shrug</td><td>3</td><td>12-15</td><td>—</td><td><span class="ss">SS con #5</span></td></tr>
+                <tr><td>5</td><td>Face pulls</td><td>3</td><td>15-20</td><td>1.5'</td><td>Postura + rear delt</td></tr>
+                <tr><td>6</td><td>Curl Z de pie</td><td>3</td><td>8-10</td><td>—</td><td><span class="ss">SS con #7</span></td></tr>
+                <tr><td>7</td><td>Zottman curl</td><td>3</td><td>10-12</td><td>1.5'</td><td>Bíceps + antebrazo</td></tr>
+            </table>
+        </div>
+
+        <!-- SÁBADO -->
+        <div class="day-block">
+            <div class="day-header">
+                <div><div class="day-name">Sábado — HOMBROS + BRAZOS + POSTURA</div><div class="day-meta">Deltoides + Bíceps + Tríceps + Correctivos · ~70 min · RIR 2-3</div></div>
+                <div class="day-focus">21 sets</div>
+            </div>
+            <table class="ex-table">
+                <tr><th>#</th><th>Ejercicio</th><th>Series</th><th>Reps</th><th>Desc.</th><th>Nota</th></tr>
+                <tr><td>1</td><td>Elevaciones laterales polea media</td><td>4</td><td>12-15</td><td>1.5'</td><td>Deltoides medial</td></tr>
+                <tr><td>2</td><td>Elevaciones laterales sentado</td><td>3</td><td>12-15</td><td>—</td><td><span class="ss">SS con #3</span></td></tr>
+                <tr><td>3</td><td>Curl predicador</td><td>3</td><td>10-12</td><td>1.5'</td><td>Bíceps pico</td></tr>
+                <tr><td>4</td><td>Curl Z de pie</td><td>3</td><td>8-10</td><td>—</td><td><span class="ss">SS con #5</span></td></tr>
+                <tr><td>5</td><td>Extensión unilateral polea</td><td>3</td><td>12-15</td><td>1.5'</td><td>Rango parcial (codo)</td></tr>
+                <tr><td>6</td><td>Rotación externa hombro</td><td>2</td><td>15</td><td>—</td><td><span class="ss">SS con #7</span></td></tr>
+                <tr><td>7</td><td>Face pulls</td><td>3</td><td>15-20</td><td>1'</td><td>Postura + rear delt</td></tr>
+            </table>
+        </div>
+
+        <div class="volume-summary">
+            <strong>Volumen semanal (Hipertrofia I — estándar):</strong>
+            <div class="vol-row">
+                <span class="vol-chip" style="border-left:2px solid var(--accent)">Hombros: 17 ser</span>
+                <span class="vol-chip" style="border-left:2px solid var(--success)">Espalda: 14 ser</span>
+                <span class="vol-chip" style="border-left:2px solid var(--warning)">Bíceps: 12 ser</span>
+                <span class="vol-chip">Tríceps: 10 ser</span>
+                <span class="vol-chip">Pecho: 7 ser</span>
+                <span class="vol-chip">Cuádriceps: 7 ser</span>
+                <span class="vol-chip">Isquios: 7 ser</span>
+                <span class="vol-chip">Core: 5 ser</span>
+            </div>
+            <div style="margin-top:8px; font-size:0.75rem; color:var(--text3);">
+                Pecho intencionalmente bajo (P5 en prioridades). Piernas en mantenimiento (P7). Hombros y espalda maximizados (P1-P3 = V-taper).
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- HIPERTROFIA II -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="phase-content" id="phase-hiper2">
+        <div class="info-box"><strong>HIPERTROFIA II — Pecho + Brazos (6 semanas) — 16 nov → 27 dic</strong><br>Especialización: +3 series pecho, +2 bíceps extra. Mismo split, más trabajo en Push + Sábado.</div>
+
+        <div class="changes-list">
+            <strong>Cambios vs Hipertrofia I:</strong>
+            <ul>
+                <li><strong>LUNES:</strong> Añade "Fondos" 3×8-10 (si no hay dolor hombro) → Pecho sube a 10</li>
+                <li><strong>SÁBADO:</strong> Añade "Curl inclinado mancuernas" 3×10-12 → Bíceps sube a 15</li>
+                <li><strong>SÁBADO:</strong> Añade "Press francés banco 30°" 2×10-12 → Tríceps sube a 12</li>
+                <li>Sesiones suben a ~80-85 min (SÁB puede ir a 80)</li>
+            </ul>
+        </div>
+
+        <!-- LUNES HIPER2 -->
+        <div class="day-block">
+            <div class="day-header">
+                <div><div class="day-name">Lunes — PUSH (+ Pecho extra)</div><div class="day-meta">~80 min · RIR 1-2</div></div>
+                <div class="day-focus">24 sets</div>
+            </div>
+            <table class="ex-table">
+                <tr><th>#</th><th>Ejercicio</th><th>Series</th><th>Reps</th><th>Desc.</th><th>Nota</th></tr>
+                <tr><td>1</td><td>Press inclinado mancuernas</td><td>4</td><td>8-10</td><td>2.5'</td><td>Compuesto principal</td></tr>
+                <tr><td>2</td><td>Cruces polea alta</td><td>3</td><td>10-12</td><td>2'</td><td>Aislamiento pecho</td></tr>
+                <tr><td>3</td><td style="color:var(--accent)">Fondos (lastre progresivo)</td><td>3</td><td>8-10</td><td>2.5'</td><td style="color:var(--accent)">NUEVO — especialización</td></tr>
+                <tr><td>4</td><td>Press hombro mancuernas sentado</td><td>3</td><td>8-10</td><td>2.5'</td><td>—</td></tr>
+                <tr><td>5</td><td>Elevaciones laterales sentado</td><td>4</td><td>12-15</td><td>—</td><td><span class="ss">SS con #6</span></td></tr>
+                <tr><td>6</td><td>Press francés banco 30°</td><td>4</td><td>10-12</td><td>1.5'</td><td>—</td></tr>
+                <tr><td>7</td><td>Extensión unilateral polea</td><td>3</td><td>12-15</td><td>—</td><td><span class="ss">SS con #5</span></td></tr>
+            </table>
+        </div>
+
+        <!-- SÁBADO HIPER2 -->
+        <div class="day-block">
+            <div class="day-header">
+                <div><div class="day-name">Sábado — HOMBROS + BRAZOS (+ Bíceps extra)</div><div class="day-meta">~80 min · RIR 1-2</div></div>
+                <div class="day-focus">26 sets</div>
+            </div>
+            <table class="ex-table">
+                <tr><th>#</th><th>Ejercicio</th><th>Series</th><th>Reps</th><th>Desc.</th><th>Nota</th></tr>
+                <tr><td>1</td><td>Elevaciones laterales polea media</td><td>4</td><td>12-15</td><td>1.5'</td><td>—</td></tr>
+                <tr><td>2</td><td>Elevaciones laterales sentado</td><td>3</td><td>12-15</td><td>—</td><td><span class="ss">SS con #3</span></td></tr>
+                <tr><td>3</td><td>Curl predicador</td><td>3</td><td>10-12</td><td>1.5'</td><td>—</td></tr>
+                <tr><td>4</td><td>Curl Z de pie</td><td>3</td><td>8-10</td><td>—</td><td><span class="ss">SS con #5</span></td></tr>
+                <tr><td>5</td><td>Extensión unilateral polea</td><td>3</td><td>12-15</td><td>1.5'</td><td>—</td></tr>
+                <tr><td>6</td><td style="color:var(--accent)">Curl inclinado mancuernas</td><td>3</td><td>10-12</td><td>—</td><td style="color:var(--accent)"><span class="ss">NUEVO SS con #7</span></td></tr>
+                <tr><td>7</td><td style="color:var(--accent)">Press francés banco 30°</td><td>2</td><td>10-12</td><td>1.5'</td><td style="color:var(--accent)">NUEVO</td></tr>
+                <tr><td>8</td><td>Rotación externa + Face pulls</td><td>3+2</td><td>15</td><td>1'</td><td>Postura</td></tr>
+            </table>
+        </div>
+
+        <div class="volume-summary">
+            <strong>Volumen semanal (Hipertrofia II — especialización Pecho+Brazos):</strong>
+            <div class="vol-row">
+                <span class="vol-chip" style="border-left:2px solid var(--accent)">Hombros: 17</span>
+                <span class="vol-chip" style="border-left:2px solid var(--success)">Espalda: 14</span>
+                <span class="vol-chip" style="border-left:2px solid var(--warning); font-weight:600;">Bíceps: 15 ↑</span>
+                <span class="vol-chip" style="font-weight:600;">Tríceps: 12 ↑</span>
+                <span class="vol-chip" style="font-weight:600;">Pecho: 10 ↑</span>
+                <span class="vol-chip">Cuádriceps: 7</span>
+                <span class="vol-chip">Isquios: 7</span>
+                <span class="vol-chip">Core: 5</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- FUERZA -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="phase-content" id="phase-fuerza">
+        <div class="warn-box"><strong>FUERZA (6 semanas) — 4 ene → 14 feb</strong><br>Reps: 4-6 en compuestos. Descansos: 3-5 min. Menos aislamiento, más carga. RIR 1-3.</div>
+
+        <div class="changes-list">
+            <strong>Cambios vs Hipertrofia I:</strong>
+            <ul>
+                <li><strong>Reps bajan</strong> a 4-6 en compuestos, 6-8 en accesorios</li>
+                <li><strong>Descansos suben</strong> a 3-5 min en compuestos</li>
+                <li><strong>Menos ejercicios</strong> por sesión (más tiempo por set)</li>
+                <li><strong>Volumen baja</strong> ~20% pero intensidad sube mucho</li>
+                <li><strong>Sábado</strong> se simplifica: press militar barra + curl pesado</li>
+            </ul>
+        </div>
+
+        <!-- LUNES FUERZA -->
+        <div class="day-block">
+            <div class="day-header">
+                <div><div class="day-name">Lunes — PUSH (Fuerza)</div><div class="day-meta">Compuestos pesados · ~70 min · RIR 1-3</div></div>
+                <div class="day-focus">16 sets</div>
+            </div>
+            <table class="ex-table">
+                <tr><th>#</th><th>Ejercicio</th><th>Series</th><th>Reps</th><th>Desc.</th><th>Nota</th></tr>
+                <tr><td>1</td><td>Press inclinado mancuernas</td><td>5</td><td>4-6</td><td>3-4'</td><td>Carga alta, técnica perfecta</td></tr>
+                <tr><td>2</td><td>Press hombro mancuernas sentado</td><td>4</td><td>5-7</td><td>3'</td><td>Pesado</td></tr>
+                <tr><td>3</td><td>Elevaciones laterales sentado</td><td>4</td><td>10-12</td><td>1.5'</td><td>Volumen mantener</td></tr>
+                <tr><td>4</td><td>Press francés banco 30°</td><td>3</td><td>6-8</td><td>2'</td><td>Más carga, menos reps</td></tr>
+            </table>
+        </div>
+
+        <!-- MIÉRCOLES FUERZA -->
+        <div class="day-block">
+            <div class="day-header">
+                <div><div class="day-name">Miércoles — PIERNA (Fuerza)</div><div class="day-meta">Compuestos pesados · ~70 min · RIR 1-3</div></div>
+                <div class="day-focus">15 sets</div>
+            </div>
+            <table class="ex-table">
+                <tr><th>#</th><th>Ejercicio</th><th>Series</th><th>Reps</th><th>Desc.</th><th>Nota</th></tr>
+                <tr><td>1</td><td>Sentadilla barra</td><td>5</td><td>4-6</td><td>4-5'</td><td>Compuesto rey</td></tr>
+                <tr><td>2</td><td>RDL</td><td>4</td><td>5-7</td><td>3'</td><td>Pesado</td></tr>
+                <tr><td>3</td><td>Hip thrust</td><td>3</td><td>6-8</td><td>2.5'</td><td>Carga alta</td></tr>
+                <tr><td>4</td><td>Plancha lastrada</td><td>3</td><td>45-60s</td><td>1.5'</td><td>Core anti-extensión</td></tr>
+            </table>
+        </div>
+
+        <!-- VIERNES FUERZA -->
+        <div class="day-block">
+            <div class="day-header">
+                <div><div class="day-name">Viernes — PULL (Fuerza)</div><div class="day-meta">Tirón pesado · ~75 min · RIR 1-3</div></div>
+                <div class="day-focus">17 sets</div>
+            </div>
+            <table class="ex-table">
+                <tr><th>#</th><th>Ejercicio</th><th>Series</th><th>Reps</th><th>Desc.</th><th>Nota</th></tr>
+                <tr><td>1</td><td>Dominadas lastradas</td><td>5</td><td>4-6</td><td>3-4'</td><td>Tirón vertical pesado</td></tr>
+                <tr><td>2</td><td>Remo polea agarre neutro</td><td>4</td><td>6-8</td><td>3'</td><td>Pesado</td></tr>
+                <tr><td>3</td><td>Remo unilateral con rotación</td><td>3</td><td>8-10</td><td>2.5'</td><td>—</td></tr>
+                <tr><td>4</td><td>Curl Z de pie</td><td>3</td><td>6-8</td><td>2'</td><td>Pesado</td></tr>
+                <tr><td>5</td><td>Face pulls</td><td>2</td><td>15</td><td>1'</td><td>Postura (mantenimiento)</td></tr>
+            </table>
+        </div>
+
+        <!-- SÁBADO FUERZA -->
+        <div class="day-block">
+            <div class="day-header">
+                <div><div class="day-name">Sábado — HOMBROS + BRAZOS (Fuerza)</div><div class="day-meta">Press pesado + curls · ~60 min · RIR 1-3</div></div>
+                <div class="day-focus">15 sets</div>
+            </div>
+            <table class="ex-table">
+                <tr><th>#</th><th>Ejercicio</th><th>Series</th><th>Reps</th><th>Desc.</th><th>Nota</th></tr>
+                <tr><td>1</td><td>Press militar barra de pie</td><td>4</td><td>5-7</td><td>3'</td><td>Compuesto hombros pesado</td></tr>
+                <tr><td>2</td><td>Elevaciones laterales polea media</td><td>4</td><td>10-12</td><td>1.5'</td><td>Volumen medial</td></tr>
+                <tr><td>3</td><td>Curl predicador</td><td>4</td><td>6-8</td><td>2'</td><td>Pesado</td></tr>
+                <tr><td>4</td><td>Extensión unilateral polea</td><td>3</td><td>8-10</td><td>2'</td><td>—</td></tr>
+            </table>
+        </div>
+
+        <div class="volume-summary">
+            <strong>Volumen semanal (Fuerza — reducido, intensidad alta):</strong>
+            <div class="vol-row">
+                <span class="vol-chip">Hombros: 12 ↓</span>
+                <span class="vol-chip">Espalda: 12 ↓</span>
+                <span class="vol-chip">Bíceps: 7 ↓</span>
+                <span class="vol-chip">Tríceps: 6 ↓</span>
+                <span class="vol-chip">Pecho: 5 ↓</span>
+                <span class="vol-chip">Cuádriceps: 5</span>
+                <span class="vol-chip">Isquios: 4</span>
+                <span class="vol-chip">Core: 3</span>
+            </div>
+            <div style="margin-top:8px; font-size:0.75rem; color:var(--text3);">
+                Volumen total baja ~30% vs hipertrofia. Compensado con intensidad +++ y descansos largos. El sistema nervioso se adapta a cargas altas.
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- HIPERTROFIA III -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="phase-content" id="phase-hiper3">
+        <div class="info-box"><strong>HIPERTROFIA III — Piernas + Core (6 semanas) — 15 feb → 28 mar</strong><br>Especialización inferior: +3 series pierna, +3 core. Upper mantiene. RIR progresivo estándar.</div>
+
+        <div class="changes-list">
+            <strong>Cambios vs Hipertrofia I:</strong>
+            <ul>
+                <li><strong>MIÉRCOLES:</strong> Añade "Leg press" 3×10-12 y "Plancha" 3 sets → Cuádriceps sube a 10, Core sube a 8</li>
+                <li><strong>MIÉRCOLES:</strong> Sesión sube a ~85 min (la más larga)</li>
+                <li>Upper body se mantiene igual que Hipertrofia I</li>
+            </ul>
+        </div>
+
+        <!-- MIÉRCOLES HIPER3 -->
+        <div class="day-block">
+            <div class="day-header">
+                <div><div class="day-name">Miércoles — PIERNA + CORE (Especialización)</div><div class="day-meta">~85 min · RIR 1-2</div></div>
+                <div class="day-focus">28 sets</div>
+            </div>
+            <table class="ex-table">
+                <tr><th>#</th><th>Ejercicio</th><th>Series</th><th>Reps</th><th>Desc.</th><th>Nota</th></tr>
+                <tr><td>1</td><td>Sentadilla barra</td><td>4</td><td>6-8</td><td>3'</td><td>Compuesto principal</td></tr>
+                <tr><td>2</td><td>RDL</td><td>4</td><td>8-10</td><td>2.5'</td><td>Isquios</td></tr>
+                <tr><td>3</td><td style="color:var(--accent)">Leg press</td><td>3</td><td>10-12</td><td>2'</td><td style="color:var(--accent)">NUEVO — cuádriceps extra</td></tr>
+                <tr><td>4</td><td>Hip thrust</td><td>3</td><td>10-12</td><td>2'</td><td>Glúteos</td></tr>
+                <tr><td>5</td><td>Extensión cuádriceps</td><td>3</td><td>12-15</td><td>—</td><td><span class="ss">SS con #6</span></td></tr>
+                <tr><td>6</td><td>Curl femoral tumbado</td><td>3</td><td>10-12</td><td>1.5'</td><td>—</td></tr>
+                <tr><td>7</td><td>Hollow hold / rock</td><td>3</td><td>30-45s</td><td>—</td><td><span class="ss">SS con #8</span></td></tr>
+                <tr><td>8</td><td>Press Pallof</td><td>3</td><td>12/lado</td><td>—</td><td><span class="ss">SS con #9</span></td></tr>
+                <tr><td>9</td><td style="color:var(--accent)">Plancha lastrada</td><td>2</td><td>45-60s</td><td>1'</td><td style="color:var(--accent)">NUEVO — core extra</td></tr>
+            </table>
+        </div>
+
+        <div class="volume-summary">
+            <strong>Volumen semanal (Hipertrofia III — especialización Pierna+Core):</strong>
+            <div class="vol-row">
+                <span class="vol-chip">Hombros: 17</span>
+                <span class="vol-chip">Espalda: 14</span>
+                <span class="vol-chip">Bíceps: 12</span>
+                <span class="vol-chip">Tríceps: 10</span>
+                <span class="vol-chip">Pecho: 7</span>
+                <span class="vol-chip" style="font-weight:600;">Cuádriceps: 10 ↑</span>
+                <span class="vol-chip" style="font-weight:600;">Isquios: 7</span>
+                <span class="vol-chip" style="font-weight:600;">Core: 8 ↑</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- DEFINICIÓN -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="phase-content" id="phase-defin">
+        <div class="warn-box"><strong>DEFINICIÓN (6 semanas) — 5 abr → 16 may</strong><br>Déficit -20% kcal (2460 kcal). Volumen mantenido. Más superseries. HIIT 2x/sem. Proteína sube a 2.4g/kg. RIR 1-2 (intensidad alta para preservar músculo).</div>
+
+        <div class="changes-list">
+            <strong>Cambios vs Hipertrofia I:</strong>
+            <ul>
+                <li><strong>Reps suben</strong> ligeramente (10-15) en aislamiento para quemar más</li>
+                <li><strong>Todo en superseries</strong> (menos los compuestos principales)</li>
+                <li><strong>HIIT</strong>: 2x/sem post-natación (MAR y JUE) → 15 min bici intervalos</li>
+                <li><strong>Descansos bajan</strong> en accesorios (más densidad metabólica)</li>
+                <li><strong>Volumen se mantiene</strong> — NO reducir (Helms 2014: mantener volumen en déficit)</li>
+                <li><strong>Pesos pueden bajar</strong> 5-10% por el déficit — es normal</li>
+            </ul>
+        </div>
+
+        <!-- LUNES DEF -->
+        <div class="day-block">
+            <div class="day-header">
+                <div><div class="day-name">Lunes — PUSH (Definición)</div><div class="day-meta">Todo en SS donde posible · ~70 min · RIR 1-2</div></div>
+                <div class="day-focus">21 sets</div>
+            </div>
+            <table class="ex-table">
+                <tr><th>#</th><th>Ejercicio</th><th>Series</th><th>Reps</th><th>Desc.</th><th>Nota</th></tr>
+                <tr><td>1</td><td>Press inclinado mancuernas</td><td>4</td><td>8-10</td><td>2.5'</td><td>Mantener carga</td></tr>
+                <tr><td>2</td><td>Cruces polea alta</td><td>3</td><td>12-15</td><td>—</td><td><span class="ss">SS con #3</span></td></tr>
+                <tr><td>3</td><td>Press hombro mancuernas</td><td>3</td><td>8-10</td><td>2'</td><td>—</td></tr>
+                <tr><td>4</td><td>Elevaciones laterales sentado</td><td>4</td><td>15</td><td>—</td><td><span class="ss">SS con #5</span></td></tr>
+                <tr><td>5</td><td>Press francés banco 30°</td><td>4</td><td>12-15</td><td>1'</td><td>Reps más altas</td></tr>
+                <tr><td>6</td><td>Extensión unilateral polea</td><td>3</td><td>15</td><td>—</td><td><span class="ss">SS con #4 (rondas 2-4)</span></td></tr>
+            </table>
+        </div>
+
+        <div class="day-block" style="border-left:3px solid var(--chart);">
+            <div class="day-header">
+                <div><div class="day-name">Martes/Jueves — Natación + HIIT</div><div class="day-meta">Clase natación 60 min + 15 min HIIT post</div></div>
+                <div class="day-focus">HIIT</div>
+            </div>
+            <table class="ex-table">
+                <tr><th>#</th><th>Ejercicio</th><th>Tiempo</th><th>Intensidad</th><th>Nota</th></tr>
+                <tr><td>1</td><td>Natación (clase)</td><td>60 min</td><td>Media</td><td>Normal</td></tr>
+                <tr><td>2</td><td>Bicicleta estática — intervalos</td><td>15 min</td><td>30s sprint / 60s suave</td><td>Post-nadar · Wilson 2012: bici no interfiere</td></tr>
+            </table>
+        </div>
+
+        <div class="volume-summary">
+            <strong>Volumen semanal (Definición):</strong>
+            <div class="vol-row">
+                <span class="vol-chip">Hombros: 17 (mantener)</span>
+                <span class="vol-chip">Espalda: 14 (mantener)</span>
+                <span class="vol-chip">Bíceps: 12 (mantener)</span>
+                <span class="vol-chip">Tríceps: 10 (mantener)</span>
+                <span class="vol-chip">Pecho: 7 (mantener)</span>
+                <span class="vol-chip" style="border-left:2px solid var(--error)">HIIT: 2x/sem</span>
+                <span class="vol-chip" style="border-left:2px solid var(--error)">Kcal: 2460 (-20%)</span>
+            </div>
+            <div style="margin-top:8px; font-size:0.75rem; color:var(--text3);">
+                Helms 2014: "En déficit, mantener volumen e intensidad. Reducir volumen = perder músculo." Acepta que el peso en barra baje 5-10%.
+            </div>
+        </div>
+    </div>
+
+</section>
+
+<!-- DELOAD -->
+<section>
+    <h2>Semanas Deload</h2>
+    <p class="sec-desc">Cada 4-6 semanas. Bompa 2009: -40% volumen, mantener intensidad.</p>
+    <div class="day-block">
+        <div class="day-header">
+            <div><div class="day-name">Regla universal para DELOAD</div></div>
+        </div>
+        <div class="changes-list">
+            <ul>
+                <li><strong>Mismos ejercicios</strong> que la semana anterior</li>
+                <li><strong>Mismo peso</strong> (o -10% si hay fatiga)</li>
+                <li><strong>-40% de series</strong>: si hacías 4 series → haz 2-3</li>
+                <li><strong>RIR 4-5</strong>: todo se siente fácil</li>
+                <li><strong>Sesiones de ~45-50 min</strong></li>
+                <li><strong>Natación normal</strong> (es recuperación activa)</li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<!-- DATOS PARA GOOGLE SHEETS -->
+<section>
+    <h2>Macros por Fase</h2>
+    <p class="sec-desc">Calorías y macronutrientes cambian según la fase. Fuente: Iraki 2019, Helms 2014 (motor_dieta.md)</p>
+
+    <div class="day-block" style="overflow-x:auto;">
+        <table class="ex-table">
+            <tr><th>Fase</th><th>Kcal</th><th>Proteína</th><th>Carbos</th><th>Grasa</th><th>Agua</th><th>Objetivo</th></tr>
+            <tr><td>Adaptación</td><td>3280</td><td>156g (2.0g/kg)</td><td>488g</td><td>78g</td><td>3.2L</td><td>Bulk +15%</td></tr>
+            <tr><td>Hipertrofia I</td><td>3280</td><td>156g (2.0g/kg)</td><td>488g</td><td>78g</td><td>3.2L</td><td>Bulk +15%</td></tr>
+            <tr><td style="color:var(--text3)">Deload 1</td><td style="color:var(--text3)">3100</td><td style="color:var(--text3)">156g</td><td style="color:var(--text3)">430g</td><td style="color:var(--text3)">78g</td><td style="color:var(--text3)">3L</td><td style="color:var(--text3)">Mantener (menos gasto)</td></tr>
+            <tr><td>Hipertrofia II</td><td>3280</td><td>156g (2.0g/kg)</td><td>488g</td><td>78g</td><td>3.2L</td><td>Bulk +15%</td></tr>
+            <tr><td style="color:var(--text3)">Deload 2</td><td style="color:var(--text3)">3100</td><td style="color:var(--text3)">156g</td><td style="color:var(--text3)">430g</td><td style="color:var(--text3)">78g</td><td style="color:var(--text3)">3L</td><td style="color:var(--text3)">Mantener</td></tr>
+            <tr><td>Fuerza</td><td>3280</td><td>156g (2.0g/kg)</td><td>488g</td><td>78g</td><td>3.2L</td><td>Bulk +15%</td></tr>
+            <tr><td>Hipertrofia III</td><td>3280</td><td>156g (2.0g/kg)</td><td>488g</td><td>78g</td><td>3.2L</td><td>Bulk +15%</td></tr>
+            <tr><td style="color:var(--text3)">Deload 3</td><td style="color:var(--text3)">3100</td><td style="color:var(--text3)">156g</td><td style="color:var(--text3)">430g</td><td style="color:var(--text3)">78g</td><td style="color:var(--text3)">3L</td><td style="color:var(--text3)">Mantener</td></tr>
+            <tr style="background:rgba(239,83,80,0.1);"><td style="color:var(--error);font-weight:500">Definición</td><td style="color:var(--error)">2460</td><td style="color:var(--error)">187g (2.4g/kg)</td><td style="color:var(--error)">260g</td><td style="color:var(--error)">65g</td><td>3.5L</td><td style="color:var(--error)">Cut -20%</td></tr>
+            <tr><td>Peak + Mantenimiento</td><td>3050</td><td>156g (2.0g/kg)</td><td>420g</td><td>75g</td><td>3.2L</td><td>Mantener +5%</td></tr>
+        </table>
+    </div>
+    <div class="warn-box"><strong>En Definición:</strong> Proteína sube a 2.4g/kg para preservar músculo en déficit (Helms 2014). Carbos bajan más que grasas (mantener hormonas). Agua sube para compensar retención.</div>
+</section>
+
+<!-- PLAN ANUAL COMPLETO PARA SHEETS -->
+<section>
+    <h2>Plan Anual Completo (plan_anual)</h2>
+    <p class="sec-desc">Las 10 fases con fechas exactas. Copiar a la hoja <code>plan_anual</code>.</p>
+
+    <div class="day-block" style="overflow-x:auto;">
+        <pre style="font-family:'Consolas',monospace; font-size:0.72rem; color:var(--success); white-space:pre; overflow-x:auto; padding:12px; background:var(--bg); border-radius:8px; border:1px solid var(--surface2);">
+fase_id,nombre,tipo,fecha_inicio,fecha_fin,semanas,rir_rango,foco,objetivo_nutri,kcal,prot_g,carb_g,fat_g
+FAS_01,Adaptación,VOL,2026-08-31,2026-09-27,4,4-5,General,bulk,3280,156,488,78
+FAS_02,Hipertrofia I,VOL,2026-09-28,2026-11-08,6,2-3→1-2,Hombros Espalda,bulk,3280,156,488,78
+FAS_03,Deload 1,DELOAD,2026-11-09,2026-11-15,1,4-5,General,mantener,3100,156,430,78
+FAS_04,Hipertrofia II,VOL,2026-11-16,2026-12-27,6,2-3→1-2,Pecho Brazos,bulk,3280,156,488,78
+FAS_05,Deload 2,DELOAD,2026-12-28,2027-01-03,1,4-5,General,mantener,3100,156,430,78
+FAS_06,Fuerza,FZA,2027-01-04,2027-02-14,6,1-3,Compuestos,bulk,3280,156,488,78
+FAS_07,Hipertrofia III,VOL,2027-02-15,2027-03-28,6,2-3→1-2,Piernas Core,bulk,3280,156,488,78
+FAS_08,Deload 3,DELOAD,2027-03-29,2027-04-04,1,4-5,General,mantener,3100,156,430,78
+FAS_09,Definición,DEF,2027-04-05,2027-05-16,6,1-2,Mantener masa,cut,2460,187,260,65
+FAS_10,Peak + Mantenimiento,MNT,2027-05-17,2027-07-31,11,2-3,General,mantener,3050,156,420,75</pre>
+    </div>
+</section>
+
+<!-- TEMPLATES POR FASE PARA SHEETS -->
+<section>
+    <h2>Templates de Sesión por Fase</h2>
+    <p class="sec-desc">Cada fase usa un template de ejercicios diferente. La función <code>generarPlanCompleto()</code> mapea fecha → fase → template.</p>
+
+    <div class="day-block" style="overflow-x:auto;">
+        <div class="day-header"><div class="day-name">Mapa: qué template usa cada fase</div></div>
+        <table class="ex-table">
+            <tr><th>Fase</th><th>Template PUSH</th><th>Template PIERNA</th><th>Template PULL</th><th>Template HOMBR</th></tr>
+            <tr><td>Adaptación</td><td>PUSH_ADAPT</td><td>PIERNA_ADAPT</td><td>PULL_ADAPT</td><td>HOMBR_ADAPT</td></tr>
+            <tr><td>Hipertrofia I</td><td>PUSH_H1</td><td>PIERNA_H1</td><td>PULL_H1</td><td>HOMBR_H1</td></tr>
+            <tr><td>Hipertrofia II</td><td>PUSH_H2</td><td>PIERNA_H1</td><td>PULL_H1</td><td>HOMBR_H2</td></tr>
+            <tr><td>Fuerza</td><td>PUSH_FZA</td><td>PIERNA_FZA</td><td>PULL_FZA</td><td>HOMBR_FZA</td></tr>
+            <tr><td>Hipertrofia III</td><td>PUSH_H1</td><td>PIERNA_H3</td><td>PULL_H1</td><td>HOMBR_H1</td></tr>
+            <tr><td>Definición</td><td>PUSH_DEF</td><td>PIERNA_H1</td><td>PULL_H1</td><td>HOMBR_H1</td></tr>
+            <tr><td>Peak/Mant.</td><td>PUSH_H1</td><td>PIERNA_H1</td><td>PULL_H1</td><td>HOMBR_H1</td></tr>
+            <tr><td style="color:var(--text3)">Deloads</td><td colspan="4" style="color:var(--text3)">Mismo template que fase anterior pero series ×0.6 y RIR 4-5</td></tr>
+        </table>
+    </div>
+    <div class="info-box"><strong>Lógica clave:</strong> La mayoría de fases usan los mismos ejercicios (Hipertrofia I = template base). Solo cambian: Adaptación (menos sets), Fuerza (menos reps, más descanso), Hipertrofia II (+pecho/brazos), Hipertrofia III (+pierna/core), Definición (+superseries).</div>
+</section>
+
+<!-- CSV COMPLETO DE TODOS LOS TEMPLATES -->
+<section>
+    <h2>Datos para ejercicios_plan (Google Sheets)</h2>
+    <p class="sec-desc">TODOS los templates. La función <code>generarPlanCompleto()</code> los replica para cada semana del año asignando la fecha y el RIR correspondiente.</p>
+
+    <div class="day-block" style="overflow-x:auto;">
+        <div class="day-header"><div class="day-name">CSV Completo — Todos los Templates por Fase</div></div>
+        <pre style="font-family:'Consolas',monospace; font-size:0.72rem; color:var(--success); white-space:pre; overflow-x:auto; padding:12px; background:var(--bg); border-radius:8px; border:1px solid var(--surface2);">
+template_id,orden,ejercicio,series,reps_min,reps_max,descanso_seg,notas
+# ═══ ADAPTACIÓN (RIR 4-5, pesos ligeros, -20% volumen) ═══
+PUSH_ADAPT,1,Press inclinado mancuernas,3,10,12,150,Ligero - sentir el pecho
+PUSH_ADAPT,2,Cruces polea alta,3,12,15,90,Contracción pico
+PUSH_ADAPT,3,Press hombro mancuernas sentado,3,10,12,120,Sin dolor hombro
+PUSH_ADAPT,4,Elevaciones laterales sentado,3,15,15,90,Peso mínimo - técnica
+PUSH_ADAPT,5,Press francés banco 30°,2,12,15,90,Rango parcial codo
+PUSH_ADAPT,6,Extensión unilateral polea,2,15,15,60,Peso ligero
+PIERNA_ADAPT,1,Sentadilla barra,3,10,12,150,Solo barra + poco peso
+PIERNA_ADAPT,2,RDL,3,10,12,150,Aprender hip hinge
+PIERNA_ADAPT,3,Hip thrust,3,12,15,120,Activación glúteo
+PIERNA_ADAPT,4,Extensión cuádriceps,2,15,15,90,Máquina ligero
+PIERNA_ADAPT,5,Curl femoral tumbado,2,12,15,90,—
+PIERNA_ADAPT,6,Plancha,3,30,45,60,Core base (segundos)
+PULL_ADAPT,1,Dominadas asistidas,3,6,8,150,Agarre prono ancho
+PULL_ADAPT,2,Remo polea agarre neutro,3,10,12,120,Favorito
+PULL_ADAPT,3,Remo unilateral con rotación,3,12,12,120,Aprender rotación
+PULL_ADAPT,4,Face pulls,3,15,20,90,Postura
+PULL_ADAPT,5,Curl Z de pie,3,12,12,90,Peso muy ligero
+PULL_ADAPT,6,Rotación externa hombro,2,15,15,60,Manguito rotador
+HOMBR_ADAPT,1,Elevaciones laterales polea media,3,15,15,90,Favorito - ligero
+HOMBR_ADAPT,2,Elevaciones laterales sentado,2,15,15,90,Técnica
+HOMBR_ADAPT,3,Curl predicador,3,12,12,90,Favorito
+HOMBR_ADAPT,4,Zottman curl,2,12,12,90,Bíceps + antebrazo
+HOMBR_ADAPT,5,Extensión unilateral polea,2,15,15,90,Codo: rango parcial
+HOMBR_ADAPT,6,Face pulls,2,15,15,60,Postura
+# ═══ HIPERTROFIA I (template BASE — RIR progresivo 3→2→1→deload) ═══
+PUSH_H1,1,Press inclinado mancuernas,4,8,10,150,Compuesto principal
+PUSH_H1,2,Cruces polea alta,3,10,12,120,Aislamiento pecho
+PUSH_H1,3,Press hombro mancuernas sentado,3,8,10,150,Deltoides ant+med
+PUSH_H1,4,Elevaciones laterales sentado,4,12,15,90,SS con #5
+PUSH_H1,5,Press francés banco 30°,4,10,12,90,Rango parcial codo
+PUSH_H1,6,Extensión unilateral polea,3,12,15,0,SS con #4
+PIERNA_H1,1,Sentadilla barra,4,6,8,180,Compuesto principal
+PIERNA_H1,2,RDL,4,8,10,150,Isquios + glúteo
+PIERNA_H1,3,Hip thrust,3,10,12,120,Glúteos
+PIERNA_H1,4,Extensión cuádriceps,3,12,15,0,SS con #5
+PIERNA_H1,5,Curl femoral tumbado,3,10,12,90,Isquios extra
+PIERNA_H1,6,Hollow hold/rock,3,30,45,0,SS con #7 (segundos)
+PIERNA_H1,7,Press Pallof,2,12,12,60,Anti-rotación por lado
+PULL_H1,1,Dominadas,4,6,8,150,Asistidas→libres
+PULL_H1,2,Remo polea agarre neutro,4,8,10,150,Tirón horizontal
+PULL_H1,3,Remo unilateral con rotación,3,10,12,120,Espalda media
+PULL_H1,4,Kelso shrug,3,12,15,0,SS con #5
+PULL_H1,5,Face pulls,3,15,20,90,Postura + rear delt
+PULL_H1,6,Curl Z de pie,3,8,10,0,SS con #7
+PULL_H1,7,Zottman curl,3,10,12,90,Bíceps + antebrazo
+HOMBR_H1,1,Elevaciones laterales polea media,4,12,15,90,Deltoides medial
+HOMBR_H1,2,Elevaciones laterales sentado,3,12,15,0,SS con #3
+HOMBR_H1,3,Curl predicador,3,10,12,90,Bíceps pico
+HOMBR_H1,4,Curl Z de pie,3,8,10,0,SS con #5
+HOMBR_H1,5,Extensión unilateral polea,3,12,15,90,Rango parcial codo
+HOMBR_H1,6,Rotación externa hombro,2,15,15,0,SS con #7
+HOMBR_H1,7,Face pulls,3,15,20,60,Postura + rear delt
+# ═══ HIPERTROFIA II (especialización Pecho + Brazos) ═══
+PUSH_H2,1,Press inclinado mancuernas,4,8,10,150,Compuesto principal
+PUSH_H2,2,Cruces polea alta,3,10,12,120,Aislamiento pecho
+PUSH_H2,3,Fondos (lastre progresivo),3,8,10,150,NUEVO - especialización
+PUSH_H2,4,Press hombro mancuernas sentado,3,8,10,150,Deltoides
+PUSH_H2,5,Elevaciones laterales sentado,4,12,15,0,SS con #6
+PUSH_H2,6,Press francés banco 30°,4,10,12,90,—
+PUSH_H2,7,Extensión unilateral polea,3,12,15,0,SS con #5
+HOMBR_H2,1,Elevaciones laterales polea media,4,12,15,90,Deltoides medial
+HOMBR_H2,2,Elevaciones laterales sentado,3,12,15,0,SS con #3
+HOMBR_H2,3,Curl predicador,3,10,12,90,—
+HOMBR_H2,4,Curl Z de pie,3,8,10,0,SS con #5
+HOMBR_H2,5,Extensión unilateral polea,3,12,15,90,—
+HOMBR_H2,6,Curl inclinado mancuernas,3,10,12,0,NUEVO - SS con #7
+HOMBR_H2,7,Press francés banco 30°,2,10,12,90,NUEVO - extra tríceps
+HOMBR_H2,8,Face pulls,3,15,20,60,Postura
+# ═══ FUERZA (reps bajas, descansos largos, menos aislamiento) ═══
+PUSH_FZA,1,Press inclinado mancuernas,5,4,6,210,Carga alta
+PUSH_FZA,2,Press hombro mancuernas sentado,4,5,7,180,Pesado
+PUSH_FZA,3,Elevaciones laterales sentado,4,10,12,90,Mantener volumen
+PUSH_FZA,4,Press francés banco 30°,3,6,8,120,Más carga menos reps
+PIERNA_FZA,1,Sentadilla barra,5,4,6,270,Compuesto rey
+PIERNA_FZA,2,RDL,4,5,7,180,Pesado
+PIERNA_FZA,3,Hip thrust,3,6,8,150,Carga alta
+PIERNA_FZA,4,Plancha lastrada,3,45,60,90,Core anti-extensión (seg)
+PULL_FZA,1,Dominadas lastradas,5,4,6,210,Tirón vertical pesado
+PULL_FZA,2,Remo polea agarre neutro,4,6,8,180,Pesado
+PULL_FZA,3,Remo unilateral con rotación,3,8,10,150,—
+PULL_FZA,4,Curl Z de pie,3,6,8,120,Pesado
+PULL_FZA,5,Face pulls,2,15,15,60,Postura mantenimiento
+HOMBR_FZA,1,Press militar barra de pie,4,5,7,180,Compuesto hombros pesado
+HOMBR_FZA,2,Elevaciones laterales polea media,4,10,12,90,Volumen medial
+HOMBR_FZA,3,Curl predicador,4,6,8,120,Pesado
+HOMBR_FZA,4,Extensión unilateral polea,3,8,10,120,—
+# ═══ HIPERTROFIA III (especialización Piernas + Core) ═══
+PIERNA_H3,1,Sentadilla barra,4,6,8,180,Compuesto principal
+PIERNA_H3,2,RDL,4,8,10,150,Isquios
+PIERNA_H3,3,Leg press,3,10,12,120,NUEVO - cuádriceps extra
+PIERNA_H3,4,Hip thrust,3,10,12,120,Glúteos
+PIERNA_H3,5,Extensión cuádriceps,3,12,15,0,SS con #6
+PIERNA_H3,6,Curl femoral tumbado,3,10,12,90,—
+PIERNA_H3,7,Hollow hold/rock,3,30,45,0,SS con #8 (segundos)
+PIERNA_H3,8,Press Pallof,3,12,12,0,SS con #9
+PIERNA_H3,9,Plancha lastrada,2,45,60,60,NUEVO - core extra (seg)
+# ═══ DEFINICIÓN (mismos ejercicios H1 + todo en superseries + HIIT post-nadar) ═══
+PUSH_DEF,1,Press inclinado mancuernas,4,8,10,150,Mantener carga
+PUSH_DEF,2,Cruces polea alta,3,12,15,0,SS con #3
+PUSH_DEF,3,Press hombro mancuernas sentado,3,8,10,120,—
+PUSH_DEF,4,Elevaciones laterales sentado,4,15,15,0,SS con #5
+PUSH_DEF,5,Press francés banco 30°,4,12,15,60,Reps más altas
+PUSH_DEF,6,Extensión unilateral polea,3,15,15,0,SS con #4</pre>
+    </div>
+    <div class="info-box"><strong>Deloads:</strong> No tienen template propio. Se usa el template de la fase anterior con <code>series = series × 0.6</code> (redondeado arriba) y <code>RIR = 4-5</code>.</div>
+</section>
+
+<!-- CATÁLOGO DE EJERCICIOS -->
+<section>
+    <h2>Catálogo de Ejercicios (ejercicios_catalogo)</h2>
+    <p class="sec-desc">Los ~25 ejercicios únicos que aparecen en el plan. Copiar a la hoja <code>ejercicios_catalogo</code>.</p>
+    <div class="day-block" style="overflow-x:auto;">
+        <pre style="font-family:'Consolas',monospace; font-size:0.72rem; color:var(--success); white-space:pre; overflow-x:auto; padding:12px; background:var(--bg); border-radius:8px; border:1px solid var(--surface2);">
+ejercicio_id,nombre,grupo_principal,grupos_secundarios,patron,equipamiento,compuesto,favorito
+EJE_PRESS_INC,Press inclinado mancuernas,Pecho,"Hombro,Tríceps",Empuje horizontal,"Mancuernas,Banco inclinado",true,true
+EJE_CRUCES,Cruces polea alta,Pecho,,Empuje horizontal,Poleas cruce,false,true
+EJE_FONDOS,Fondos (lastre progresivo),Pecho,"Tríceps,Hombro",Empuje vertical,"Barras paralelas",true,true
+EJE_PRESS_HOMB,Press hombro mancuernas sentado,Hombros,"Tríceps",Empuje vertical,"Mancuernas,Banco 90°",true,false
+EJE_PRESS_MIL,Press militar barra de pie,Hombros,"Tríceps,Core",Empuje vertical,Barra olímpica,true,false
+EJE_LAT_SENT,Elevaciones laterales sentado,Hombros,,Empuje lateral,"Mancuernas,Banco",false,true
+EJE_LAT_POLEA,Elevaciones laterales polea media,Hombros,,Empuje lateral,Polea,false,true
+EJE_FRANC,Press francés banco 30°,Tríceps,,Extensión,"Barra Z,Banco 30°",false,true
+EJE_EXT_POLEA,Extensión unilateral polea,Tríceps,,Extensión,Polea alta,false,true
+EJE_SENTADILLA,Sentadilla barra,Cuádriceps,"Glúteos,Isquios",Extensión rodilla,"Barra,Rack",true,true
+EJE_RDL,RDL,Isquios,"Glúteos,Espalda baja",Extensión cadera,"Barra o Mancuernas",true,true
+EJE_HIP_THRUST,Hip thrust,Glúteos,"Isquios",Extensión cadera,"Barra,Banco",true,true
+EJE_LEG_PRESS,Leg press,Cuádriceps,"Glúteos",Extensión rodilla,Leg press máquina,true,false
+EJE_EXT_QUAD,Extensión cuádriceps,Cuádriceps,,Extensión rodilla,Máquina extensión,false,false
+EJE_CURL_FEM,Curl femoral tumbado,Isquios,,Flexión rodilla,Máquina curl,false,false
+EJE_DOMINADAS,Dominadas,Espalda,"Bíceps",Tirón vertical,Barra dominadas,true,true
+EJE_REMO_NEUTRO,Remo polea agarre neutro,Espalda,"Bíceps",Tirón horizontal,"Polea,Agarre neutro",true,true
+EJE_REMO_ROT,Remo unilateral con rotación,Espalda,"Bíceps,Core",Tirón horizontal,Mancuerna,true,true
+EJE_KELSO,Kelso shrug,Espalda (trapecios),,Tirón,Banco + mancuernas,false,true
+EJE_FACE_PULL,Face pulls,Hombros (posterior),"Trapecios",Tirón horizontal,Polea + cuerda,false,false
+EJE_CURL_Z,Curl Z de pie,Bíceps,,Flexión codo,Barra Z,false,true
+EJE_ZOTTMAN,Zottman curl,Bíceps,"Antebrazo",Flexión codo,Mancuernas,false,true
+EJE_CURL_PRED,Curl predicador,Bíceps,,Flexión codo,"Máquina predicador",false,true
+EJE_CURL_INC,Curl inclinado mancuernas,Bíceps,,Flexión codo,"Mancuernas,Banco 45°",false,false
+EJE_ROT_EXT,Rotación externa hombro,Manguito rotador,,Rotación externa,"Mancuerna o Polea",false,false
+EJE_HOLLOW,Hollow hold/rock,Core,,Anti-extensión,Suelo,false,true
+EJE_PALLOF,Press Pallof,Core,,Anti-rotación,Polea,false,true
+EJE_PLANCHA,Plancha (lastrada),Core,,Anti-extensión,"Suelo,Disco",false,false</pre>
+    </div>
+</section>
+
+<!-- ARQUITECTURA PRE-GENERACIÓN -->
+<section>
+    <h2>Arquitectura: Pre-Generación</h2>
+    <p class="sec-desc">Las sesiones NO se generan día a día. Se pre-generan TODAS al desplegar.</p>
+
+    <div class="day-block">
+        <div class="day-header"><div class="day-name">Flujo de datos (corregido)</div></div>
+        <div style="font-family:monospace; font-size:0.8rem; color:var(--text2); line-height:1.8; padding:12px;">
+            <div style="color:var(--accent); font-weight:500;">DESPLIEGUE (una vez):</div>
+            <div>inicializarHojas() → generarPlanCompleto()</div>
+            <div>→ 10 fases en plan_anual</div>
+            <div>→ 48 semanas en plan_semanal</div>
+            <div>→ ~192 sesiones en sesiones_plan (4/semana × 48 sem)</div>
+            <div>→ ~1300 ejercicios en ejercicios_plan</div>
+            <div>→ 27 ejercicios en ejercicios_catalogo</div>
+            <br>
+            <div style="color:var(--success); font-weight:500;">DÍA A DÍA (runtime):</div>
+            <div>1. App abre → fecha de hoy → busca sesión en sesiones_plan</div>
+            <div>2. Sesión encontrada → carga ejercicios_plan de esa sesión</div>
+            <div>3. peso_sugerido = último peso usado + regla ACSM</div>
+            <div>4. Si peso_sugerido = 0 → "Elige tu peso" (primera vez)</div>
+            <div>5. Usuario entrena → registra en ejercicios_log</div>
+            <div>6. Motor actualiza peso_sugerido de la PRÓXIMA sesión</div>
+            <div>7. Sin red → Room encola → sincroniza después</div>
+            <br>
+            <div style="color:var(--warning); font-weight:500;">GARANTÍA:</div>
+            <div>Para CUALQUIER día 31/08/2026 → 31/07/2027:</div>
+            <div>Al abrir la app → ejercicios, series y reps YA están.</div>
+            <div>Solo el peso depende del historial (si no hay → manual).</div>
+        </div>
+    </div>
+
+    <div class="warn-box"><strong>¿Y si cambio de opinión sobre un ejercicio?</strong><br>Puedes editar directamente la hoja <code>ejercicios_plan</code> en Google Sheets. La app lee lo que haya — no tiene nada hardcodeado.</div>
+</section>
+
+<div class="footer">
+    FitBase © 2026 · Plan de Ejercicios v2.0 · Pre-generación completa · 24/06/2026
+</div>
+
+<script>
+function showPhase(id) {
+    document.querySelectorAll('.phase-content').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.phase-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('phase-' + id).classList.add('active');
+    event.target.classList.add('active');
+}
+</script>
+</body>
+</html>

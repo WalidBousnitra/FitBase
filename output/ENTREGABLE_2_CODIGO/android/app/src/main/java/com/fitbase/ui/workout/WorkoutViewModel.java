@@ -1,12 +1,15 @@
 package com.fitbase.ui.workout;
 
+import android.app.Application;
 import android.os.CountDownTimer;
 
+import androidx.annotation.NonNull;
+import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
-import androidx.lifecycle.ViewModel;
 
 import com.fitbase.data.api.ApiClient;
+import com.fitbase.data.local.SyncManager;
 import com.fitbase.data.model.Ejercicio;
 import com.fitbase.data.model.EjercicioLog;
 import com.fitbase.data.model.GenericResponse;
@@ -24,10 +27,12 @@ import retrofit2.Response;
 /**
  * ViewModel para el flujo de entrenamiento.
  * Gestiona: ejercicio actual, series, timer, registro.
+ * Usa AndroidViewModel para acceso a contexto (Room offline queue).
  * Referencia: REG-DEV-01 (ui.md) §4, REG-LOG-01 (motor_pesos.md)
  */
-public class WorkoutViewModel extends ViewModel {
+public class WorkoutViewModel extends AndroidViewModel {
 
+    private final Application app;
     private List<Ejercicio> ejercicios = new ArrayList<>();
     private int indiceEjercicio = 0;
     private int serieCompletadaActual = 0;
@@ -43,6 +48,13 @@ public class WorkoutViewModel extends ViewModel {
 
     private CountDownTimer timer;
     private CountDownTimer cronometroTotal;
+
+    public WorkoutViewModel(@NonNull Application application) {
+        super(application);
+        this.app = application;
+        // Al crear el ViewModel, intentar sincronizar pendientes
+        SyncManager.sincronizar(app);
+    }
 
     public LiveData<Ejercicio> getEjercicioActual() { return ejercicioActual; }
     public LiveData<Integer> getSerieActual() { return serieActual; }
@@ -124,12 +136,16 @@ public class WorkoutViewModel extends ViewModel {
         ApiClient.getApi().enviarDatos(datos).enqueue(new Callback<GenericResponse>() {
             @Override
             public void onResponse(Call<GenericResponse> call, Response<GenericResponse> response) {
-                // Log guardado
+                if (!response.isSuccessful() || response.body() == null || !response.body().ok) {
+                    // Servidor respondio pero con error — encolar para reintento
+                    SyncManager.encolar(app, datos);
+                }
             }
 
             @Override
             public void onFailure(Call<GenericResponse> call, Throwable t) {
-                // TODO: guardar en Room para sync posterior
+                // Sin red o timeout — encolar en Room para sync posterior
+                SyncManager.encolar(app, datos);
             }
         });
 
@@ -194,10 +210,16 @@ public class WorkoutViewModel extends ViewModel {
 
         ApiClient.getApi().enviarDatos(datos).enqueue(new Callback<GenericResponse>() {
             @Override
-            public void onResponse(Call<GenericResponse> call, Response<GenericResponse> response) {}
+            public void onResponse(Call<GenericResponse> call, Response<GenericResponse> response) {
+                if (!response.isSuccessful() || response.body() == null || !response.body().ok) {
+                    SyncManager.encolar(app, datos);
+                }
+            }
 
             @Override
-            public void onFailure(Call<GenericResponse> call, Throwable t) {}
+            public void onFailure(Call<GenericResponse> call, Throwable t) {
+                SyncManager.encolar(app, datos);
+            }
         });
     }
 

@@ -172,10 +172,24 @@ ALERTAS:
 ---
 
 ## 8. Uso en el Sistema
-1. Se ejecuta antes de cada sesión
-2. Lee HRV/Readiness del día (Zepp) + media 10 días
-3. Aplica protocolo Kiviniemi para decisión base
-4. Ajusta con heurísticas si hay datos subjetivos
-5. Muestra ajuste sugerido con justificación
 
-> **Estado**: Motor FUNCIONAL con base en Kiviniemi (HRV) + ACSM/Mann/Rhea (progresión)
+> **IMPORTANTE**: El motor NO genera sesiones ni selecciona ejercicios.
+> Las sesiones están PRE-GENERADAS (ver `base_datos.md` §7).
+> El motor SOLO ajusta el campo `num_peso_sugerido_kg` de ejercicios_plan.
+
+### Cuándo se ejecuta:
+1. **Post-registro de serie** (inmediato): Actualiza peso sugerido de la PRÓXIMA sesión que tenga el mismo ejercicio
+2. **Al abrir la app** (si hay métricas nuevas): Aplica ajuste de volumen (×0.80 si FC alta)
+
+### Qué NO hace:
+- NO genera sesiones (ya están pre-cargadas)
+- NO selecciona ejercicios (ya están en ejercicios_plan)
+- NO cambia series ni reps (definidas por fase en el template)
+- NO es imprescindible: si falla, el usuario ve el último peso conocido o "Elige tu peso"
+
+### Fallback sin red:
+- La app usa el ÚLTIMO `num_peso_sugerido_kg` cacheado en Room
+- Si es la primera sesión (peso = 0): la app muestra "Elige tu peso" y el usuario introduce manualmente
+- El peso manual se registra en ejercicios_log y sirve de base para la siguiente sugerencia
+
+> **Estado**: Motor FUNCIONAL. Solo modifica peso sugerido. No es bloqueante.

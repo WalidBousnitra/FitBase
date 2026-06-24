@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Item individual de metrica (fila en RecyclerView) -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:paddingVertical="10dp"
+    android:paddingHorizontal="4dp"
+    android:gravity="center_vertical">
+
+    <!-- Fecha -->
+    <TextView
+        android:id="@+id/tvMetricaFecha"
+        android:layout_width="80dp"
+        android:layout_height="wrap_content"
+        android:textSize="12sp"
+        android:textColor="?android:textColorTertiary"
+        android:fontFamily="sans-serif" />
+
+    <!-- Valor principal -->
+    <TextView
+        android:id="@+id/tvMetricaValor"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:textSize="14sp"
+        android:textColor="?android:textColorPrimary"
+        android:fontFamily="sans-serif-medium" />
+
+    <!-- Valor secundario -->
+    <TextView
+        android:id="@+id/tvMetricaSecundario"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="12sp"
+        android:textColor="?android:textColorSecondary"
+        android:visibility="gone" />
+
+</LinearLayout>

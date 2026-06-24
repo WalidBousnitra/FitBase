@@ -436,21 +436,83 @@ function getVolumenSemanal(userId, grupoMuscular) {
 
 ---
 
-## 7. Triggers Automáticos (Apps Script)
+## 7. Pre-Generación del Plan Completo
 
-| Trigger | Frecuencia | Acción |
-|---------|------------|--------|
-| `syncZepp` | Diario 7:00 | Importar datos de Health Connect |
-| `generarSesion` | Diario 7:30 | Crear sesión del día con ajustes |
-| `calcularProgresion` | Post-sesión | Actualizar 1RM estimados |
-| `backupDiario` | Diario 3:00 | Copia de seguridad |
-| `alertaInactividad` | Diario 20:00 | Notificar si no hay entrada |
+> ⚠️ **DECISIÓN ARQUITECTÓNICA**: Las sesiones NO se generan día a día.
+> Se pre-generan TODAS las sesiones del año durante el despliegue.
+> El usuario abre la app cualquier día y ya tiene su sesión lista.
+
+### 7.1 Función `generarPlanCompleto()`
+
+Se ejecuta UNA VEZ durante el despliegue (post-`inicializarHojas()`).
+Genera las ~192 sesiones (48 semanas × 4 gym/semana) + ~1300 filas de ejercicios.
+
+```javascript
+function generarPlanCompleto() {
+  // 1. Leer plan_anual → obtener fases con fechas
+  // 2. Para cada fase:
+  //    a. Determinar semanas (fecha_inicio → fecha_fin)
+  //    b. Para cada semana:
+  //       - Determinar RIR según posición en mesociclo
+  //       - Para cada día de gym (LUN, MIÉ, VIE, SÁB):
+  //         * Crear fila en sesiones_plan
+  //         * Crear filas en ejercicios_plan según fase+día
+  //         * num_peso_sugerido_kg = 0 (desconocido hasta primera sesión)
+  // 3. Marcar plan_semanal con template por semana
+}
+```
+
+### 7.2 Qué queda PRE-CARGADO (no depende de nada en runtime)
+
+| Hoja | Contenido pre-cargado | Dependencia runtime |
+|------|----------------------|---------------------|
+| `plan_anual` | 10 fases con fechas exactas | NINGUNA |
+| `plan_semanal` | 48 semanas con split + RIR | NINGUNA |
+| `sesiones_plan` | ~192 sesiones con fecha+tipo+fase | NINGUNA |
+| `ejercicios_plan` | ~1300 ejercicios con series+reps+descanso | Solo `num_peso_sugerido_kg` se actualiza post-sesión |
+| `ejercicios_catalogo` | ~25 ejercicios únicos | NINGUNA |
+
+### 7.3 Qué se actualiza en RUNTIME (motor_pesos)
+
+| Campo | Cuándo se actualiza | Lógica |
+|-------|--------------------|---------| 
+| `ejercicios_plan.num_peso_sugerido_kg` | Post-registro de serie anterior | ACSM 2009: +2.5% si excedes reps con RIR≥2 |
+| `sesiones_plan.num_ajuste_volumen` | Al abrir la app (si hay métricas) | Kiviniemi: FC reposo > media+10 → ×0.80 |
+| `sesiones_plan.bool_completada` | Al terminar sesión | Marca como hecha |
+
+### 7.4 Si el motor NO puede ejecutarse (sin red)
+
+La app usa el ÚLTIMO peso registrado para ese ejercicio (cache local Room).
+Si es la PRIMERA VEZ (peso = 0), la app muestra "Elige tu peso" y el usuario ajusta manualmente.
+
+### 7.5 Triggers que SÍ se mantienen (opcionales, no críticos)
+
+| Trigger | Frecuencia | Acción | ¿Crítico? |
+|---------|------------|--------|-----------|
+| `actualizarPesos` | Post-sesión | Recalcula pesos sugeridos para próximas sesiones | NO — si falla, el usuario ajusta manual |
+| `syncMetricas` | Al abrir app | Lee HC y aplica ajuste de volumen | NO — sin ajuste = sesión normal al 100% |
+| `backupSemanal` | Domingo 3:00 | Copia de seguridad | NO |
 
 ---
 
-## 8. Uso en el Sistema
+## 8. Uso en el Sistema (Flujo Corregido)
 
-1. **Mañana**: `syncZepp` → `metricas_zepp` → `generarSesion` → `sesiones_plan`
-2. **Gym**: App lee `sesiones_plan` + `ejercicios_plan` → Usuario registra → `ejercicios_log`
-3. **Post-gym**: `calcularProgresion` → `progresion_log` → Actualiza sugerencias futuras
-4. **Nutrición**: Usuario registra → `comidas_log` + `suplementos_log`
+### Despliegue (UNA VEZ):
+```
+inicializarHojas() → generarPlanCompleto() → 192 sesiones + 1300 ejercicios listos
+```
+
+### Día a día (RUNTIME):
+```
+1. App abre → consulta fecha hoy → busca sesión en sesiones_plan
+2. Si hay sesión → carga ejercicios_plan de esa sesión
+3. Muestra ejercicio + peso sugerido (o "Elige peso" si es primera vez)
+4. Usuario entrena y registra → ejercicios_log
+5. Post-registro → motor_pesos actualiza peso sugerido de la PRÓXIMA sesión del mismo ejercicio
+6. Si no hay red → todo se encola en Room y se sincroniza después
+```
+
+### Garantía:
+> **Para CUALQUIER día entre 31/08/2026 y 31/07/2027, al abrir la app,
+> la sesión con sus ejercicios, series y reps ya está pre-cargada.**
+> Solo el peso sugerido depende del historial (y si no hay historial, se deja manual).
