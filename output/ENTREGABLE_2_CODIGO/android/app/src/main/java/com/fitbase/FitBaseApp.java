@@ -13,7 +13,7 @@ import com.fitbase.data.local.SyncManager;
  */
 public class FitBaseApp extends Application {
 
-    public static final String CANAL_TIMER = "canal_timer";
+    public static final String CANAL_TIMER = "canal_timer_v2";
     public static final String CANAL_TIMER_RELOJ = "canal_timer_reloj";
     public static final String CANAL_RECORDATORIOS = "canal_recordatorios";
 
@@ -39,7 +39,7 @@ public class FitBaseApp extends Application {
         NotificationChannel canalTimer = new NotificationChannel(
                 CANAL_TIMER,
                 "Timer de Descanso",
-                NotificationManager.IMPORTANCE_LOW
+            NotificationManager.IMPORTANCE_DEFAULT
         );
         canalTimer.setDescription("Cuenta atrás durante descanso entre series");
         canalTimer.enableVibration(false);

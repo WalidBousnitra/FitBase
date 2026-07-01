@@ -110,8 +110,13 @@ public class HomeActivity extends AppCompatActivity {
      * Called from ViewModel observer if HC returned 0 steps (likely no perms).
      */
     private void solicitarPermisosHC() {
-        if (!HealthConnectBridge.isAvailable(this)) return;
-        hcPermLauncher.launch(HealthConnectBridge.getRequiredPermissions());
+        try {
+            hcPermLauncher.launch(HealthConnectBridge.getRequiredPermissions());
+        } catch (Exception e) {
+            android.widget.Toast.makeText(this,
+                    "No se pudo abrir permisos de Health Connect",
+                    android.widget.Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void solicitarPermisosIniciales() {
@@ -121,9 +126,7 @@ public class HomeActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.POST_NOTIFICATIONS}, 101);
         }
-        if (HealthConnectBridge.isAvailable(this)) {
-            solicitarPermisosHC();
-        }
+        solicitarPermisosHC();
     }
 
     private void vincularVistas() {
@@ -318,5 +321,8 @@ public class HomeActivity extends AppCompatActivity {
         super.onResume();
         // Recargar datos cada vez que se abre la app (HC sync + backend)
         viewModel.cargarDatosDelDia();
+        if (HealthConnectBridge.isAvailable(this)) {
+            solicitarPermisosHC();
+        }
     }
 }

@@ -13,7 +13,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:gravity="top">
+    android:gravity="top"
+    android:weightSum="10">
 
     <!-- Banner preinicio -->
     <TextView
@@ -64,9 +65,10 @@
     <!-- ═══ CALORÍAS (compacto) ═══ -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="0dp"
+        android:layout_weight="2.6"
         android:orientation="vertical"
-        android:paddingVertical="12dp"
+        android:paddingVertical="16dp"
         android:background="@color/colorSurface">
 
         <LinearLayout
@@ -131,9 +133,10 @@
     <!-- Macros restantes -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="0dp"
+        android:layout_weight="1.6"
         android:orientation="horizontal"
-        android:paddingVertical="10dp"
+        android:paddingVertical="14dp"
         android:gravity="center">
 
         <!-- Proteína -->
@@ -216,7 +219,8 @@
     <!-- Pasos + Agua (una línea) -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="0dp"
+        android:layout_weight="1.8"
         android:orientation="horizontal">
 
         <!-- Pasos -->
@@ -307,20 +311,24 @@
     <TextView
         android:id="@+id/tvSesionHoy"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="0dp"
+        android:layout_weight="0.9"
         android:text="Push Day — 6 ejercicios, ~72 min"
         android:textColor="@color/colorTextPrimary"
         android:textSize="15sp"
-        android:fontFamily="sans-serif-medium" />
+        android:fontFamily="sans-serif-medium"
+        android:gravity="center_vertical" />
 
     <TextView
         android:id="@+id/tvFaseInfo"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="0dp"
+        android:layout_weight="0.7"
         android:text=""
         android:textColor="@color/colorTextTertiary"
         android:textSize="12sp"
-        android:layout_marginTop="2dp" />
+        android:layout_marginTop="2dp"
+        android:gravity="center_vertical" />
 
     <!-- BOTONES al fondo -->
     <Button

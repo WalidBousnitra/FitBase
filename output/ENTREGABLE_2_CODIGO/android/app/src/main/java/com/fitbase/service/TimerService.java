@@ -112,13 +112,15 @@ public class TimerService extends Service {
                 .setContentText(ejercicio)
                 .setContentIntent(pi)
                 .setOngoing(true)
+            .setOnlyAlertOnce(true)
                 .setSilent(true)
                 .setUsesChronometer(true)
                 .setChronometerCountDown(true)
                 .setWhen(finishTimeMs)
                 .setShowWhen(true)
                 .setCategory(NotificationCompat.CATEGORY_STOPWATCH)
-                .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .build();
     }
 

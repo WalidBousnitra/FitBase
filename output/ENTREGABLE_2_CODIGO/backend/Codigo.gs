@@ -1110,6 +1110,15 @@ function getHoja(nombre) {
   return SpreadsheetApp.getActiveSpreadsheet().getSheetByName(nombre);
 }
 
+function appendRowsBatch(hoja, filas, batchSize = 500) {
+  if (!filas || filas.length === 0) return;
+  const totalCols = filas[0].length;
+  for (let i = 0; i < filas.length; i += batchSize) {
+    const bloque = filas.slice(i, i + batchSize);
+    hoja.getRange(hoja.getLastRow() + 1, 1, bloque.length, totalCols).setValues(bloque);
+  }
+}
+
 function generarId(prefijo) {
   const ahora = Utilities.formatDate(new Date(), 'Europe/Madrid', 'yyyyMMdd');
   const random = Math.floor(Math.random() * 9999).toString().padStart(4, '0');
@@ -1398,6 +1407,12 @@ function inicializarHojas() {
     if (!hoja) {
       hoja = ss.insertSheet(nombre);
     }
+
+    // Mantener cabeceras y limpiar contenido previo para evitar duplicados acumulados.
+    if (hoja.getLastRow() > 1) {
+      hoja.getRange(2, 1, hoja.getLastRow() - 1, hoja.getMaxColumns()).clearContent();
+    }
+
     hoja.getRange(1, 1, 1, cabeceras.length).setValues([cabeceras]);
     // Formato cabeceras
     hoja.getRange(1, 1, 1, cabeceras.length).setFontWeight('bold');
@@ -1406,10 +1421,10 @@ function inicializarHojas() {
 
   // Insertar datos iniciales del usuario
   const hojaUsuarios = ss.getSheetByName(HOJAS.USUARIOS);
-  hojaUsuarios.appendRow([
+  appendRowsBatch(hojaUsuarios, [[
     USER_ID, 'Usuario', 188, 'M', 'bulk', 'Push/Pierna/Pull/Hombros+Brazos',
     new Date().toISOString(), new Date().toISOString()
-  ]);
+  ]]);
 
   return { ok: true, mensaje: 'Hojas inicializadas correctamente (10 hojas simplificadas)' };
 }
@@ -1427,6 +1442,19 @@ function inicializarHojas() {
  */
 function generarPlanCompleto() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  const hojaPlanAnual = getHoja(HOJAS.PLAN_ANUAL);
+  const hojaSesiones = getHoja(HOJAS.SESIONES_PLAN);
+  const hojaEjercicios = getHoja(HOJAS.EJERCICIOS_PLAN);
+  const hojaSemanal = getHoja(HOJAS.PLAN_SEMANAL);
+  const hojaCatalogo = getHoja(HOJAS.EJERCICIOS_CATALOGO);
+
+  // Limpiar datos previos (mantener cabeceras) para que re-ejecutar no multiplique filas.
+  [hojaPlanAnual, hojaSesiones, hojaEjercicios, hojaSemanal, hojaCatalogo].forEach(hoja => {
+    if (hoja && hoja.getLastRow() > 1) {
+      hoja.getRange(2, 1, hoja.getLastRow() - 1, hoja.getMaxColumns()).clearContent();
+    }
+  });
 
   // ═══ 1. DEFINIR FASES (plan_anual) ═══
   // Refleja prioridades: P1 Estética V-taper > P2 Postura > P3 Hipertrofia > P4 Flexibilidad
@@ -1597,18 +1625,19 @@ function generarPlanCompleto() {
   const DIAS_GYM = { 1: 'push', 3: 'pierna', 5: 'pull', 6: 'hombr' }; // 0=DOM, 1=LUN...
 
   // ═══ 5. ESCRIBIR PLAN_ANUAL ═══
-  const hojaPlanAnual = getHoja(HOJAS.PLAN_ANUAL);
+  const filasPlanAnual = [];
   FASES.forEach((fase, idx) => {
-    hojaPlanAnual.appendRow([
+    filasPlanAnual.push([
       fase.id, USER_ID, 2026, idx + 1, fase.nombre, fase.tipo,
       fase.inicio, fase.fin, fase.semanas, 16, fase.rir, fase.foco, fase.nutri, ''
     ]);
   });
+  appendRowsBatch(hojaPlanAnual, filasPlanAnual);
 
   // ═══ 6. GENERAR SESIONES + EJERCICIOS ═══
-  const hojaSesiones = getHoja(HOJAS.SESIONES_PLAN);
-  const hojaEjercicios = getHoja(HOJAS.EJERCICIOS_PLAN);
-  const hojaSemanal = getHoja(HOJAS.PLAN_SEMANAL);
+  const filasSesiones = [];
+  const filasEjercicios = [];
+  const filasSemanal = [];
 
   let sesionCount = 0;
   let ejercicioCount = 0;
@@ -1647,7 +1676,7 @@ function generarPlanCompleto() {
         sesionCount++;
         const sesionId = `SES_${fechaStr.replace(/-/g, '')}_${String(sesionCount).padStart(3, '0')}`;
 
-        hojaSesiones.appendRow([
+        filasSesiones.push([
           sesionId, USER_ID, fechaStr, tipoDisplay, semanaFase, fase.nombre,
           1.0, '', 75, false, '', '', new Date().toISOString()
         ]);
@@ -1669,7 +1698,7 @@ function generarPlanCompleto() {
 
             const repsStr = ej[3] === ej[4] ? String(ej[3]) : `${ej[3]}-${ej[4]}`;
 
-            hojaEjercicios.appendRow([
+            filasEjercicios.push([
               planId, sesionId, ej[0], orden + 1, series, repsStr,
               0, // num_peso_sugerido_kg = 0 (desconocido hasta primera sesión)
               parseInt(rirSemana) || 3, // RIR numérico
@@ -1685,7 +1714,7 @@ function generarPlanCompleto() {
       if (diaSemana === 0) { // Domingo = fin de semana
         semanaAño++;
         // Escribir plan_semanal
-        hojaSemanal.appendRow([
+        filasSemanal.push([
           `SEM_${String(semanaAño).padStart(3, '0')}`, fase.id, USER_ID,
           semanaAño, semanaFase,
           'Push', 'Natación', 'Pierna', 'Natación', 'Pull', 'Hombros+Brazos', 'Descanso',
@@ -1699,8 +1728,12 @@ function generarPlanCompleto() {
     }
   }
 
+  // Persistir lotes principales antes del catálogo.
+  appendRowsBatch(hojaSesiones, filasSesiones);
+  appendRowsBatch(hojaEjercicios, filasEjercicios);
+  appendRowsBatch(hojaSemanal, filasSemanal);
+
   // ═══ 7. ESCRIBIR CATÁLOGO DE EJERCICIOS ═══
-  const hojaCatalogo = getHoja(HOJAS.EJERCICIOS_CATALOGO);
   const CATALOGO = [
     ['EJE_PRESS_INC', 'Press inclinado mancuernas', 'Incline DB Press', 'Pecho', '["Hombro","Tríceps"]', 'Empuje horizontal', 'Mancuernas,Banco inclinado', true, true, false, '', ''],
     ['EJE_CRUCES', 'Cruces polea alta', 'High Cable Fly', 'Pecho', '[]', 'Empuje horizontal', 'Poleas cruce', false, true, false, '', ''],
@@ -1732,7 +1765,7 @@ function generarPlanCompleto() {
     ['EJE_PLANCHA', 'Plancha (lastrada)', 'Weighted Plank', 'Core', '[]', 'Anti-extensión', 'Suelo,Disco', false, false, false, '', '']
   ];
 
-  CATALOGO.forEach(ej => hojaCatalogo.appendRow(ej));
+  appendRowsBatch(hojaCatalogo, CATALOGO);
 
   // ═══ 8. RESULTADO ═══
   Logger.log(`Plan generado: ${sesionCount} sesiones, ${ejercicioCount} ejercicios, ${CATALOGO.length} en catálogo`);
