@@ -5,17 +5,16 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
-import android.media.session.MediaSession;
-import android.media.session.PlaybackState;
 import android.media.AudioAttributes;
 import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.RingtoneManager;
 import android.net.Uri;
-import android.os.Build;
-import android.os.CountDownTimer;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
+import android.os.SystemClock;
 
 import androidx.core.app.NotificationCompat;
 
@@ -26,15 +25,21 @@ import com.fitbase.ui.workout.WorkoutActivity;
 /**
  * Foreground Service - Timer de descanso entre series.
  *
- * UX tipo "Dynamic Island" en Android:
- *   - DURANTE: Notificacion compacta con cronometro nativo (visible en barra/isla).
+ * Enfoque: TIEMPO ABSOLUTO + HANDLER (no CountDownTimer, no MediaSession).
+ * - Calcula el instante exacto en que debe terminar (elapsedRealtime).
+ * - Un Handler con postDelayed(1s) actualiza la notificación cada segundo.
+ * - Chronometer nativo de la notificación funciona independiente del proceso.
+ * - Si el SO mata el handler, el Chronometer sigue contando visualmente.
+ *
+ * UX:
+ *   - DURANTE: Notificación compacta con cronómetro nativo (cuenta atrás).
  *   - AL ACABAR (fuera de la app):
- *       -> Notificacion HEADS-UP expandida (como WhatsApp) con "Siguiente serie!"
- *       -> Sonido sutil SOLO si hay auriculares conectados
- *       -> Vibracion en reloj Amazfit via Zepp (notificacion alta prioridad)
- *       -> NO vibra el movil, NO suena por altavoz
+ *       -> Notificación HEADS-UP con "Siguiente serie!"
+ *       -> Sonido sutil SOLO con auriculares
+ *       -> Vibración en reloj Amazfit via Zepp (notificación alta prioridad)
+ *       -> NO vibra el móvil, NO suena por altavoz
  *   - AL ACABAR (dentro de la app):
- *       -> NADA. Ni sonido ni vibracion. La UI ya transiciona automaticamente.
+ *       -> SILENCIO TOTAL. La UI transiciona automáticamente.
  *
  * Referencia: REG-DEV-01 (ui.md) 4.4, 7.1, 7.2
  */
@@ -43,13 +48,15 @@ public class TimerService extends Service {
     private static final int NOTIFICACION_ID = 1001;
     private static final int NOTIF_FIN_ID = 1002;
     public static final String ACTION_TIMER_FINISHED = "com.fitbase.TIMER_FINISHED";
+    public static final String ACTION_TIMER_TICK = "com.fitbase.TIMER_TICK";
+    public static final String EXTRA_SEGUNDOS_RESTANTES = "segundos_restantes";
 
-    private CountDownTimer timer;
-    private long finishTimeMs;
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private long finishElapsedMs; // SystemClock.elapsedRealtime() cuando debe acabar
     private boolean finishHandled = false;
-    private MediaSession mediaSession;
+    private String ejercicioNombre = "";
 
-    // Flag estatico para saber si la app esta en primer plano
+    // Flag estático para saber si la app está en primer plano
     private static boolean appEnPrimerPlano = false;
 
     public static void setAppEnPrimerPlano(boolean enPrimerPlano) {
@@ -70,11 +77,12 @@ public class TimerService extends Service {
 
         int segundos = intent.getIntExtra("segundos", 120);
         if (segundos <= 0) segundos = 1;
-        String ejercicioNombre = intent.getStringExtra("ejercicio_nombre");
+        ejercicioNombre = intent.getStringExtra("ejercicio_nombre");
         if (ejercicioNombre == null) ejercicioNombre = "";
 
-        // Calcular cuando termina (para Chronometer nativo de la notificacion)
-        finishTimeMs = System.currentTimeMillis() + (segundos * 1000L);
+        // Tiempo absoluto de finalización (inmune a delays del SO)
+        finishElapsedMs = SystemClock.elapsedRealtime() + (segundos * 1000L);
+        finishHandled = false;
 
         // Intent para volver a la app
         Intent volverIntent = new Intent(this, WorkoutActivity.class);
@@ -82,146 +90,134 @@ public class TimerService extends Service {
         PendingIntent pendingIntent = PendingIntent.getActivity(
                 this, 0, volverIntent, PendingIntent.FLAG_IMMUTABLE);
 
-        inicializarMediaSession();
-
-        // Notificacion compacta con cronometro (estilo Dynamic Island)
-        Notification notificacion = crearNotificacionCronometro(ejercicioNombre, pendingIntent);
+        // Notificación con Chronometer nativo (cuenta atrás sin depender del proceso)
+        Notification notificacion = crearNotificacion(segundos, pendingIntent);
         try {
             startForeground(NOTIFICACION_ID, notificacion);
         } catch (Exception e) {
             stopSelf();
             return START_NOT_STICKY;
         }
-        finishHandled = false;
 
-        // Timer interno para detectar finalizacion
-        if (timer != null) timer.cancel();
-        final String ejercicio = ejercicioNombre;
-        timer = new CountDownTimer(segundos * 1000L, 1000) {
-            @Override
-            public void onTick(long millisUntilFinished) {
-                // Chronometer nativo actualiza solo. No necesitamos rebuilds.
-            }
-
-            @Override
-            public void onFinish() {
-                if (finishHandled) return;
-                finishHandled = true;
-                onTimerFinish(ejercicio, pendingIntent);
-            }
-        };
-        timer.start();
+        // Handler que verifica cada segundo si el timer terminó
+        handler.removeCallbacksAndMessages(null);
+        handler.post(tickRunnable);
 
         return START_NOT_STICKY;
     }
 
     /**
-     * Notificacion con Chronometer nativo - cuenta atras visible en barra/isla.
-     * En Android 14+ con dispositivos compatibles se ve como "Dynamic Island".
-     * En otros se ve como notificacion compacta con timer en tiempo real.
+     * Runnable que se ejecuta cada segundo.
+     * Calcula segundos restantes desde tiempo absoluto (preciso incluso si hay delays).
+     * Envía broadcast con segundos restantes para que la UI se actualice.
      */
-    private Notification crearNotificacionCronometro(String ejercicio, PendingIntent pi) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && mediaSession != null) {
-            Notification.Builder builder = new Notification.Builder(this, FitBaseApp.CANAL_TIMER)
-                    .setSmallIcon(R.drawable.ic_timer)
-                    .setContentTitle("Descanso")
-                    .setContentText(ejercicio)
-                    .setSubText("FitBase Timer")
-                    .setContentIntent(pi)
-                    .setOngoing(true)
-                    .setOnlyAlertOnce(true)
-                    .setSound(null)
-                    .setVibrate(new long[]{0L})
-                    .setUsesChronometer(true)
-                    .setChronometerCountDown(true)
-                    .setWhen(finishTimeMs)
-                    .setShowWhen(true)
-                    .setCategory(Notification.CATEGORY_TRANSPORT)
-                    .setVisibility(Notification.VISIBILITY_PUBLIC)
-                    .setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE)
-                    .setStyle(new Notification.MediaStyle().setMediaSession(mediaSession.getSessionToken()));
-            return builder.build();
+    private final Runnable tickRunnable = new Runnable() {
+        @Override
+        public void run() {
+            long ahora = SystemClock.elapsedRealtime();
+            long restanteMs = finishElapsedMs - ahora;
+            int restanteSeg = (int) Math.ceil(restanteMs / 1000.0);
+
+            if (restanteSeg <= 0) {
+                // TERMINÓ
+                if (!finishHandled) {
+                    finishHandled = true;
+                    // Broadcast tick final (0 segundos)
+                    Intent tickIntent = new Intent(ACTION_TIMER_TICK);
+                    tickIntent.putExtra(EXTRA_SEGUNDOS_RESTANTES, 0);
+                    tickIntent.setPackage(getPackageName());
+                    sendBroadcast(tickIntent);
+
+                    onTimerFinish();
+                }
+                return;
+            }
+
+            // Broadcast con segundos restantes (la UI escucha esto)
+            Intent tickIntent = new Intent(ACTION_TIMER_TICK);
+            tickIntent.putExtra(EXTRA_SEGUNDOS_RESTANTES, restanteSeg);
+            tickIntent.setPackage(getPackageName());
+            sendBroadcast(tickIntent);
+
+            // Siguiente tick en 1 segundo
+            handler.postDelayed(this, 1000);
         }
+    };
+
+    /**
+     * Notificación con Chronometer nativo — cuenta atrás visible en barra de estado.
+     * El Chronometer del sistema funciona independientemente del proceso de la app.
+     */
+    private Notification crearNotificacion(int segundos, PendingIntent pi) {
+        long whenMs = System.currentTimeMillis() + (segundos * 1000L);
 
         return new NotificationCompat.Builder(this, FitBaseApp.CANAL_TIMER)
                 .setSmallIcon(R.drawable.ic_timer)
                 .setContentTitle("Descanso")
-                .setContentText(ejercicio)
+                .setContentText(ejercicioNombre)
                 .setContentIntent(pi)
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
                 .setSilent(true)
                 .setUsesChronometer(true)
                 .setChronometerCountDown(true)
-                .setWhen(finishTimeMs)
+                .setWhen(whenMs)
                 .setShowWhen(true)
-                .setCategory(NotificationCompat.CATEGORY_TRANSPORT)
+                .setCategory(NotificationCompat.CATEGORY_STOPWATCH)
                 .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setPriority(NotificationCompat.PRIORITY_LOW)
                 .build();
-    }
-
-    private void inicializarMediaSession() {
-        if (mediaSession != null) return;
-        mediaSession = new MediaSession(this, "FitBaseTimerSession");
-        mediaSession.setActive(true);
-        PlaybackState state = new PlaybackState.Builder()
-                .setActions(PlaybackState.ACTION_PLAY_PAUSE)
-                .setState(PlaybackState.STATE_PLAYING, 0, 1.0f)
-                .build();
-        mediaSession.setPlaybackState(state);
     }
 
     /**
-     * Logica al terminar el timer.
-     * Si la app esta en primer plano -> SILENCIO TOTAL (UI ya muestra transicion).
-     * Si esta fuera -> notificacion expandida + sonido auriculares + vibrar reloj.
+     * Lógica al terminar el timer.
+     * Dentro de la app → SILENCIO (UI observa LiveData y transiciona sola).
+     * Fuera → notificación expandida + sonido auriculares + vibrar reloj.
      */
-    private void onTimerFinish(String ejercicio, PendingIntent pi) {
+    private void onTimerFinish() {
         try {
+            Intent volverIntent = new Intent(this, WorkoutActivity.class);
+            volverIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            PendingIntent pi = PendingIntent.getActivity(
+                    this, 0, volverIntent, PendingIntent.FLAG_IMMUTABLE);
+
             if (appEnPrimerPlano) {
-                // DENTRO de la app -> SILENCIO TOTAL
-                // WorkoutActivity observa timerSegundos=0 y transiciona sola
+                // DENTRO de la app → SILENCIO TOTAL
                 android.app.NotificationManager nm = getSystemService(android.app.NotificationManager.class);
                 if (nm != null) nm.cancel(NOTIFICACION_ID);
             } else {
-                // FUERA de la app -> Expandir notificacion (tipo WhatsApp heads-up)
-                mostrarNotificacionExpandida(ejercicio, pi);
-
-                // Vibrar reloj (via Zepp)
-                enviarVibracionReloj(ejercicio, pi);
-
-                // Sonido SOLO con auriculares
+                // FUERA de la app → Expandir notificación + sonido auriculares
+                mostrarNotificacionFin(pi);
+                enviarVibracionReloj(pi);
                 if (hayAuricularesConectados()) {
                     reproducirSonidoSutil();
                 }
             }
         } catch (Exception ignored) {
-            // Evita crash del servicio por comportamientos particulares del vendor.
+            // No crashear el servicio por errores de notificación
         }
 
-        // Broadcast para que WorkoutActivity sepa que termino
-        sendBroadcast(new Intent(ACTION_TIMER_FINISHED));
+        // Broadcast para que WorkoutActivity sepa que terminó
+        Intent finishIntent = new Intent(ACTION_TIMER_FINISHED);
+        finishIntent.setPackage(getPackageName());
+        sendBroadcast(finishIntent);
         stopSelf();
     }
 
     /**
-     * Notificacion expandida (heads-up) - aparece como burbuja grande
-     * tipo "Dynamic Island expandida" o notificacion de WhatsApp entrante.
-     * Se auto-descarta al tocar.
+     * Notificación heads-up al terminar (tipo llamada entrante).
      */
-    private void mostrarNotificacionExpandida(String ejercicio, PendingIntent pi) {
+    private void mostrarNotificacionFin(PendingIntent pi) {
         Notification expandida = new NotificationCompat.Builder(this, FitBaseApp.CANAL_TIMER_RELOJ)
                 .setSmallIcon(R.drawable.ic_timer)
-                .setContentTitle("Siguiente serie!")
-                .setContentText(ejercicio)
+                .setContentTitle("¡Siguiente serie!")
+                .setContentText(ejercicioNombre)
                 .setContentIntent(pi)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setCategory(NotificationCompat.CATEGORY_ALARM)
                 .setAutoCancel(true)
-                .setVibrate(new long[]{0}) // Trigger heads-up sin vibrar realmente
+                .setVibrate(new long[]{0}) // Trigger heads-up sin vibrar
                 .setSound(null)
-                .setFullScreenIntent(pi, false)
                 .build();
 
         android.app.NotificationManager nm = getSystemService(android.app.NotificationManager.class);
@@ -232,14 +228,13 @@ public class TimerService extends Service {
     }
 
     /**
-     * Notificacion que Zepp replica al Amazfit GTS 4 -> vibracion en muneca.
-     * No vibra el movil (canal configurado sin vibracion local).
+     * Notificación que Zepp replica al Amazfit GTS 4 → vibración en muñeca.
      */
-    private void enviarVibracionReloj(String ejercicio, PendingIntent pi) {
+    private void enviarVibracionReloj(PendingIntent pi) {
         Notification notifReloj = new NotificationCompat.Builder(this, FitBaseApp.CANAL_TIMER_RELOJ)
                 .setSmallIcon(R.drawable.ic_timer)
                 .setContentTitle("VAMOS!")
-                .setContentText("Siguiente serie: " + ejercicio)
+                .setContentText("Siguiente serie: " + ejercicioNombre)
                 .setContentIntent(pi)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true)
@@ -255,7 +250,6 @@ public class TimerService extends Service {
 
     /**
      * Detecta auriculares (cable, BT A2DP, BLE headset, USB).
-     * Usa AudioDeviceInfo (API 23+) que es mas fiable que BluetoothAdapter.
      */
     private boolean hayAuricularesConectados() {
         try {
@@ -279,8 +273,8 @@ public class TimerService extends Service {
     }
 
     /**
-     * Sonido sutil por STREAM_MUSIC - solo audible por auriculares.
-     * Volumen reducido (30%). No es una alarma, es un "ding" discreto.
+     * Sonido sutil por STREAM_MUSIC (solo audible por auriculares).
+     * Volumen reducido (30%).
      */
     private void reproducirSonidoSutil() {
         try {
@@ -295,19 +289,12 @@ public class TimerService extends Service {
             mp.setOnCompletionListener(MediaPlayer::release);
             mp.prepare();
             mp.start();
-        } catch (Exception ignored) {
-            // No es critico
-        }
+        } catch (Exception ignored) {}
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if (timer != null) timer.cancel();
-        if (mediaSession != null) {
-            mediaSession.setActive(false);
-            mediaSession.release();
-            mediaSession = null;
-        }
+        handler.removeCallbacksAndMessages(null);
     }
 }

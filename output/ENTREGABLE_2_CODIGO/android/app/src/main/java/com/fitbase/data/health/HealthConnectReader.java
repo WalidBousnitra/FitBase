@@ -8,9 +8,11 @@ import android.os.Looper;
  * Lee datos REALES de Health Connect:
  * - Pasos (Zepp/Amazfit → Health Connect)
  * - Nutrición (FatSecret → Health Connect)
+ * - Peso corporal (balanza o Mi Fitness → Health Connect)
+ * - Sueño (Zepp sleep tracking → Health Connect)
+ * - FC reposo (Zepp heart rate → Health Connect)
  *
  * Delega a HealthConnectBridge.kt (Kotlin-first SDK).
- * Se usa incluso en modo demo para verificar que la integración funciona.
  */
 public class HealthConnectReader {
 
@@ -36,6 +38,36 @@ public class HealthConnectReader {
     }
 
     /**
+     * Resultado con datos de recuperación para progresión y motor de pesos.
+     */
+    public static class DatosRecuperacion {
+        public java.util.List<PesoEntry> pesos = new java.util.ArrayList<>();
+        public java.util.List<SleepEntry> suenos = new java.util.ArrayList<>();
+        public java.util.List<HrEntry> fcReposo = new java.util.ArrayList<>();
+    }
+
+    public static class PesoEntry {
+        public String fecha;
+        public double kg;
+        public PesoEntry(String fecha, double kg) { this.fecha = fecha; this.kg = kg; }
+    }
+
+    public static class SleepEntry {
+        public String fecha;
+        public int duracionMin;
+        public int score;
+        public SleepEntry(String fecha, int duracionMin, int score) {
+            this.fecha = fecha; this.duracionMin = duracionMin; this.score = score;
+        }
+    }
+
+    public static class HrEntry {
+        public String fecha;
+        public int bpm;
+        public HrEntry(String fecha, int bpm) { this.fecha = fecha; this.bpm = bpm; }
+    }
+
+    /**
      * Lee pasos y nutrición del día de hoy desde Health Connect.
      * Ejecuta en hilo de fondo, devuelve resultado vía callback en main thread.
      */
@@ -54,7 +86,34 @@ public class HealthConnectReader {
             } catch (Exception e) {
                 // HC no disponible o sin permisos — datos quedan en 0
             }
+            mainHandler.post(() -> listener.onDatos(datos));
+        }).start();
+    }
 
+    /**
+     * Lee datos de recuperación (peso, sueño, FC reposo) de los últimos N días.
+     * Para pantalla de progresión y sincronización con backend.
+     */
+    public void leerDatosRecuperacion(int diasAtras, OnRecuperacionListener listener) {
+        Handler mainHandler = new Handler(Looper.getMainLooper());
+
+        new Thread(() -> {
+            DatosRecuperacion datos = new DatosRecuperacion();
+            try {
+                HealthConnectBridge.RecoveryData recovery = HealthConnectBridge.readRecoveryData(context, diasAtras);
+
+                for (HealthConnectBridge.PesoEntry pe : recovery.pesosKg) {
+                    datos.pesos.add(new PesoEntry(pe.fecha, pe.kg));
+                }
+                for (HealthConnectBridge.SleepEntry se : recovery.suenos) {
+                    datos.suenos.add(new SleepEntry(se.fecha, se.duracionMin, se.score));
+                }
+                for (HealthConnectBridge.HrEntry hr : recovery.fcReposo) {
+                    datos.fcReposo.add(new HrEntry(hr.fecha, hr.bpm));
+                }
+            } catch (Exception e) {
+                // Sin datos de recuperación — arrays vacíos
+            }
             mainHandler.post(() -> listener.onDatos(datos));
         }).start();
     }
@@ -62,4 +121,9 @@ public class HealthConnectReader {
     public interface OnDatosListener {
         void onDatos(DatosHoy datos);
     }
+
+    public interface OnRecuperacionListener {
+        void onDatos(DatosRecuperacion datos);
+    }
 }
+

@@ -126,6 +126,11 @@ public class WorkoutActivity extends AppCompatActivity {
                 if (segundos <= 5) {
                     feedback.tick();
                 }
+            } else if (segundos != null && segundos == 0 && estadoActual == ESTADO_TIMER) {
+                // Timer terminó → volver a estado ejercicio
+                layoutTimer.setVisibility(View.GONE);
+                estadoActual = ESTADO_EJERCICIO;
+                stopService(new Intent(this, TimerService.class));
             }
         });
 

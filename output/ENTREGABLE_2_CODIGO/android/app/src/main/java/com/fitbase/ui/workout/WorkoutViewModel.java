@@ -255,6 +255,7 @@ public class WorkoutViewModel extends AndroidViewModel {
 
     /**
      * Inicia timer de descanso.
+     * Usa tiempo absoluto (SystemClock) para precisión incluso con delays.
      * Descanso según evidencia (Schoenfeld 2016):
      *   - Compuestos: 3-5 min
      *   - Aislamiento: 1.5-2 min
@@ -263,17 +264,21 @@ public class WorkoutViewModel extends AndroidViewModel {
         if (timer != null) timer.cancel();
         timerSegundos.setValue(Math.max(1, segundos));
 
-        timer = new CountDownTimer(segundos * 1000L, 1000) {
+        final long finishTime = android.os.SystemClock.elapsedRealtime() + (segundos * 1000L);
+
+        timer = new CountDownTimer(segundos * 1000L + 500, 250) {
             @Override
             public void onTick(long millisUntilFinished) {
-                int restantes = (int) Math.ceil(millisUntilFinished / 1000.0);
-                timerSegundos.postValue(Math.max(restantes, 1));
+                // Calcular desde tiempo absoluto (no del argumento que puede driftar)
+                long restanteMs = finishTime - android.os.SystemClock.elapsedRealtime();
+                int restante = (int) Math.ceil(restanteMs / 1000.0);
+                if (restante < 0) restante = 0;
+                timerSegundos.postValue(restante);
             }
 
             @Override
             public void onFinish() {
                 timerSegundos.postValue(0);
-                // Auto-avanza a siguiente serie (ui.md § 4.5)
             }
         };
         timer.start();
