@@ -35,5 +35,5 @@ public final class Constants {
     // Agua base (35ml/kg)
     public static final int AGUA_BASE_ML = 2700;
     public static final int AGUA_ENTRENO_EXTRA_ML = 500;
-    public static final String API_BASE_URL = "https://script.google.com/macros/s/AKfycbw79e-xq-qeGB-NaoAqkeYaS_qPD-C-ZkFfkOqqZE5jvgH3aM72mVt-Lkixhp38QfV80Q/";
+    public static final String API_BASE_URL = "https://script.google.com/macros/s/AKfycbye7bjaH3F8xiH2a68h1q8fvEypQLgMlx5pGFAlvaSFZv2QM8Rkx1pAD2mJ_SGL_Fyd/exec";
 }
