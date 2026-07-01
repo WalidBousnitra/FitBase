@@ -79,6 +79,7 @@ public class HomeActivity extends AppCompatActivity {
     private View bannerDemo;
     private View bannerAusencia;
     private TextView tvAusenciaMensaje;
+    private String ultimaSesionRenderizada = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -172,9 +173,9 @@ public class HomeActivity extends AppCompatActivity {
             tvCaloriasObjetivo.setText(String.format(Locale.getDefault(), "de %,d kcal", macros.caloriasObjetivo));
 
             // Progreso animado
-            int progresoPct = macros.caloriasObjetivo > 0
+                int progresoPct = macros.caloriasObjetivo > 0
                     ? (macros.caloriasConsumidas * 100) / macros.caloriasObjetivo : 0;
-            animarProgreso(progressCalorias, progresoPct);
+                animarProgreso(progressCalorias, progresoPct);
 
             // Macros restantes
             tvProteinaRestante.setText(String.format(Locale.getDefault(), "%dg", macros.getProteinaRestante()));
@@ -200,19 +201,32 @@ public class HomeActivity extends AppCompatActivity {
         // Sesión del día
         viewModel.getSesionHoy().observe(this, sesionResp -> {
             if (sesionResp != null && sesionResp.sesion != null) {
+                String claveSesion = (sesionResp.sesion.getSesionId() != null && !sesionResp.sesion.getSesionId().isEmpty())
+                        ? sesionResp.sesion.getSesionId()
+                        : String.format(Locale.getDefault(), "%s_%d",
+                        sesionResp.sesion.getTipo(),
+                        sesionResp.sesion.getDuracionEstimadaMin());
                 String texto = String.format("%s — %d ejercicios, ~%d min",
                         sesionResp.sesion.getTipo(),
                         sesionResp.ejercicios != null ? sesionResp.ejercicios.size() : 0,
                         sesionResp.sesion.getDuracionEstimadaMin());
                 tvSesionHoy.setText(texto);
                 tvFaseInfo.setText(sesionResp.mensaje != null ? sesionResp.mensaje : "");
-                btnEmpezarEntreno.setVisibility(View.VISIBLE);
-                btnEmpezarEntreno.setAlpha(0f);
-                btnEmpezarEntreno.animate().alpha(1f).setDuration(400).start();
+                if (btnEmpezarEntreno.getVisibility() != View.VISIBLE) {
+                    btnEmpezarEntreno.setVisibility(View.VISIBLE);
+                }
+                if (!claveSesion.equals(ultimaSesionRenderizada)) {
+                    btnEmpezarEntreno.setAlpha(0f);
+                    btnEmpezarEntreno.animate().alpha(1f).setDuration(250).start();
+                    ultimaSesionRenderizada = claveSesion;
+                } else {
+                    btnEmpezarEntreno.setAlpha(1f);
+                }
             } else {
                 tvSesionHoy.setText("Descanso + Movilidad");
                 tvFaseInfo.setText("Recuperación activa — Wall Angels + aductores + tríceps overhead");
                 btnEmpezarEntreno.setVisibility(View.GONE);
+                ultimaSesionRenderizada = "";
             }
         });
 
@@ -234,7 +248,9 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     private void animarProgreso(ProgressBar bar, int target) {
-        ObjectAnimator anim = ObjectAnimator.ofInt(bar, "progress", 0, target);
+        int actual = bar.getProgress();
+        if (actual == target) return;
+        ObjectAnimator anim = ObjectAnimator.ofInt(bar, "progress", actual, target);
         anim.setDuration(800);
         anim.setInterpolator(new DecelerateInterpolator());
         anim.start();

@@ -8,6 +8,7 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.dynamicanimation.animation.SpringAnimation;
 import androidx.dynamicanimation.animation.SpringForce;
 import androidx.lifecycle.ViewModelProvider;
@@ -283,7 +284,12 @@ public class WorkoutActivity extends AppCompatActivity {
         Intent timerIntent = new Intent(this, TimerService.class);
         timerIntent.putExtra("segundos", descansoSeg);
         timerIntent.putExtra("ejercicio_nombre", ej != null ? ej.getNombre() : "");
-        startForegroundService(timerIntent);
+        try {
+            ContextCompat.startForegroundService(this, timerIntent);
+        } catch (Exception e) {
+            // Fallback defensivo para evitar cierre de la pantalla si el SO bloquea FGS.
+            startService(timerIntent);
+        }
     }
 
     private void saltarTimer() {

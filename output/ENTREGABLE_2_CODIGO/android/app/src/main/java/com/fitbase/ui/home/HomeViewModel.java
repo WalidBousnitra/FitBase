@@ -29,7 +29,7 @@ import retrofit2.Response;
 
 /**
  * ViewModel para pantalla principal.
- * DEMO: lee pasos y calorías REALES de Health Connect (Zepp + FatSecret).
+ * DEMO: lee pasos y calorías REALES de Health Connect (sin persistencia en backend).
  *       Sesión mostrada pero NO arranca entrenamiento ni escribe en BBDD.
  * REAL: todo conectado al backend.
  */
@@ -115,7 +115,7 @@ public class HomeViewModel extends AndroidViewModel {
                     base.grasasConsumidasG = Math.max(datos.grasasG, 0);
                     if (base.caloriasConsumidas == 0 && base.proteinaConsumidaG == 0
                             && base.carbosConsumidosG == 0 && base.grasasConsumidasG == 0) {
-                        base.origenDatos = "demo_sin_sync_nutricion";
+                        base.origenDatos = "demo_sin_datos_hc";
                     }
                     macros.postValue(base);
                 });

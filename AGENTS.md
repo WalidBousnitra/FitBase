@@ -55,7 +55,7 @@ Base de conocimiento para una app de programación de entrenamiento y nutrición
 |------------|------------|
 | Frontend | Android (Java + Views/XML) |
 | Backend | Google Apps Script (V8) |
-| Base de Datos | Google Sheets (14 hojas) |
+| Base de Datos | Google Sheets (esquema simplificado) |
 | Métricas | Health Connect ← Zepp (Amazfit GTS 4) |
 
 ## Archivos Clave

@@ -13,7 +13,6 @@ import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.CountDownTimer;
 import android.os.IBinder;
-import android.os.SystemClock;
 
 import androidx.core.app.NotificationCompat;
 
@@ -44,6 +43,7 @@ public class TimerService extends Service {
 
     private CountDownTimer timer;
     private long finishTimeMs;
+    private boolean finishHandled = false;
 
     // Flag estatico para saber si la app esta en primer plano
     private static boolean appEnPrimerPlano = false;
@@ -65,6 +65,7 @@ public class TimerService extends Service {
         }
 
         int segundos = intent.getIntExtra("segundos", 120);
+        if (segundos <= 0) segundos = 1;
         String ejercicioNombre = intent.getStringExtra("ejercicio_nombre");
         if (ejercicioNombre == null) ejercicioNombre = "";
 
@@ -80,6 +81,7 @@ public class TimerService extends Service {
         // Notificacion compacta con cronometro (estilo Dynamic Island)
         Notification notificacion = crearNotificacionCronometro(ejercicioNombre, pendingIntent);
         startForeground(NOTIFICACION_ID, notificacion);
+        finishHandled = false;
 
         // Timer interno para detectar finalizacion
         if (timer != null) timer.cancel();
@@ -92,6 +94,8 @@ public class TimerService extends Service {
 
             @Override
             public void onFinish() {
+                if (finishHandled) return;
+                finishHandled = true;
                 onTimerFinish(ejercicio, pendingIntent);
             }
         };
@@ -130,22 +134,26 @@ public class TimerService extends Service {
      * Si esta fuera -> notificacion expandida + sonido auriculares + vibrar reloj.
      */
     private void onTimerFinish(String ejercicio, PendingIntent pi) {
-        if (appEnPrimerPlano) {
-            // DENTRO de la app -> SILENCIO TOTAL
-            // WorkoutActivity observa timerSegundos=0 y transiciona sola
-            android.app.NotificationManager nm = getSystemService(android.app.NotificationManager.class);
-            nm.cancel(NOTIFICACION_ID);
-        } else {
-            // FUERA de la app -> Expandir notificacion (tipo WhatsApp heads-up)
-            mostrarNotificacionExpandida(ejercicio, pi);
+        try {
+            if (appEnPrimerPlano) {
+                // DENTRO de la app -> SILENCIO TOTAL
+                // WorkoutActivity observa timerSegundos=0 y transiciona sola
+                android.app.NotificationManager nm = getSystemService(android.app.NotificationManager.class);
+                if (nm != null) nm.cancel(NOTIFICACION_ID);
+            } else {
+                // FUERA de la app -> Expandir notificacion (tipo WhatsApp heads-up)
+                mostrarNotificacionExpandida(ejercicio, pi);
 
-            // Vibrar reloj (via Zepp)
-            enviarVibracionReloj(ejercicio, pi);
+                // Vibrar reloj (via Zepp)
+                enviarVibracionReloj(ejercicio, pi);
 
-            // Sonido SOLO con auriculares
-            if (hayAuricularesConectados()) {
-                reproducirSonidoSutil();
+                // Sonido SOLO con auriculares
+                if (hayAuricularesConectados()) {
+                    reproducirSonidoSutil();
+                }
             }
+        } catch (Exception ignored) {
+            // Evita crash del servicio por comportamientos particulares del vendor.
         }
 
         // Broadcast para que WorkoutActivity sepa que termino
@@ -173,8 +181,10 @@ public class TimerService extends Service {
                 .build();
 
         android.app.NotificationManager nm = getSystemService(android.app.NotificationManager.class);
-        nm.cancel(NOTIFICACION_ID);
-        nm.notify(NOTIF_FIN_ID, expandida);
+        if (nm != null) {
+            nm.cancel(NOTIFICACION_ID);
+            nm.notify(NOTIF_FIN_ID, expandida);
+        }
     }
 
     /**
@@ -194,7 +204,9 @@ public class TimerService extends Service {
                 .build();
 
         android.app.NotificationManager nm = getSystemService(android.app.NotificationManager.class);
-        nm.notify(NOTIF_FIN_ID + 1, notifReloj);
+        if (nm != null) {
+            nm.notify(NOTIF_FIN_ID + 1, notifReloj);
+        }
     }
 
     /**

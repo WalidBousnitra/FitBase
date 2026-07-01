@@ -61,7 +61,7 @@ Especificaciones en `/reglas/desarrollo/`:
 - **Arquitectura**: MVVM + Repository + Room + Retrofit
 - **Diseño**: `Sistema_Diseno_Fitness.md` (colores, fuentes)
 - **Pantallas**: `ui.md` (todos los flujos)
-- **Base de datos**: `base_datos.md` (14 hojas en Sheets)
+- **Base de datos**: `base_datos.md` (esquema simplificado en Sheets)
 
 ---
 
@@ -84,7 +84,7 @@ La IA debe darme **4 entregables**:
 ├─────────────────────────────────────────────────────────────────┤
 │ Backend (Google Apps Script):                                   │
 │   - Codigo.gs con API REST completa                             │
-│   - Instrucciones para crear las 14 hojas                       │
+│   - Instrucciones para crear las hojas activas del esquema      │
 │                                                                 │
 │ Android (Java + Views/XML):                                     │
 │   - Todos los archivos .java                                    │

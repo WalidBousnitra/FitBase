@@ -31,8 +31,10 @@ public class MetricasProgresionResponse {
         public float pesoKg;
         @SerializedName("grasa_pct")
         public Float grasaPct;
-        @SerializedName("musculo_kg")
-        public Float musculoKg;
+        @SerializedName("hidratacion_pct")
+        public Float hidratacionPct;
+        @SerializedName("grasa_visceral")
+        public Float grasaVisceral;
     }
 
     public static class ZeppEntry {
@@ -50,6 +52,7 @@ public class MetricasProgresionResponse {
         @SerializedName("stress_avg")
         public int stressAvg;
         public int pasos;
+        public float vo2max;
     }
 
     public static class VolumenEntry {

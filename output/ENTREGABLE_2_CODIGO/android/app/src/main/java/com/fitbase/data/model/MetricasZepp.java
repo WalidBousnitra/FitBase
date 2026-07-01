@@ -6,12 +6,10 @@ import com.google.gson.annotations.SerializedName;
 public class MetricasZepp {
     @SerializedName("num_sleep_score")
     public int sleepScore;
-    @SerializedName("num_sleep_horas")
-    public float sleepHoras;
     @SerializedName("num_hr_reposo")
     public int hrReposo;
-    @SerializedName("num_pasos_ayer")
-    public int pasosAyer;
-    @SerializedName("num_readiness")
-    public int readiness;
+    @SerializedName("num_pasos")
+    public int pasos;
+    @SerializedName("num_vo2max")
+    public float vo2max;
 }

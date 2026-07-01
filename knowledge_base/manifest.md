@@ -45,7 +45,7 @@ Ver: `/PROMPT_FITBASE.md` para instrucciones de generación.
 | **Frontend** | Android (Java + Views/XML) | NO Kotlin, NO Compose |
 | UI | Material Design 3, modo oscuro | Minimalismo absoluto |
 | Backend | Google Apps Script | Solo API REST, sin lógica pesada |
-| Base de Datos | Google Sheets | 14 hojas (REG-LOG-02) |
+| Base de Datos | Google Sheets | Esquema simplificado (REG-LOG-02) |
 | Métricas | Amazfit GTS 4 (Zepp) | Sueño, HRV, FC, pasos |
 | Báscula | Xiaomi Mi Scale | Peso, composición corporal |
 | Dispositivo | Xiaomi Redmi Note 14 Pro 5G | Referencia para UI |
@@ -110,7 +110,7 @@ Ver: `/PROMPT_FITBASE.md` para instrucciones de generación.
         │   └── piscina.md       # [REG-NAT-01] 2x/semana
         ├── /logica
         │   ├── motor_pesos.md   # [REG-LOG-01] Progresión de cargas
-        │   ├── base_datos.md    # [REG-LOG-02] Esquema Sheets (14 hojas)
+        │   ├── base_datos.md    # [REG-LOG-02] Esquema Sheets simplificado
         │   └── excepciones.md   # [REG-LOG-03] Viajes, enfermedad
         └── /desarrollo
             ├── ui.md            # [REG-DEV-01] Especificación pantallas
@@ -189,7 +189,7 @@ Ver: `/PROMPT_FITBASE.md` para instrucciones de generación.
 |---------|----------|-----------|
 | [compilador.md](reglas/desarrollo/compilador.md) | Estructura código, convenciones | ⭐⭐⭐ |
 | [ui.md](reglas/desarrollo/ui.md) | Wireframes, flujos, gestos | ⭐⭐⭐ |
-| [base_datos.md](reglas/logica/base_datos.md) | Esquema 14 hojas Sheets | ⭐⭐⭐ |
+| [base_datos.md](reglas/logica/base_datos.md) | Esquema Sheets simplificado | ⭐⭐⭐ |
 | [motor_pesos.md](reglas/logica/motor_pesos.md) | Algoritmo autorregulación | ⭐⭐ |
 | [motor_dieta.md](reglas/nutricion/motor_dieta.md) | Cálculo macros | ⭐⭐ |
 | [prioridades.md](usuario/prioridades.md) | Orden de decisiones | ⭐⭐ |
@@ -219,7 +219,7 @@ Ver: `/PROMPT_FITBASE.md` para instrucciones de generación.
 ```yaml
 GOOGLE:
   - Crear Spreadsheet "FitBase_DB" en Drive
-  - Crear las 14 hojas con headers exactos
+  - Crear las hojas activas definidas en base_datos.md con headers exactos
   - Crear proyecto Apps Script vinculado
   - Deploy como Web App
   - Copiar URL del endpoint

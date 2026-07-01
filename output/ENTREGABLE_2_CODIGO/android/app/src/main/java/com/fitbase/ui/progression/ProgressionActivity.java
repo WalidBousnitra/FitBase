@@ -13,6 +13,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.fitbase.R;
 import com.fitbase.data.model.MetricasProgresionResponse;
 
+import java.util.Collections;
+
 /**
  * Pantalla de progresion de metricas clave.
  * Muestra historico de: Peso, Grasa%, Sueno, HRV, FC reposo, Volumen entreno.
@@ -86,7 +88,17 @@ public class ProgressionActivity extends AppCompatActivity {
     }
 
     private void mostrarDatos(MetricasProgresionResponse data) {
-        if (data == null) return;
+        if (data == null) {
+            tvPesoActual.setText("— kg");
+            tvPesoCambio.setText("Sin datos");
+            tvGrasaActual.setText("—%");
+            tvSleepMedia.setText("—");
+            tvPasosMedia.setText("—");
+            rvPeso.setAdapter(new MetricaAdapter(Collections.emptyList(), MetricaAdapter.TIPO_PESO));
+            rvSueno.setAdapter(new MetricaAdapter(Collections.emptyList(), MetricaAdapter.TIPO_SUENO));
+            rvVolumen.setAdapter(new MetricaAdapter(Collections.emptyList(), MetricaAdapter.TIPO_VOLUMEN));
+            return;
+        }
         tvError.setVisibility(View.GONE);
 
         // Resumen

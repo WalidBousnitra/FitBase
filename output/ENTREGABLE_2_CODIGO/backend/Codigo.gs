@@ -8,17 +8,13 @@
 // Script container-bound: ya está asociado al Spreadsheet (creado desde Extensiones → Apps Script)
 // No necesita SPREADSHEET_ID — usa getActiveSpreadsheet() directamente.
 
-const USER_ID = 'USR_001';
-
 // Nombres de hojas (REG-LOG-02)
 const HOJAS = {
-  USUARIOS: 'usuarios',
   METRICAS_ZEPP: 'metricas_zepp',
   PESO_LOG: 'peso_log',
   SESIONES_PLAN: 'sesiones_plan',
   EJERCICIOS_PLAN: 'ejercicios_plan',
   EJERCICIOS_LOG: 'ejercicios_log',
-  COMIDAS_LOG: 'comidas_log',
   PLAN_ANUAL: 'plan_anual',
   PLAN_SEMANAL: 'plan_semanal',
   EJERCICIOS_CATALOGO: 'ejercicios_catalogo'
@@ -79,7 +75,6 @@ function doGet(e) {
  *   accion=guardar_peso
  *   accion=guardar_metricas
  *   accion=completar_sesion
- *   accion=sync_nutricion
  */
 function doPost(e) {
   try {
@@ -100,11 +95,8 @@ function doPost(e) {
       case 'completar_sesion':
         resultado = completarSesion(datos);
         break;
-      case 'sync_nutricion':
-        resultado = syncNutricionDesdeHealthConnect(datos);
-        break;
       default:
-        resultado = { error: 'Acción POST no reconocida', acciones_validas: ['guardar_log', 'guardar_peso', 'guardar_metricas', 'completar_sesion', 'sync_nutricion'] };
+        resultado = { error: 'Acción POST no reconocida', acciones_validas: ['guardar_log', 'guardar_peso', 'guardar_metricas', 'completar_sesion'] };
     }
 
     return ContentService.createTextOutput(JSON.stringify(resultado))
@@ -131,7 +123,7 @@ function getSesionHoy() {
   let sesion = null;
   for (let i = 1; i < datos.length; i++) {
     const fechaFila = Utilities.formatDate(new Date(datos[i][cabeceras.indexOf('date_fecha')]), 'Europe/Madrid', 'yyyy-MM-dd');
-    if (fechaFila === hoy && datos[i][cabeceras.indexOf('user_id')] === USER_ID) {
+    if (fechaFila === hoy) {
       sesion = filaAObjeto(cabeceras, datos[i]);
       break;
     }
@@ -171,9 +163,7 @@ function getPlanAnual() {
 
   const fases = [];
   for (let i = 1; i < datos.length; i++) {
-    if (datos[i][cabeceras.indexOf('user_id')] === USER_ID) {
-      fases.push(filaAObjeto(cabeceras, datos[i]));
-    }
+    fases.push(filaAObjeto(cabeceras, datos[i]));
   }
 
   // Determinar fase actual
@@ -206,8 +196,7 @@ function getPlanSemanal(numSemana) {
   const cabeceras = datos[0];
 
   for (let i = 1; i < datos.length; i++) {
-    if (datos[i][cabeceras.indexOf('num_semana_año')] == numSemana &&
-        datos[i][cabeceras.indexOf('user_id')] === USER_ID) {
+    if (datos[i][cabeceras.indexOf('num_semana_año')] == numSemana) {
       return filaAObjeto(cabeceras, datos[i]);
     }
   }
@@ -247,8 +236,7 @@ function getProgresion(ejercicioId) {
 
   const registros = [];
   for (let i = 1; i < datos.length; i++) {
-    if (datos[i][cabeceras.indexOf('ejercicio_id')] === ejercicioId &&
-        datos[i][cabeceras.indexOf('user_id')] === USER_ID) {
+    if (datos[i][cabeceras.indexOf('ejercicio_id')] === ejercicioId) {
       registros.push(filaAObjeto(cabeceras, datos[i]));
     }
   }
@@ -289,16 +277,26 @@ function getPesoActual() {
   const idxGrasa = cabeceras.indexOf('num_grasa_pct');
   const idxFecha = cabeceras.indexOf('date_fecha');
 
-  for (let i = datos.length - 1; i >= 1; i--) {
-    const peso = datos[i][idxPeso];
-    if (peso && peso > 0) {
-      return {
+  let mejor = null;
+  for (let i = 1; i < datos.length; i++) {
+    const peso = Number(datos[i][idxPeso]);
+    const fecha = parseSheetDate(datos[i][idxFecha]);
+    if (!peso || peso <= 0 || !fecha) continue;
+    if (!mejor || fecha > mejor.fecha) {
+      mejor = {
         peso: peso,
         grasa_pct: datos[i][idxGrasa] || null,
-        fecha: datos[i][idxFecha],
-        fuente: 'peso_log'
+        fecha: fecha
       };
     }
+  }
+  if (mejor) {
+    return {
+      peso: mejor.peso,
+      grasa_pct: mejor.grasa_pct,
+      fecha: Utilities.formatDate(mejor.fecha, 'Europe/Madrid', 'yyyy-MM-dd'),
+      fuente: 'peso_log'
+    };
   }
   return { peso: 78.2, grasa_pct: null, fuente: 'default' };
 }
@@ -326,9 +324,9 @@ function getTendenciaPeso() {
   let pesosAnteriores = [];
 
   for (let i = 1; i < datos.length; i++) {
-    const fecha = new Date(datos[i][idxFecha]);
+    const fecha = parseSheetDate(datos[i][idxFecha]);
     const peso = datos[i][idxPeso];
-    if (!peso || peso <= 0) continue;
+    if (!peso || peso <= 0 || !fecha) continue;
 
     if (fecha >= hace7) {
       pesosRecientes.push(peso);
@@ -364,15 +362,15 @@ function getPasosHoy() {
   if (datos.length <= 1) return 0;
 
   const cabeceras = datos[0];
-  const idxPasos = cabeceras.indexOf('num_pasos_ayer');
+  const idxPasos = cabeceras.indexOf('num_pasos');
   const idxFecha = cabeceras.indexOf('date_fecha');
   const hoy = Utilities.formatDate(new Date(), 'Europe/Madrid', 'yyyy-MM-dd');
 
   for (let i = datos.length - 1; i >= 1; i--) {
-    const fecha = datos[i][idxFecha];
-    const fechaStr = fecha instanceof Date
+    const fecha = parseSheetDate(datos[i][idxFecha]);
+    const fechaStr = fecha
       ? Utilities.formatDate(fecha, 'Europe/Madrid', 'yyyy-MM-dd')
-      : String(fecha);
+      : String(datos[i][idxFecha]);
     if (fechaStr === hoy && datos[i][idxPasos]) {
       return datos[i][idxPasos];
     }
@@ -395,10 +393,10 @@ function getSleepScoreHoy() {
   const hoy = Utilities.formatDate(new Date(), 'Europe/Madrid', 'yyyy-MM-dd');
 
   for (let i = datos.length - 1; i >= 1; i--) {
-    const fecha = datos[i][idxFecha];
-    const fechaStr = fecha instanceof Date
+    const fecha = parseSheetDate(datos[i][idxFecha]);
+    const fechaStr = fecha
       ? Utilities.formatDate(fecha, 'Europe/Madrid', 'yyyy-MM-dd')
-      : String(fecha);
+      : String(datos[i][idxFecha]);
     if (fechaStr === hoy && datos[i][idxSleep]) {
       return datos[i][idxSleep];
     }
@@ -552,33 +550,12 @@ function getMacrosHoy() {
   // ═══ 12. SLEEP SCORE (informativo — no afecta nutrición per se) ═══
   const sleepScore = getSleepScoreHoy();
 
-  // ═══ 13. CONSUMO REAL SYNC (Health Connect -> comidas_log) ═══
-  const comidasHoja = getHoja(HOJAS.COMIDAS_LOG);
-  const comidasData = comidasHoja.getDataRange().getValues();
-  const cabComidas = comidasData[0];
-  const comColFecha = cabComidas.indexOf('date_fecha');
-  const comColUser = cabComidas.indexOf('user_id');
-  const comColCal = cabComidas.indexOf('num_calorias');
-  const comColProt = cabComidas.indexOf('num_proteina_g');
-  const comColCarbs = cabComidas.indexOf('num_carbos_g');
-  const comColGrasas = cabComidas.indexOf('num_grasas_g');
-
-  let caloriasConsumidas = 0;
-  let proteinaConsumidaG = 0;
-  let carbosConsumidosG = 0;
-  let grasasConsumidasG = 0;
-
-  for (let i = 1; i < comidasData.length; i++) {
-    if (comidasData[i][comColFecha] === hoy && comidasData[i][comColUser] === USER_ID) {
-      caloriasConsumidas += comidasData[i][comColCal] || 0;
-      proteinaConsumidaG += comidasData[i][comColProt] || 0;
-      carbosConsumidosG += comidasData[i][comColCarbs] || 0;
-      grasasConsumidasG += comidasData[i][comColGrasas] || 0;
-    }
-  }
-  const origenDatos = (caloriasConsumidas > 0 || proteinaConsumidaG > 0 || carbosConsumidosG > 0 || grasasConsumidasG > 0)
-    ? 'health_connect_sync'
-    : 'sin_datos';
+  // Comida NO se persiste en BBDD por requerimiento (solo vista diaria local en app).
+  const caloriasConsumidas = 0;
+  const proteinaConsumidaG = 0;
+  const carbosConsumidosG = 0;
+  const grasasConsumidasG = 0;
+  const origenDatos = 'sin_persistencia_comida';
 
   return {
     // Contrato original (Android compatible)
@@ -640,6 +617,7 @@ function guardarEjercicioLog(datos) {
   ];
 
   hoja.appendRow(fila);
+  limpiarEjerciciosLogUltimos7Dias();
 
   return { ok: true, log_id: logId };
 }
@@ -653,12 +631,11 @@ function guardarPeso(datos) {
 
   const fila = [
     pesoId,
-    USER_ID,
     datos.fecha || Utilities.formatDate(new Date(), 'Europe/Madrid', 'yyyy-MM-dd'),
     datos.peso_kg,
     datos.grasa_pct || '',
-    datos.musculo_kg || '',
-    datos.fuente || 'manual',
+    datos.hidratacion_pct || '',
+    datos.grasa_visceral || '',
     new Date().toISOString()
   ];
 
@@ -675,11 +652,11 @@ function guardarMetricas(datos) {
 
   const fila = [
     metricaId,
-    USER_ID,
     datos.fecha,
     datos.sleep_score || 0,
+    datos.pasos || 0,
     datos.hr_reposo || 0,
-    datos.pasos_ayer || 0,
+    datos.vo2max || 0,
     new Date().toISOString()
   ];
 
@@ -691,51 +668,14 @@ function guardarMetricas(datos) {
  * Guarda una comida en el log nutricional.
  */
 function guardarComida(datos) {
-  const hoja = getHoja(HOJAS.COMIDAS_LOG);
-  const comidaId = generarId('COM');
-
-  const fila = [
-    comidaId,
-    USER_ID,
-    datos.fecha || Utilities.formatDate(new Date(), 'Europe/Madrid', 'yyyy-MM-dd'),
-    datos.tipo_comida, // desayuno/comida/cena/snack
-    datos.calorias,
-    datos.proteina_g,
-    datos.carbos_g,
-    datos.grasas_g,
-    datos.pre_entreno || false,
-    datos.post_entreno || false,
-    datos.notas || '',
-    new Date().toISOString()
-  ];
-
-  hoja.appendRow(fila);
-  return { ok: true, comida_id: comidaId };
+  return { ok: false, error: 'comida_no_persistida' };
 }
 
 /**
  * Guarda adherencia a suplementos del día.
  */
 function guardarSuplemento(datos) {
-  const hoja = getHoja(HOJAS.SUPLEMENTOS_LOG);
-  const suppId = generarId('SUP');
-
-  const fila = [
-    suppId,
-    USER_ID,
-    datos.fecha || Utilities.formatDate(new Date(), 'Europe/Madrid', 'yyyy-MM-dd'),
-    datos.whey || false,
-    datos.caseina || false,
-    datos.vitd_k || false,
-    datos.omega3 || false,
-    datos.magnesio || false,
-    datos.ashwagandha || false,
-    datos.cromo || false,
-    datos.notas || ''
-  ];
-
-  hoja.appendRow(fila);
-  return { ok: true, supp_id: suppId };
+  return { ok: false, error: 'suplementos_fuera_de_alcance' };
 }
 
 /**
@@ -764,23 +704,7 @@ function completarSesion(datos) {
  * Guarda una excepción (viaje, enfermedad, lesión).
  */
 function guardarExcepcion(datos) {
-  const hoja = getHoja(HOJAS.EXCEPCIONES_LOG);
-  const excId = generarId('EXC');
-
-  const fila = [
-    excId,
-    USER_ID,
-    datos.tipo, // viaje/enfermedad/lesion/ramadan/estres
-    datos.fecha_inicio,
-    datos.fecha_fin || '',
-    datos.detalles || '',
-    datos.zona_afectada || '',
-    datos.severidad || '',
-    true // activa
-  ];
-
-  hoja.appendRow(fila);
-  return { ok: true, exc_id: excId };
+  return { ok: false, error: 'excepciones_fuera_de_alcance' };
 }
 
 // ─── DETECCIÓN AUSENCIA (abre app y no entrenó) ──────────────
@@ -797,13 +721,11 @@ function checkAusencia() {
   const cabeceras = datos[0];
   const colFecha = cabeceras.indexOf('date_fecha');
   const colCompletada = cabeceras.indexOf('bool_completada');
-  const colUserId = cabeceras.indexOf('user_id');
 
   const diasPerdidos = [];
   const hace7dias = new Date(hoy.getTime() - 7 * 24 * 60 * 60 * 1000);
 
   for (let i = 1; i < datos.length; i++) {
-    if (datos[i][colUserId] !== USER_ID) continue;
     const fechaFila = new Date(datos[i][colFecha]);
     if (fechaFila >= hace7dias && fechaFila < hoy && !datos[i][colCompletada]) {
       diasPerdidos.push({
@@ -852,34 +774,7 @@ function calcularRedistribucion(diasPerdidos) {
  * El usuario indica manualmente fechas de inicio/fin.
  */
 function registrarAusenciaExtendida(datos) {
-  // Guardar como excepción
-  const excResult = guardarExcepcion({
-    tipo: datos.tipo || 'ausencia',
-    fecha_inicio: datos.fecha_inicio,
-    fecha_fin: datos.fecha_fin,
-    detalles: datos.motivo || 'Ausencia extendida',
-    severidad: datos.severidad || 'media'
-  });
-
-  // Recalcular plan: mover fechas de sesiones pendientes
-  const diasAusencia = Math.ceil(
-    (new Date(datos.fecha_fin) - new Date(datos.fecha_inicio)) / (1000 * 60 * 60 * 24)
-  );
-
-  // Ajustar plan post-ausencia
-  const ajuste = {
-    semana_readaptacion: diasAusencia >= 7,
-    reduccion_volumen_primera_semana: diasAusencia >= 7 ? 0.6 : 0.8,
-    redistribuir_fases: diasAusencia >= 14
-  };
-
-  return {
-    ok: true,
-    exc_id: excResult.exc_id,
-    dias_ausencia: diasAusencia,
-    ajuste_plan: ajuste,
-    mensaje: `Ausencia registrada (${diasAusencia} días). Plan ajustado.`
-  };
+  return { ok: false, error: 'ausencia_extendida_fuera_de_alcance' };
 }
 
 /**
@@ -913,40 +808,7 @@ function subirPesoManual(datos) {
  * No se usa la API REST de FatSecret (la cuenta Platform es solo para devs).
  */
 function syncNutricionDesdeHealthConnect(datos) {
-  const hoja = getHoja(HOJAS.COMIDAS_LOG);
-  const fecha = datos.fecha || Utilities.formatDate(new Date(), 'Europe/Madrid', 'yyyy-MM-dd');
-
-  let totalCal = 0, totalProt = 0, totalCarbs = 0, totalGrasa = 0;
-
-  const comidas = datos.comidas || [];
-  for (const comida of comidas) {
-    const comidaId = generarId('COM');
-    const fila = [
-      comidaId,
-      USER_ID,
-      fecha,
-      comida.tipo_comida || 'snack',
-      comida.calorias || 0,
-      comida.proteina_g || 0,
-      comida.carbos_g || 0,
-      comida.grasas_g || 0,
-      comida.nombre || '',
-      new Date().toISOString()
-    ];
-    hoja.appendRow(fila);
-
-    totalCal += comida.calorias || 0;
-    totalProt += comida.proteina_g || 0;
-    totalCarbs += comida.carbos_g || 0;
-    totalGrasa += comida.grasas_g || 0;
-  }
-
-  return {
-    ok: true,
-    fecha: fecha,
-    total_comidas: comidas.length,
-    totales: { calorias: totalCal, proteina_g: totalProt, carbos_g: totalCarbs, grasas_g: totalGrasa }
-  };
+  return { ok: false, error: 'comida_no_persistida' };
 }
 
 /**
@@ -960,14 +822,13 @@ function getComposicionSemanal() {
 
   // Buscar último registro con datos de composición
   for (let i = datos.length - 1; i >= 1; i--) {
-    if (datos[i][cabeceras.indexOf('user_id')] === USER_ID &&
-        datos[i][cabeceras.indexOf('num_grasa_pct')]) {
+    if (datos[i][cabeceras.indexOf('num_grasa_pct')]) {
       return {
         fecha: datos[i][cabeceras.indexOf('date_fecha')],
         peso_kg: datos[i][cabeceras.indexOf('num_peso_kg')],
         grasa_pct: datos[i][cabeceras.indexOf('num_grasa_pct')],
-        musculo_kg: datos[i][cabeceras.indexOf('num_musculo_kg')],
-        fuente: datos[i][cabeceras.indexOf('str_fuente')]
+        hidratacion_pct: datos[i][cabeceras.indexOf('num_hidratacion_pct')],
+        grasa_visceral: datos[i][cabeceras.indexOf('num_grasa_visceral')]
       };
     }
   }
@@ -979,27 +840,7 @@ function getComposicionSemanal() {
  * Solo al inicio del plan y al final de cada fase.
  */
 function guardarMedicion(datos) {
-  const hoja = getHoja(HOJAS.MEDICIONES_LOG);
-  const medId = generarId('MED');
-
-  const fila = [
-    medId,
-    USER_ID,
-    datos.fecha || Utilities.formatDate(new Date(), 'Europe/Madrid', 'yyyy-MM-dd'),
-    datos.tipo || 'inicio', // 'inicio' | 'fin_fase'
-    datos.fase || '',
-    datos.hombros_cm || '',
-    datos.pecho_cm || '',
-    datos.cintura_cm || '',
-    datos.cadera_cm || '',
-    datos.bicep_cm || '',
-    datos.muslo_cm || '',
-    datos.pantorrilla_cm || '',
-    new Date().toISOString()
-  ];
-
-  hoja.appendRow(fila);
-  return { ok: true, medicion_id: medId };
+  return { ok: false, error: 'mediciones_fuera_de_alcance' };
 }
 
 // ─── MOTOR DE CARGAS (REG-LOG-01) ────────────────────────────
@@ -1078,30 +919,7 @@ function calcularPesoSugerido(ejercicioId, pesoBase) {
  * Actualiza log de progresión (1RM estimado, PRs).
  */
 function actualizarProgresion(ejercicioId, peso, reps) {
-  const hoja = getHoja(HOJAS.PROGRESION_LOG);
-  const progId = generarId('PRO');
-
-  // 1RM estimado (fórmula Epley)
-  const rm1Estimado = peso * (1 + reps / 30);
-  const volumenTotal = peso * reps;
-
-  // Verificar si es PR
-  const ultimoPR = getUltimo1RM(ejercicioId);
-  const esPR = rm1Estimado > ultimoPR ? '1rm' : '';
-
-  const fila = [
-    progId,
-    USER_ID,
-    ejercicioId,
-    Utilities.formatDate(new Date(), 'Europe/Madrid', 'yyyy-MM-dd'),
-    Math.round(rm1Estimado * 10) / 10,
-    peso,
-    volumenTotal,
-    reps,
-    esPR
-  ];
-
-  hoja.appendRow(fila);
+  return { ok: false, error: 'progresion_historica_fuera_de_alcance' };
 }
 
 // ─── UTILIDADES ───────────────────────────────────────────────
@@ -1133,6 +951,19 @@ function filaAObjeto(cabeceras, fila) {
   return obj;
 }
 
+function parseSheetDate(valor) {
+  if (!valor && valor !== 0) return null;
+  if (valor instanceof Date) return valor;
+  if (typeof valor === 'number') {
+    // Formato serial de Google Sheets (dias desde 1899-12-30)
+    const ms = (valor - 25569) * 86400 * 1000;
+    const d = new Date(ms);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  const d = new Date(valor);
+  return isNaN(d.getTime()) ? null : d;
+}
+
 function getEjerciciosDeSesion(sesionId) {
   const hoja = getHoja(HOJAS.EJERCICIOS_PLAN);
   const datos = hoja.getDataRange().getValues();
@@ -1154,8 +985,10 @@ function getUltimaMetrica(nombreHoja, fecha) {
   const colFecha = cabeceras.indexOf('date_fecha');
 
   for (let i = datos.length - 1; i >= 1; i--) {
-    const fechaFila = Utilities.formatDate(new Date(datos[i][colFecha]), 'Europe/Madrid', 'yyyy-MM-dd');
-    if (fechaFila === fecha && datos[i][cabeceras.indexOf('user_id')] === USER_ID) {
+    const parsed = parseSheetDate(datos[i][colFecha]);
+    if (!parsed) continue;
+    const fechaFila = Utilities.formatDate(parsed, 'Europe/Madrid', 'yyyy-MM-dd');
+    if (fechaFila === fecha) {
       return filaAObjeto(cabeceras, datos[i]);
     }
   }
@@ -1170,7 +1003,7 @@ function calcularMediaFC(dias) {
 
   const valores = [];
   for (let i = Math.max(1, datos.length - dias); i < datos.length; i++) {
-    if (datos[i][cabeceras.indexOf('user_id')] === USER_ID && datos[i][colFC]) {
+    if (datos[i][colFC]) {
       valores.push(datos[i][colFC]);
     }
   }
@@ -1187,7 +1020,7 @@ function calcularMediaPeso(dias) {
 
   const valores = [];
   for (let i = Math.max(1, datos.length - dias); i < datos.length; i++) {
-    if (datos[i][cabeceras.indexOf('user_id')] === USER_ID && datos[i][colPeso]) {
+    if (datos[i][colPeso]) {
       valores.push(datos[i][colPeso]);
     }
   }
@@ -1232,17 +1065,19 @@ function getProgresionMetricas(dias) {
   const datosPeso = hojaPeso.getDataRange().getValues();
   const cabPeso = datosPeso[0];
   for (let i = 1; i < datosPeso.length; i++) {
-    if (datosPeso[i][cabPeso.indexOf('user_id')] !== USER_ID) continue;
-    const fecha = new Date(datosPeso[i][cabPeso.indexOf('date_fecha')]);
-    if (fecha >= desde) {
+    const fecha = parseSheetDate(datosPeso[i][cabPeso.indexOf('date_fecha')]);
+    const pesoVal = Number(datosPeso[i][cabPeso.indexOf('num_peso_kg')]);
+    if (fecha && fecha >= desde && pesoVal > 0) {
       pesoData.push({
         fecha: Utilities.formatDate(fecha, 'Europe/Madrid', 'yyyy-MM-dd'),
-        peso_kg: datosPeso[i][cabPeso.indexOf('num_peso_kg')],
+        peso_kg: pesoVal,
         grasa_pct: datosPeso[i][cabPeso.indexOf('num_grasa_pct')] || null,
-        musculo_kg: datosPeso[i][cabPeso.indexOf('num_musculo_kg')] || null
+        hidratacion_pct: datosPeso[i][cabPeso.indexOf('num_hidratacion_pct')] || null,
+        grasa_visceral: datosPeso[i][cabPeso.indexOf('num_grasa_visceral')] || null
       });
     }
   }
+  pesoData.sort((a, b) => a.fecha.localeCompare(b.fecha));
 
   // 2. Métricas Zepp (sueño, FC, HRV, estrés, pasos)
   const zeppData = [];
@@ -1250,9 +1085,8 @@ function getProgresionMetricas(dias) {
   const datosZepp = hojaZepp.getDataRange().getValues();
   const cabZepp = datosZepp[0];
   for (let i = 1; i < datosZepp.length; i++) {
-    if (datosZepp[i][cabZepp.indexOf('user_id')] !== USER_ID) continue;
-    const fecha = new Date(datosZepp[i][cabZepp.indexOf('date_fecha')]);
-    if (fecha >= desde) {
+    const fecha = parseSheetDate(datosZepp[i][cabZepp.indexOf('date_fecha')]);
+    if (fecha && fecha >= desde) {
       zeppData.push({
         fecha: Utilities.formatDate(fecha, 'Europe/Madrid', 'yyyy-MM-dd'),
         sleep_score: datosZepp[i][cabZepp.indexOf('num_sleep_score')] || 0,
@@ -1261,10 +1095,12 @@ function getProgresionMetricas(dias) {
         hrv_rmssd: 0,
         hr_reposo: datosZepp[i][cabZepp.indexOf('num_hr_reposo')] || 0,
         stress_avg: 0,
-        pasos: datosZepp[i][cabZepp.indexOf('num_pasos_ayer')] || 0
+        pasos: datosZepp[i][cabZepp.indexOf('num_pasos')] || 0,
+        vo2max: datosZepp[i][cabZepp.indexOf('num_vo2max')] || 0
       });
     }
   }
+  zeppData.sort((a, b) => a.fecha.localeCompare(b.fecha));
 
   // 3. Volumen de entrenamiento por día
   const volumenData = [];
@@ -1275,7 +1111,8 @@ function getProgresionMetricas(dias) {
   for (let i = 1; i < datosLog.length; i++) {
     const fechaStr = datosLog[i][cabLog.indexOf('date_timestamp')];
     if (!fechaStr) continue;
-    const fecha = new Date(fechaStr);
+    const fecha = parseSheetDate(fechaStr);
+    if (!fecha) continue;
     if (fecha < desde) continue;
     const dia = Utilities.formatDate(fecha, 'Europe/Madrid', 'yyyy-MM-dd');
     const peso = datosLog[i][cabLog.indexOf('num_peso_usado_kg')] || 0;
@@ -1390,15 +1227,13 @@ function inicializarHojas() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
 
   const estructuras = {
-    [HOJAS.USUARIOS]: ['user_id', 'str_nombre', 'num_altura_cm', 'str_sexo', 'str_objetivo', 'str_split', 'date_creado', 'date_modificado'],
-    [HOJAS.METRICAS_ZEPP]: ['metrica_id', 'user_id', 'date_fecha', 'num_sleep_score', 'num_hr_reposo', 'num_pasos_ayer', 'date_sync'],
-    [HOJAS.PESO_LOG]: ['peso_id', 'user_id', 'date_fecha', 'num_peso_kg', 'num_grasa_pct', 'num_musculo_kg', 'str_fuente', 'date_creado'],
-    [HOJAS.SESIONES_PLAN]: ['sesion_id', 'user_id', 'date_fecha', 'str_tipo', 'num_semana_meso', 'str_fase', 'num_ajuste_volumen', 'num_duracion_est_min', 'bool_completada', 'date_inicio', 'date_fin', 'date_creado'],
+    [HOJAS.METRICAS_ZEPP]: ['metrica_id', 'date_fecha', 'num_sleep_score', 'num_pasos', 'num_hr_reposo', 'num_vo2max', 'date_sync'],
+    [HOJAS.PESO_LOG]: ['peso_id', 'date_fecha', 'num_peso_kg', 'num_grasa_pct', 'num_hidratacion_pct', 'num_grasa_visceral', 'date_sync'],
+    [HOJAS.SESIONES_PLAN]: ['sesion_id', 'date_fecha', 'str_tipo', 'num_semana_meso', 'str_fase', 'num_ajuste_volumen', 'num_duracion_est_min', 'bool_completada', 'date_inicio', 'date_fin', 'date_creado'],
     [HOJAS.EJERCICIOS_PLAN]: ['plan_id', 'sesion_id', 'ejercicio_id', 'num_orden', 'num_series_plan', 'num_reps_plan', 'num_peso_sugerido_kg', 'num_rir_objetivo', 'num_descanso_seg', 'str_notas', 'bool_es_warmup'],
     [HOJAS.EJERCICIOS_LOG]: ['log_id', 'plan_id', 'sesion_id', 'ejercicio_id', 'num_serie', 'num_peso_usado_kg', 'num_reps_completadas', 'num_rir_percibido', 'str_sensacion', 'date_timestamp'],
-    [HOJAS.COMIDAS_LOG]: ['comida_id', 'user_id', 'date_fecha', 'str_tipo_comida', 'num_calorias', 'num_proteina_g', 'num_carbos_g', 'num_grasas_g', 'str_notas', 'date_hora'],
-    [HOJAS.PLAN_ANUAL]: ['fase_id', 'user_id', 'num_año', 'num_orden', 'str_nombre_fase', 'str_tipo', 'date_inicio', 'date_fin', 'num_semanas', 'num_volumen_objetivo', 'str_rir_rango', 'str_foco_muscular', 'str_objetivo_nutri', 'str_notas'],
-    [HOJAS.PLAN_SEMANAL]: ['semana_id', 'fase_id', 'user_id', 'num_semana_año', 'num_semana_fase', 'str_lunes', 'str_martes', 'str_miercoles', 'str_jueves', 'str_viernes', 'str_sabado', 'str_domingo', 'str_rir_semana', 'bool_deload'],
+    [HOJAS.PLAN_ANUAL]: ['fase_id', 'num_año', 'num_orden', 'str_nombre_fase', 'str_tipo', 'date_inicio', 'date_fin', 'num_semanas', 'num_volumen_objetivo', 'str_rir_rango', 'str_foco_muscular', 'str_objetivo_nutri', 'str_notas'],
+    [HOJAS.PLAN_SEMANAL]: ['semana_id', 'fase_id', 'num_semana_año', 'num_semana_fase', 'str_lunes', 'str_martes', 'str_miercoles', 'str_jueves', 'str_viernes', 'str_sabado', 'str_domingo', 'str_rir_semana', 'bool_deload'],
     [HOJAS.EJERCICIOS_CATALOGO]: ['ejercicio_id', 'str_nombre', 'str_nombre_en', 'str_grupo_principal', 'arr_grupos_secundarios', 'str_patron', 'str_equipamiento', 'bool_compuesto', 'bool_favorito', 'bool_excluido', 'str_razon_exclusion', 'str_alternativa']
   };
 
@@ -1419,14 +1254,7 @@ function inicializarHojas() {
     hoja.setFrozenRows(1);
   }
 
-  // Insertar datos iniciales del usuario
-  const hojaUsuarios = ss.getSheetByName(HOJAS.USUARIOS);
-  appendRowsBatch(hojaUsuarios, [[
-    USER_ID, 'Usuario', 188, 'M', 'bulk', 'Push/Pierna/Pull/Hombros+Brazos',
-    new Date().toISOString(), new Date().toISOString()
-  ]]);
-
-  return { ok: true, mensaje: 'Hojas inicializadas correctamente (10 hojas simplificadas)' };
+  return { ok: true, mensaje: 'Hojas inicializadas correctamente (esquema usuario unico simplificado)' };
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1628,7 +1456,7 @@ function generarPlanCompleto() {
   const filasPlanAnual = [];
   FASES.forEach((fase, idx) => {
     filasPlanAnual.push([
-      fase.id, USER_ID, 2026, idx + 1, fase.nombre, fase.tipo,
+      fase.id, 2026, idx + 1, fase.nombre, fase.tipo,
       fase.inicio, fase.fin, fase.semanas, 16, fase.rir, fase.foco, fase.nutri, ''
     ]);
   });
@@ -1677,7 +1505,7 @@ function generarPlanCompleto() {
         const sesionId = `SES_${fechaStr.replace(/-/g, '')}_${String(sesionCount).padStart(3, '0')}`;
 
         filasSesiones.push([
-          sesionId, USER_ID, fechaStr, tipoDisplay, semanaFase, fase.nombre,
+          sesionId, fechaStr, tipoDisplay, semanaFase, fase.nombre,
           1.0, '', 75, false, '', '', new Date().toISOString()
         ]);
 
@@ -1715,7 +1543,7 @@ function generarPlanCompleto() {
         semanaAño++;
         // Escribir plan_semanal
         filasSemanal.push([
-          `SEM_${String(semanaAño).padStart(3, '0')}`, fase.id, USER_ID,
+          `SEM_${String(semanaAño).padStart(3, '0')}`, fase.id,
           semanaAño, semanaFase,
           'Push', 'Natación', 'Pierna', 'Natación', 'Pull', 'Hombros+Brazos', 'Descanso',
           rirSemana || fase.rir, esDeload
@@ -1778,4 +1606,30 @@ function generarPlanCompleto() {
     fases: FASES.length,
     periodo: '31/08/2026 → 31/07/2027'
   };
+}
+
+function limpiarEjerciciosLogUltimos7Dias() {
+  const hoja = getHoja(HOJAS.EJERCICIOS_LOG);
+  const datos = hoja.getDataRange().getValues();
+  if (datos.length <= 1) return;
+
+  const cab = datos[0];
+  const colFecha = cab.indexOf('date_timestamp');
+  if (colFecha < 0) return;
+
+  const limite = new Date();
+  limite.setHours(0, 0, 0, 0);
+  limite.setDate(limite.getDate() - 7);
+
+  for (let i = datos.length - 1; i >= 1; i--) {
+    const valor = datos[i][colFecha];
+    if (!valor) {
+      hoja.deleteRow(i + 1);
+      continue;
+    }
+    const fecha = new Date(valor);
+    if (isNaN(fecha.getTime()) || fecha < limite) {
+      hoja.deleteRow(i + 1);
+    }
+  }
 }

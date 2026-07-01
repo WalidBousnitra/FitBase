@@ -47,8 +47,11 @@ public class MetricaAdapter extends RecyclerView.Adapter<MetricaAdapter.ViewHold
                         (MetricasProgresionResponse.PesoEntry) items.get(position);
                 holder.tvFecha.setText(peso.fecha);
                 holder.tvValorPrincipal.setText(String.format("%.1f kg", peso.pesoKg));
-                if (peso.grasaPct != null) {
-                    holder.tvValorSecundario.setText(String.format("%.1f%% grasa", peso.grasaPct));
+                if (peso.grasaPct != null || peso.hidratacionPct != null || peso.grasaVisceral != null) {
+                    String grasa = peso.grasaPct != null ? String.format("%.1f%% grasa", peso.grasaPct) : "grasa --";
+                    String hidrat = peso.hidratacionPct != null ? String.format("%.1f%% hidrat", peso.hidratacionPct) : "hidrat --";
+                    String visceral = peso.grasaVisceral != null ? String.format("GV %.1f", peso.grasaVisceral) : "GV --";
+                    holder.tvValorSecundario.setText(String.format("%s | %s | %s", grasa, hidrat, visceral));
                     holder.tvValorSecundario.setVisibility(View.VISIBLE);
                 } else {
                     holder.tvValorSecundario.setVisibility(View.GONE);
@@ -60,8 +63,8 @@ public class MetricaAdapter extends RecyclerView.Adapter<MetricaAdapter.ViewHold
                         (MetricasProgresionResponse.ZeppEntry) items.get(position);
                 holder.tvFecha.setText(zepp.fecha);
                 holder.tvValorPrincipal.setText(String.format("Score: %d", zepp.sleepScore));
-                holder.tvValorSecundario.setText(String.format("%.1fh | FC %d | HRV %d",
-                        zepp.sleepHoras, zepp.hrReposo, zepp.hrvRmssd));
+                holder.tvValorSecundario.setText(String.format("Pasos %d | FC %d | VO2 %.1f",
+                    zepp.pasos, zepp.hrReposo, zepp.vo2max));
                 holder.tvValorSecundario.setVisibility(View.VISIBLE);
                 break;
 
