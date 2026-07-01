@@ -96,7 +96,11 @@ public class WorkoutActivity extends AppCompatActivity {
     private void observarDatos() {
         // Loading state
         viewModel.isCargando().observe(this, cargando -> {
-            layoutCargando.setVisibility(Boolean.TRUE.equals(cargando) ? View.VISIBLE : View.GONE);
+            boolean enCarga = Boolean.TRUE.equals(cargando);
+            layoutCargando.setVisibility(enCarga ? View.VISIBLE : View.GONE);
+            if (enCarga) {
+                layoutCargando.bringToFront();
+            }
         });
 
         // Ejercicio actual
@@ -270,6 +274,9 @@ public class WorkoutActivity extends AppCompatActivity {
 
         Ejercicio ej = viewModel.getEjercicioActual().getValue();
         int descansoSeg = ej != null ? ej.getDescansoSeg() : 120;
+        int minInit = descansoSeg / 60;
+        int segInit = descansoSeg % 60;
+        tvTimerCountdown.setText(String.format("%d:%02d", minInit, segInit));
 
         // Info próxima serie
         Integer serieActual = viewModel.getSerieActual().getValue();

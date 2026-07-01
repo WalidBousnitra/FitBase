@@ -261,11 +261,13 @@ public class WorkoutViewModel extends AndroidViewModel {
      */
     public void iniciarTimer(int segundos) {
         if (timer != null) timer.cancel();
+        timerSegundos.setValue(Math.max(1, segundos));
 
         timer = new CountDownTimer(segundos * 1000L, 1000) {
             @Override
             public void onTick(long millisUntilFinished) {
-                timerSegundos.postValue((int) (millisUntilFinished / 1000));
+                int restantes = (int) Math.ceil(millisUntilFinished / 1000.0);
+                timerSegundos.postValue(Math.max(restantes, 1));
             }
 
             @Override

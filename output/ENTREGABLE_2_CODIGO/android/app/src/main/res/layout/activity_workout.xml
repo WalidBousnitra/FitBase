@@ -13,7 +13,9 @@
         android:layout_height="match_parent"
         android:orientation="vertical"
         android:gravity="center"
-        android:background="@color/colorBackground">
+        android:background="@color/colorBackground"
+        android:clickable="true"
+        android:focusable="true">
 
         <ProgressBar
             android:layout_width="48dp"

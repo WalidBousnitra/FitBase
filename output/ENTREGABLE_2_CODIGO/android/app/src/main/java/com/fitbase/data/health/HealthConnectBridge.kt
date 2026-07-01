@@ -9,6 +9,7 @@ import androidx.health.connect.client.records.NutritionRecord
 import androidx.health.connect.client.records.StepsRecord
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
+import android.util.Log
 import kotlinx.coroutines.runBlocking
 import java.time.Instant
 import java.time.LocalDate
@@ -19,6 +20,8 @@ import java.time.ZoneId
  * Called from Java via HealthConnectReader.
  */
 object HealthConnectBridge {
+
+    private const val TAG = "HealthConnectBridge"
 
     private val PERMISSIONS = setOf(
         HealthPermission.getReadPermission(StepsRecord::class),
@@ -82,6 +85,7 @@ object HealthConnectBridge {
                 for (record in stepsResult.records) {
                     data.pasos += record.count.toInt()
                 }
+                Log.d(TAG, "Steps records=${stepsResult.records.size} total=${data.pasos}")
 
                 // Nutrition
                 val nutriRequest = ReadRecordsRequest(
@@ -89,15 +93,37 @@ object HealthConnectBridge {
                     timeRangeFilter = timeFilter
                 )
                 val nutriResult = client.readRecords(nutriRequest)
+                var kcalFromEnergy = 0
+                var kcalFromMacros = 0
                 for (record in nutriResult.records) {
-                    record.energy?.let { data.caloriasConsumidas += it.inKilocalories.toInt() }
+                    record.energy?.let {
+                        val kcal = it.inKilocalories.toInt()
+                        data.caloriasConsumidas += kcal
+                        kcalFromEnergy += kcal
+                    }
                     record.protein?.let { data.proteinaG += it.inGrams.toInt() }
                     record.totalCarbohydrate?.let { data.carbosG += it.inGrams.toInt() }
                     record.totalFat?.let { data.grasasG += it.inGrams.toInt() }
+
+                    if (record.energy == null) {
+                        val p = record.protein?.inGrams?.toInt() ?: 0
+                        val c = record.totalCarbohydrate?.inGrams?.toInt() ?: 0
+                        val g = record.totalFat?.inGrams?.toInt() ?: 0
+                        val kcal = (p * 4) + (c * 4) + (g * 9)
+                        if (kcal > 0) {
+                            data.caloriasConsumidas += kcal
+                            kcalFromMacros += kcal
+                        }
+                    }
                 }
+                Log.d(
+                    TAG,
+                    "Nutrition records=${nutriResult.records.size} kcalEnergy=$kcalFromEnergy kcalMacros=$kcalFromMacros totalKcal=${data.caloriasConsumidas} p=${data.proteinaG} c=${data.carbosG} g=${data.grasasG}"
+                )
             }
         } catch (e: Exception) {
             // HC not available or no permissions — data stays at 0
+            Log.e(TAG, "Error leyendo datos HC", e)
         }
         return data
     }

@@ -112,6 +112,8 @@ public class HomeActivity extends AppCompatActivity {
      */
     private void solicitarPermisosHC() {
         try {
+            if (!HealthConnectBridge.isAvailable(this)) return;
+            if (HealthConnectBridge.hasPermissions(this)) return;
             hcPermLauncher.launch(HealthConnectBridge.getRequiredPermissions());
         } catch (Exception e) {
             android.widget.Toast.makeText(this,
@@ -337,7 +339,7 @@ public class HomeActivity extends AppCompatActivity {
         super.onResume();
         // Recargar datos cada vez que se abre la app (HC sync + backend)
         viewModel.cargarDatosDelDia();
-        if (HealthConnectBridge.isAvailable(this)) {
+        if (HealthConnectBridge.isAvailable(this) && !HealthConnectBridge.hasPermissions(this)) {
             solicitarPermisosHC();
         }
     }

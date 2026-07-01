@@ -1,6 +1,7 @@
 package com.fitbase.ui.progression;
 
 import android.app.Application;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
@@ -19,6 +20,8 @@ import retrofit2.Response;
  * Carga datos historicos: peso, grasa, hidratacion, visceral, sueno, pasos y volumen.
  */
 public class ProgressionViewModel extends AndroidViewModel {
+
+    private static final String TAG = "ProgressionVM";
 
     private final MutableLiveData<MetricasProgresionResponse> datos = new MutableLiveData<>();
     private final MutableLiveData<Boolean> cargando = new MutableLiveData<>(false);
@@ -40,11 +43,16 @@ public class ProgressionViewModel extends AndroidViewModel {
                     public void onResponse(Call<MetricasProgresionResponse> call,
                                            Response<MetricasProgresionResponse> response) {
                         cargando.postValue(false);
-                        if (response.isSuccessful() && response.body() != null
-                                && response.body().resumen != null) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            MetricasProgresionResponse body = response.body();
+                            int peso = body.peso != null ? body.peso.size() : 0;
+                            int zepp = body.zepp != null ? body.zepp.size() : 0;
+                            int vol = body.volumenEntreno != null ? body.volumenEntreno.size() : 0;
+                            Log.d(TAG, "Progresion OK dias=" + dias + " peso=" + peso + " zepp=" + zepp + " volumen=" + vol);
                             error.postValue(null);
-                            datos.postValue(response.body());
+                            datos.postValue(body);
                         } else {
+                            Log.w(TAG, "Progresion vacia/invalida code=" + response.code());
                             error.postValue("No hay datos de progresion disponibles");
                             datos.postValue(null);
                         }
@@ -53,6 +61,7 @@ public class ProgressionViewModel extends AndroidViewModel {
                     @Override
                     public void onFailure(Call<MetricasProgresionResponse> call, Throwable t) {
                         cargando.postValue(false);
+                        Log.e(TAG, "Error cargando progresion", t);
                         error.postValue("Error cargando progresion: " + t.getMessage());
                         datos.postValue(null);
                     }

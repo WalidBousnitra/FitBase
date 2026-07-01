@@ -1,181 +1,138 @@
 // ═══════════════════════════════════════════════════════════════
-// FITBASE - BACKEND (Google Apps Script)
-// Archivo: Codigo.gs
-// Fuente: REG-LOG-02 (base_datos.md), REG-LOG-01 (motor_pesos.md)
+// FITBASE - BACKEND SIMPLIFICADO (Google Apps Script)
+// ═══════════════════════════════════════════════════════════════
+// Organización:
+//   §1. CONFIGURACIÓN
+//   §2. ENDPOINTS (doGet / doPost)
+//   §3. LÓGICA PRINCIPAL (funciones que sirven datos a la app)
+//   §4. MOTOR DE CARGAS (autorregulación basada en evidencia)
+//   §5. AUXILIARES (helpers genéricos)
+//   §6. INICIALIZAR (crear hojas + cabeceras — ejecutar 1 vez)
+//   §7. RELLENAR (pre-generar plan anual, semanal, sesiones)
+//   §8. LIMPIAR (borrar logs de test, conservar estructura y planes)
 // ═══════════════════════════════════════════════════════════════
 
-// ─── CONFIGURACIÓN ────────────────────────────────────────────
-// Script container-bound: ya está asociado al Spreadsheet (creado desde Extensiones → Apps Script)
-// No necesita SPREADSHEET_ID — usa getActiveSpreadsheet() directamente.
+// ─── §1. CONFIGURACIÓN ────────────────────────────────────────
 
-// Nombres de hojas (REG-LOG-02)
 const HOJAS = {
   METRICAS_ZEPP: 'metricas_zepp',
+  METRICAS_SUBJETIVAS: 'metricas_subjetivas',
   PESO_LOG: 'peso_log',
+  PLAN_ANUAL: 'plan_anual',
+  PLAN_SEMANAL: 'plan_semanal',
   SESIONES_PLAN: 'sesiones_plan',
   EJERCICIOS_PLAN: 'ejercicios_plan',
   EJERCICIOS_LOG: 'ejercicios_log',
-  PLAN_ANUAL: 'plan_anual',
-  PLAN_SEMANAL: 'plan_semanal',
   EJERCICIOS_CATALOGO: 'ejercicios_catalogo'
 };
 
-// ─── ENDPOINTS REST ───────────────────────────────────────────
+const CACHE_TTL = 30; // segundos
 
-/**
- * Maneja peticiones GET.
- * Rutas:
- *   ?accion=sesion_hoy
- *   ?accion=plan_anual
- *   ?accion=plan_semanal&semana=25
- *   ?accion=macros_hoy
- *   ?accion=check_ausencia
- *   ?accion=progresion_metricas
- */
+// ─── §2. ENDPOINTS ────────────────────────────────────────────
+
 function doGet(e) {
   try {
     const accion = e.parameter.accion;
-    let resultado;
+    const cache = CacheService.getScriptCache();
+    const cacheKey = 'GET:' + accion + ':' + (e.parameter.dias || '') + ':' + (e.parameter.semana || '');
 
+    // Cache para GETs costosos
+    const cached = cache.get(cacheKey);
+    if (cached) return jsonOutput_(cached);
+
+    let resultado;
     switch (accion) {
-      case 'sesion_hoy':
-        resultado = getSesionHoy();
-        break;
-      case 'plan_anual':
-        resultado = getPlanAnual();
-        break;
-      case 'plan_semanal':
-        resultado = getPlanSemanal(e.parameter.semana);
-        break;
-      case 'macros_hoy':
-        resultado = getMacrosHoy();
-        break;
-      case 'check_ausencia':
-        resultado = checkAusencia();
-        break;
-      case 'progresion_metricas':
-        resultado = getProgresionMetricas(e.parameter.dias);
-        break;
-      default:
-        resultado = { error: 'Acción no reconocida', acciones_validas: ['sesion_hoy', 'plan_anual', 'plan_semanal', 'macros_hoy', 'check_ausencia', 'progresion_metricas'] };
+      case 'sesion_hoy':       resultado = getSesionHoy_(); break;
+      case 'plan_anual':       resultado = getPlanAnual_(); break;
+      case 'plan_semanal':     resultado = getPlanSemanal_(e.parameter.semana); break;
+      case 'macros_hoy':       resultado = getMacrosHoy_(); break;
+      case 'check_ausencia':   resultado = checkAusencia_(); break;
+      case 'progresion_metricas': resultado = getProgresionMetricas_(e.parameter.dias); break;
+      default: resultado = { error: 'Acción no reconocida' };
     }
 
-    return ContentService.createTextOutput(JSON.stringify(resultado))
-      .setMimeType(ContentService.MimeType.JSON);
-  } catch (error) {
-    return ContentService.createTextOutput(JSON.stringify({ error: error.message }))
-      .setMimeType(ContentService.MimeType.JSON);
+    const json = JSON.stringify(resultado);
+    if (['sesion_hoy','plan_anual','macros_hoy','progresion_metricas'].includes(accion)) {
+      cache.put(cacheKey, json, CACHE_TTL);
+    }
+    return jsonOutput_(json);
+  } catch (err) {
+    return jsonOutput_(JSON.stringify({ error: err.message }));
   }
 }
 
-/**
- * Maneja peticiones POST.
- * Rutas:
- *   accion=guardar_log (ejercicio completado)
- *   accion=guardar_peso
- *   accion=guardar_metricas
- *   accion=completar_sesion
- */
 function doPost(e) {
   try {
     const datos = JSON.parse(e.postData.contents);
-    const accion = datos.accion;
     let resultado;
-
-    switch (accion) {
-      case 'guardar_log':
-        resultado = guardarEjercicioLog(datos);
-        break;
-      case 'guardar_peso':
-        resultado = guardarPeso(datos);
-        break;
-      case 'guardar_metricas':
-        resultado = guardarMetricas(datos);
-        break;
-      case 'completar_sesion':
-        resultado = completarSesion(datos);
-        break;
-      default:
-        resultado = { error: 'Acción POST no reconocida', acciones_validas: ['guardar_log', 'guardar_peso', 'guardar_metricas', 'completar_sesion'] };
+    switch (datos.accion) {
+      case 'guardar_log':       resultado = guardarLog_(datos); break;
+      case 'guardar_peso':      resultado = guardarPeso_(datos); break;
+      case 'guardar_metricas':  resultado = guardarMetricas_(datos); break;
+      case 'completar_sesion':  resultado = completarSesion_(datos); break;
+      default: resultado = { error: 'Acción POST no reconocida' };
     }
-
-    return ContentService.createTextOutput(JSON.stringify(resultado))
-      .setMimeType(ContentService.MimeType.JSON);
-  } catch (error) {
-    return ContentService.createTextOutput(JSON.stringify({ error: error.message }))
-      .setMimeType(ContentService.MimeType.JSON);
+    // Invalidar cache tras escritura
+    CacheService.getScriptCache().removeAll(['GET:sesion_hoy:', 'GET:macros_hoy:', 'GET:progresion_metricas:']);
+    return jsonOutput_(JSON.stringify(resultado));
+  } catch (err) {
+    return jsonOutput_(JSON.stringify({ error: err.message }));
   }
 }
 
-// ─── SERVICIOS GET ────────────────────────────────────────────
+// ─── §3. LÓGICA PRINCIPAL ─────────────────────────────────────
 
 /**
- * Obtiene la sesión planificada para hoy.
- * Incluye ejercicios con peso sugerido por el motor de cargas.
+ * Sesión de hoy con ejercicios y pesos DINÁMICOS (motor de cargas).
+ * Fuente: REG-LOG-02 §5, REG-LOG-01 §6-8
  */
-function getSesionHoy() {
-  const hoy = Utilities.formatDate(new Date(), 'Europe/Madrid', 'yyyy-MM-dd');
-  const hoja = getHoja(HOJAS.SESIONES_PLAN);
+function getSesionHoy_() {
+  const hoy = fechaHoy_();
+  const hoja = getHoja_(HOJAS.SESIONES_PLAN);
   const datos = hoja.getDataRange().getValues();
-  const cabeceras = datos[0];
+  const cab = datos[0];
 
-  // Buscar sesión de hoy
+  // Buscar sesión
   let sesion = null;
   for (let i = 1; i < datos.length; i++) {
-    const fechaFila = Utilities.formatDate(new Date(datos[i][cabeceras.indexOf('date_fecha')]), 'Europe/Madrid', 'yyyy-MM-dd');
-    if (fechaFila === hoy) {
-      sesion = filaAObjeto(cabeceras, datos[i]);
+    const f = parseDate_(datos[i][cab.indexOf('date_fecha')]);
+    if (f && formatDate_(f) === hoy) {
+      sesion = rowToObj_(cab, datos[i]);
       break;
     }
   }
+  if (!sesion) return { sesion: null, ejercicios: [], mensaje: 'No hay sesión para hoy' };
 
-  if (!sesion) {
-    return { sesion: null, mensaje: 'No hay sesión planificada para hoy' };
-  }
+  // Ejercicios con peso dinámico
+  const ejercicios = getEjerciciosSesion_(sesion.sesion_id);
+  const ajuste = calcularAjusteDia_();
+  const ejerciciosAjustados = ejercicios.map(ej => ({
+    ...ej,
+    num_peso_sugerido_kg: calcularPesoSugerido_(ej.ejercicio_id, ej.num_peso_sugerido_kg, ajuste.factor),
+    ajuste_aplicado: ajuste.factor
+  }));
 
-  // Obtener ejercicios de la sesión
-  const ejercicios = getEjerciciosDeSesion(sesion.sesion_id);
-
-  // Aplicar motor de cargas (REG-LOG-01)
-  const ajuste = calcularAjusteDia();
-  const ejerciciosAjustados = ejercicios.map(ej => {
-    return {
-      ...ej,
-      num_peso_sugerido_kg: calcularPesoSugerido(ej.ejercicio_id, ej.num_peso_sugerido_kg),
-      ajuste_aplicado: ajuste.factor
-    };
-  });
-
-  return {
-    sesion: sesion,
-    ejercicios: ejerciciosAjustados,
-    ajuste_dia: ajuste
-  };
+  return { sesion: sesion, ejercicios: ejerciciosAjustados, ajuste_dia: ajuste };
 }
 
 /**
- * Obtiene el plan anual completo con fases.
+ * Plan anual: fases con directrices (no pesos fijos).
+ * Los pesos son SIEMPRE dinámicos — el plan define tipo de trabajo, RIR y volumen.
  */
-function getPlanAnual() {
-  const hoja = getHoja(HOJAS.PLAN_ANUAL);
+function getPlanAnual_() {
+  const hoja = getHoja_(HOJAS.PLAN_ANUAL);
   const datos = hoja.getDataRange().getValues();
-  const cabeceras = datos[0];
-
+  const cab = datos[0];
   const fases = [];
-  for (let i = 1; i < datos.length; i++) {
-    fases.push(filaAObjeto(cabeceras, datos[i]));
-  }
+  for (let i = 1; i < datos.length; i++) fases.push(rowToObj_(cab, datos[i]));
 
-  // Determinar fase actual
+  // Fase actual
   const hoy = new Date();
   let faseActual = null;
   for (const fase of fases) {
-    const inicio = new Date(fase.date_inicio);
-    const fin = new Date(fase.date_fin);
-    if (hoy >= inicio && hoy <= fin) {
-      faseActual = fase;
-      break;
-    }
+    const ini = parseDate_(fase.date_inicio);
+    const fin = parseDate_(fase.date_fin);
+    if (ini && fin && hoy >= ini && hoy <= fin) { faseActual = fase; break; }
   }
 
   return {
@@ -187,559 +144,130 @@ function getPlanAnual() {
   };
 }
 
-/**
- * Obtiene el plan semanal (microciclo).
- */
-function getPlanSemanal(numSemana) {
-  const hoja = getHoja(HOJAS.PLAN_SEMANAL);
+function getPlanSemanal_(numSemana) {
+  const hoja = getHoja_(HOJAS.PLAN_SEMANAL);
   const datos = hoja.getDataRange().getValues();
-  const cabeceras = datos[0];
-
+  const cab = datos[0];
   for (let i = 1; i < datos.length; i++) {
-    if (datos[i][cabeceras.indexOf('num_semana_año')] == numSemana) {
-      return filaAObjeto(cabeceras, datos[i]);
-    }
+    if (datos[i][cab.indexOf('num_semana_año')] == numSemana) return rowToObj_(cab, datos[i]);
   }
   return { error: 'Semana no encontrada' };
 }
 
 /**
- * Obtiene métricas del día (sueño, peso, readiness).
+ * Macros del día — cálculo dinámico basado en fase actual.
+ * Fuentes: Mifflin-St Jeor (BMR), Iraki 2019 (bulk), Helms 2014 (cut)
  */
-function getMetricasHoy() {
-  const hoy = Utilities.formatDate(new Date(), 'Europe/Madrid', 'yyyy-MM-dd');
+function getMacrosHoy_() {
+  const peso = getPesoActual_();
+  const altura = 188, edad = 24;
+  const bmr = (10 * peso) + (6.25 * altura) - (5 * edad) + 5;
+  const tdee = Math.round(bmr * 1.55);
 
-  // Métricas Zepp
-  const metricasZepp = getUltimaMetrica(HOJAS.METRICAS_ZEPP, hoy);
+  // Fase actual → objetivo nutricional
+  const plan = getPlanAnual_();
+  let obj = 'bulk', mult = 1.15, protRatio = 2.0;
+  if (plan.fase_actual) {
+    const n = plan.fase_actual.str_objetivo_nutri || 'bulk';
+    if (n === 'cut') { mult = 0.80; protRatio = 2.4; obj = 'cut'; }
+    else if (n === 'mantener') { mult = 1.05; protRatio = 2.0; obj = 'mantener'; }
+  }
+
+  const calorias = Math.round(tdee * mult);
+  const protG = Math.round(peso * protRatio);
+  const grasaG = Math.round(peso * 1.0);
+  const carbosG = Math.round((calorias - protG * 4 - grasaG * 9) / 4);
+
+  const sesionHoy = getSesionHoy_();
+  const esEntreno = sesionHoy.sesion !== null;
+  const agua = Math.round(peso * 35) + (esEntreno ? 500 : 0);
+  const pasos = getPasosHoy_();
+
+  return {
+    fecha: fechaHoy_(), es_dia_entreno: esEntreno, fase: obj,
+    calorias_objetivo: calorias, proteina_g: protG, carbos_g: carbosG, grasas_g: grasaG,
+    agua_ml: agua, pasos_objetivo: 8000, pasos_actuales: pasos,
+    calorias_consumidas: 0, proteina_consumida_g: 0,
+    carbos_consumidos_g: 0, grasas_consumidas_g: 0,
+    agua_consumida_ml: 0, bmr: Math.round(bmr), tdee: tdee,
+    origen_datos: 'backend', es_fallback: false
+  };
+}
+
+/**
+ * Progresión de métricas: peso corporal, sueño, volumen de entrenamiento.
+ */
+function getProgresionMetricas_(dias) {
+  dias = parseInt(dias) || 30;
+  const desde = new Date(Date.now() - dias * 86400000);
 
   // Peso
-  const pesoHoy = getUltimaMetrica(HOJAS.PESO_LOG, hoy);
-
-  // Media móvil peso 7 días
-  const mediaPeso7d = calcularMediaPeso(7);
-
-  return {
-    metricas_zepp: metricasZepp,
-    peso: pesoHoy,
-    peso_media_7d: mediaPeso7d,
-    fecha: hoy
-  };
-}
-
-/**
- * Obtiene historial de progresión de un ejercicio.
- */
-function getProgresion(ejercicioId) {
-  const hoja = getHoja(HOJAS.PROGRESION_LOG);
-  const datos = hoja.getDataRange().getValues();
-  const cabeceras = datos[0];
-
-  const registros = [];
-  for (let i = 1; i < datos.length; i++) {
-    if (datos[i][cabeceras.indexOf('ejercicio_id')] === ejercicioId) {
-      registros.push(filaAObjeto(cabeceras, datos[i]));
-    }
-  }
-
-  return {
-    ejercicio_id: ejercicioId,
-    registros: registros,
-    total: registros.length
-  };
-}
-
-/**
- * Obtiene el catálogo completo de ejercicios.
- */
-function getCatalogo() {
-  const hoja = getHoja(HOJAS.EJERCICIOS_CATALOGO);
-  const datos = hoja.getDataRange().getValues();
-  const cabeceras = datos[0];
-
-  const catalogo = [];
-  for (let i = 1; i < datos.length; i++) {
-    catalogo.push(filaAObjeto(cabeceras, datos[i]));
-  }
-  return { ejercicios: catalogo };
-}
-
-/**
- * Obtiene el peso más reciente del usuario desde peso_log.
- * Fallback: 78.2 kg (biometria.md) si no hay registros.
- */
-function getPesoActual() {
-  const hoja = getHoja(HOJAS.PESO_LOG);
-  const datos = hoja.getDataRange().getValues();
-  if (datos.length <= 1) return { peso: 78.2, grasa_pct: null, fuente: 'default' };
-
-  const cabeceras = datos[0];
-  const idxPeso = cabeceras.indexOf('num_peso_kg');
-  const idxGrasa = cabeceras.indexOf('num_grasa_pct');
-  const idxFecha = cabeceras.indexOf('date_fecha');
-
-  let mejor = null;
-  for (let i = 1; i < datos.length; i++) {
-    const peso = Number(datos[i][idxPeso]);
-    const fecha = parseSheetDate(datos[i][idxFecha]);
-    if (!peso || peso <= 0 || !fecha) continue;
-    if (!mejor || fecha > mejor.fecha) {
-      mejor = {
-        peso: peso,
-        grasa_pct: datos[i][idxGrasa] || null,
-        fecha: fecha
-      };
-    }
-  }
-  if (mejor) {
+  const pesoData = leerDatosDesdeFecha_(HOJAS.PESO_LOG, 'date_fecha', desde, function(row) {
     return {
-      peso: mejor.peso,
-      grasa_pct: mejor.grasa_pct,
-      fecha: Utilities.formatDate(mejor.fecha, 'Europe/Madrid', 'yyyy-MM-dd'),
-      fuente: 'peso_log'
+      fecha: row.date_fecha, peso_kg: row.num_peso_kg,
+      grasa_pct: row.num_grasa_pct || null, hidratacion_pct: row.num_hidratacion_pct || null,
+      grasa_visceral: row.num_grasa_visceral || null
     };
-  }
-  return { peso: 78.2, grasa_pct: null, fuente: 'default' };
-}
+  });
 
-/**
- * Calcula tendencia de peso: media 7d recientes vs media 7d anteriores.
- * Fuente: Iraki 2019 (target 0.25-0.5% BW/sem en bulk), Helms 2014 (0.5-1% en cut).
- * Necesita ≥3 datos en cada ventana para ser fiable.
- * Devuelve null si no hay suficientes datos (primeras ~2 semanas).
- */
-function getTendenciaPeso() {
-  const hoja = getHoja(HOJAS.PESO_LOG);
-  const datos = hoja.getDataRange().getValues();
-  if (datos.length <= 1) return null;
+  // Zepp
+  const zeppData = leerDatosDesdeFecha_(HOJAS.METRICAS_ZEPP, 'date_fecha', desde, function(row) {
+    return {
+      fecha: row.date_fecha, sleep_score: row.num_sleep_score || 0,
+      hr_reposo: row.num_hr_reposo || 0, pasos: row.num_pasos || 0,
+      vo2max: row.num_vo2max || 0, sleep_horas: 0, sleep_deep_min: 0, hrv_rmssd: 0, stress_avg: 0
+    };
+  });
 
-  const cabeceras = datos[0];
-  const idxPeso = cabeceras.indexOf('num_peso_kg');
-  const idxFecha = cabeceras.indexOf('date_fecha');
+  // Volumen entrenamiento
+  const logData = leerDatosDesdeFecha_(HOJAS.EJERCICIOS_LOG, 'date_timestamp', desde, function(row) { return row; });
+  const volPorDia = {};
+  logData.forEach(function(r) {
+    const d = r.date_timestamp ? formatDate_(parseDate_(r.date_timestamp)) : null;
+    if (!d) return;
+    volPorDia[d] = (volPorDia[d] || 0) + ((r.num_peso_usado_kg || 0) * (r.num_reps_completadas || 0));
+  });
+  const volumenData = Object.keys(volPorDia).map(function(f) { return { fecha: f, volumen_kg: Math.round(volPorDia[f]) }; });
+  volumenData.sort(function(a, b) { return a.fecha.localeCompare(b.fecha); });
 
-  const hoy = new Date();
-  const hace7 = new Date(hoy); hace7.setDate(hace7.getDate() - 7);
-  const hace14 = new Date(hoy); hace14.setDate(hace14.getDate() - 14);
-
-  let pesosRecientes = [];
-  let pesosAnteriores = [];
-
-  for (let i = 1; i < datos.length; i++) {
-    const fecha = parseSheetDate(datos[i][idxFecha]);
-    const peso = datos[i][idxPeso];
-    if (!peso || peso <= 0 || !fecha) continue;
-
-    if (fecha >= hace7) {
-      pesosRecientes.push(peso);
-    } else if (fecha >= hace14) {
-      pesosAnteriores.push(peso);
-    }
-  }
-
-  if (pesosRecientes.length < 3 || pesosAnteriores.length < 3) return null;
-
-  const mediaReciente = pesosRecientes.reduce((a, b) => a + b, 0) / pesosRecientes.length;
-  const mediaAnterior = pesosAnteriores.reduce((a, b) => a + b, 0) / pesosAnteriores.length;
-  const cambioKgSemana = mediaReciente - mediaAnterior;
-  const cambioPctSemana = (cambioKgSemana / mediaAnterior) * 100;
-
-  return {
-    media_reciente: Math.round(mediaReciente * 10) / 10,
-    media_anterior: Math.round(mediaAnterior * 10) / 10,
-    cambio_kg_semana: Math.round(cambioKgSemana * 100) / 100,
-    cambio_pct_semana: Math.round(cambioPctSemana * 100) / 100,
-    datos_recientes: pesosRecientes.length,
-    datos_anteriores: pesosAnteriores.length
+  // Resumen
+  const resumen = {
+    peso_actual: pesoData.length > 0 ? pesoData[pesoData.length - 1].peso_kg : null,
+    peso_inicio: pesoData.length > 0 ? pesoData[0].peso_kg : null,
+    grasa_actual: pesoData.length > 0 ? pesoData[pesoData.length - 1].grasa_pct : null,
+    sleep_media: zeppData.length > 0 ? Math.round(zeppData.reduce(function(s, d) { return s + d.sleep_score; }, 0) / zeppData.length) : null,
+    pasos_media: zeppData.length > 0 ? Math.round(zeppData.reduce(function(s, d) { return s + d.pasos; }, 0) / zeppData.length) : null
   };
+
+  return { dias_solicitados: dias, peso: pesoData, zepp: zeppData, volumen_entreno: volumenData, resumen: resumen };
 }
 
-/**
- * Obtiene los pasos de hoy desde metricas_zepp.
- * Fuente: motor_dieta.md §6 — ajuste NEAT si > 12000 pasos.
- */
-function getPasosHoy() {
-  const hoja = getHoja(HOJAS.METRICAS_ZEPP);
+function checkAusencia_() {
+  const hoja = getHoja_(HOJAS.SESIONES_PLAN);
   const datos = hoja.getDataRange().getValues();
-  if (datos.length <= 1) return 0;
-
-  const cabeceras = datos[0];
-  const idxPasos = cabeceras.indexOf('num_pasos');
-  const idxFecha = cabeceras.indexOf('date_fecha');
-  const hoy = Utilities.formatDate(new Date(), 'Europe/Madrid', 'yyyy-MM-dd');
-
-  for (let i = datos.length - 1; i >= 1; i--) {
-    const fecha = parseSheetDate(datos[i][idxFecha]);
-    const fechaStr = fecha
-      ? Utilities.formatDate(fecha, 'Europe/Madrid', 'yyyy-MM-dd')
-      : String(datos[i][idxFecha]);
-    if (fechaStr === hoy && datos[i][idxPasos]) {
-      return datos[i][idxPasos];
-    }
-  }
-  return 0;
-}
-
-/**
- * Obtiene el sleep score de hoy desde metricas_zepp.
- * Fuente: motor_pesos.md §3 — sleep score < 60 afecta recomendaciones.
- */
-function getSleepScoreHoy() {
-  const hoja = getHoja(HOJAS.METRICAS_ZEPP);
-  const datos = hoja.getDataRange().getValues();
-  if (datos.length <= 1) return null;
-
-  const cabeceras = datos[0];
-  const idxSleep = cabeceras.indexOf('num_sleep_score');
-  const idxFecha = cabeceras.indexOf('date_fecha');
-  const hoy = Utilities.formatDate(new Date(), 'Europe/Madrid', 'yyyy-MM-dd');
-
-  for (let i = datos.length - 1; i >= 1; i--) {
-    const fecha = parseSheetDate(datos[i][idxFecha]);
-    const fechaStr = fecha
-      ? Utilities.formatDate(fecha, 'Europe/Madrid', 'yyyy-MM-dd')
-      : String(datos[i][idxFecha]);
-    if (fechaStr === hoy && datos[i][idxSleep]) {
-      return datos[i][idxSleep];
-    }
-  }
-  return null;
-}
-
-/**
- * Calcula macros objetivo del día actual — DINÁMICO.
- *
- * Fuentes:
- *  - BMR: Mifflin-St Jeor 1990 (R²=0.71)
- *  - Macros bulk: Iraki 2019 (1.6-2.2 g/kg prot, +10-20% kcal, ≥3-5 g/kg carbs)
- *  - Macros cut: Helms 2014 (2.3-3.1 g/kg LBM prot, -20-25%)
- *  - Ajuste tendencia bulk: Iraki 2019 (target 0.25-0.5% BW/sem)
- *  - Ajuste tendencia cut: Helms 2014 (target 0.5-1% BW/sem)
- *  - NEAT/pasos: motor_dieta.md §6 (⚠️ HEURÍSTICO)
- *  - Agua: 35ml/kg + 500ml si entrena (⚠️ HEURÍSTICO)
- */
-function getMacrosHoy() {
-  const hoy = Utilities.formatDate(new Date(), 'Europe/Madrid', 'yyyy-MM-dd');
-  const sesionHoy = getSesionHoy();
-  const esTraining = sesionHoy.sesion !== null;
-
-  // ═══ 1. PESO REAL (no hardcodeado) ═══
-  const pesoData = getPesoActual();
-  const peso = pesoData.peso;
-  const grasaPct = pesoData.grasa_pct;
-  const altura = 188;
-  const edad = 24;
-
-  // ═══ 2. BMR Mifflin-St Jeor (EVI-11 — R²=0.71) ═══
-  const bmr = (10 * peso) + (6.25 * altura) - (5 * edad) + 5;
-
-  // ═══ 3. TDEE (⚠️ factor HEURÍSTICO) ═══
-  const factorActividad = 1.55;
-  const tdee = Math.round(bmr * factorActividad);
-
-  // ═══ 4. FASE Y OBJETIVO NUTRICIONAL ═══
-  const planAnual = getPlanAnual();
-  const faseActual = planAnual.fase_actual;
-  let objetivoNutri = 'bulk';
-  if (faseActual) {
-    objetivoNutri = faseActual.str_objetivo_nutri || 'bulk';
-  }
-
-  // ═══ 5. SUPERÁVIT/DÉFICIT BASE (Iraki 2019, Helms 2014) ═══
-  let multiplicador;
-  let proteinaRatio;
-
-  switch (objetivoNutri) {
-    case 'bulk':
-      multiplicador = 1.15;  // +15% default (Iraki 2019: +10-20%)
-      proteinaRatio = 2.0;   // g/kg (Iraki 2019: 1.6-2.2)
-      break;
-    case 'cut':
-      multiplicador = 0.80;  // -20% default (Helms 2014)
-      proteinaRatio = 2.4;   // g/kg total ≈ 2.8 g/kg LBM (Helms 2014: 2.3-3.1 LBM)
-      break;
-    default:
-      multiplicador = 1.05;  // +5% mantener
-      proteinaRatio = 2.0;
-  }
-
-  // ═══ 6. AJUSTE POR TENDENCIA DE PESO (Iraki 2019, Helms 2014) ═══
-  const tendencia = getTendenciaPeso();
-  let ajusteTendencia = 'sin_datos';
-  let razonTendencia = 'Menos de 2 semanas de datos — usando default';
-
-  if (tendencia) {
-    const pctSem = tendencia.cambio_pct_semana;
-
-    if (objetivoNutri === 'bulk') {
-      // Iraki 2019: target 0.25-0.5% BW/semana
-      if (pctSem > 0.5) {
-        multiplicador = 1.10; // Reducir: ganando demasiado rápido (probablemente grasa)
-        ajusteTendencia = 'reducido';
-        razonTendencia = `Ganando ${pctSem}%/sem (>0.5%) → surplus reducido a +10%`;
-      } else if (pctSem >= 0.25) {
-        // On track — no cambiar
-        ajusteTendencia = 'optimo';
-        razonTendencia = `Ganando ${pctSem}%/sem (0.25-0.5%) → en rango óptimo`;
-      } else if (pctSem >= 0) {
-        multiplicador = 1.20; // Subir: ganando demasiado lento
-        ajusteTendencia = 'aumentado';
-        razonTendencia = `Ganando ${pctSem}%/sem (<0.25%) → surplus aumentado a +20%`;
-      } else {
-        multiplicador = 1.20; // Perdiendo peso en bulk → subir
-        ajusteTendencia = 'aumentado';
-        razonTendencia = `Perdiendo peso en bulk (${pctSem}%/sem) → surplus aumentado a +20%`;
-      }
-    } else if (objetivoNutri === 'cut') {
-      // Helms 2014: target 0.5-1% BW/semana de pérdida
-      const perdidaPct = -pctSem; // convertir a positivo
-      if (perdidaPct > 1.0) {
-        multiplicador = 0.85; // Reducir déficit: perdiendo demasiado rápido (riesgo muscular)
-        ajusteTendencia = 'reducido';
-        razonTendencia = `Perdiendo ${perdidaPct}%/sem (>1%) → déficit reducido a -15%`;
-      } else if (perdidaPct >= 0.5) {
-        ajusteTendencia = 'optimo';
-        razonTendencia = `Perdiendo ${perdidaPct}%/sem (0.5-1%) → en rango óptimo`;
-      } else if (perdidaPct >= 0) {
-        multiplicador = 0.75; // Aumentar déficit: perdiendo demasiado lento
-        ajusteTendencia = 'aumentado';
-        razonTendencia = `Perdiendo ${perdidaPct}%/sem (<0.5%) → déficit aumentado a -25%`;
-      } else {
-        multiplicador = 0.75; // Ganando peso en cut → más déficit
-        ajusteTendencia = 'aumentado';
-        razonTendencia = `Ganando peso en cut (${pctSem}%/sem) → déficit aumentado a -25%`;
-      }
-    }
-    // 'mantener': no ajustar por tendencia (el objetivo es estabilidad)
-  }
-
-  // ═══ 7. PROTEÍNA CON COMPOSICIÓN CORPORAL (Helms 2014) ═══
-  // Si hay dato de grasa corporal (Zepp), usar LBM para proteína en cut
-  if (objetivoNutri === 'cut' && grasaPct && grasaPct > 0 && grasaPct < 50) {
-    const lbm = peso * (1 - grasaPct / 100);
-    // Helms 2014: 2.3-3.1 g/kg LBM → usar 2.6 (centro del rango)
-    const protPorLbm = Math.round(lbm * 2.6);
-    // Solo usar si es MAYOR que el cálculo por peso total (más conservador)
-    if (protPorLbm > Math.round(peso * proteinaRatio)) {
-      proteinaRatio = protPorLbm / peso; // convertir a ratio equivalente
-    }
-  }
-
-  // ═══ 8. CALORÍAS BASE ═══
-  let caloriasObjetivo = Math.round(tdee * multiplicador);
-
-  // ═══ 9. AJUSTE NEAT POR PASOS (motor_dieta.md §6 — ⚠️ HEURÍSTICO) ═══
-  const pasosHoy = getPasosHoy();
-  let ajusteNeat = 0;
-  let razonNeat = '';
-  if (pasosHoy > 12000) {
-    ajusteNeat = 150;
-    razonNeat = `${pasosHoy} pasos (>12k) → +150 kcal NEAT`;
-    caloriasObjetivo += ajusteNeat;
-  }
-
-  // ═══ 10. MACROS FINALES (Iraki 2019, Helms 2014) ═══
-  const proteinaG = Math.round(peso * proteinaRatio);
-  const grasaG = Math.round(peso * 1.0);    // 1.0 g/kg (Iraki 2019: 0.5-1.5)
-  const calsProt = proteinaG * 4;
-  const calsGrasa = grasaG * 9;
-  const carbosG = Math.round((caloriasObjetivo - calsProt - calsGrasa) / 4);
-
-  // ═══ 11. AGUA (⚠️ HEURÍSTICO: 35ml/kg + 500ml si entrena) ═══
-  const aguaBase = Math.round(peso * 35);
-  const aguaObjetivo = esTraining ? aguaBase + 500 : aguaBase;
-
-  // ═══ 12. SLEEP SCORE (informativo — no afecta nutrición per se) ═══
-  const sleepScore = getSleepScoreHoy();
-
-  // Comida NO se persiste en BBDD por requerimiento (solo vista diaria local en app).
-  const caloriasConsumidas = 0;
-  const proteinaConsumidaG = 0;
-  const carbosConsumidosG = 0;
-  const grasasConsumidasG = 0;
-  const origenDatos = 'sin_persistencia_comida';
-
-  return {
-    // Contrato original (Android compatible)
-    fecha: hoy,
-    es_dia_entreno: esTraining,
-    fase: objetivoNutri,
-    calorias_objetivo: caloriasObjetivo,
-    proteina_g: proteinaG,
-    carbos_g: carbosG,
-    grasas_g: grasaG,
-    agua_ml: aguaObjetivo,
-    pasos_objetivo: 8000,
-    calorias_consumidas: caloriasConsumidas,
-    proteina_consumida_g: proteinaConsumidaG,
-    carbos_consumidos_g: carbosConsumidosG,
-    grasas_consumidas_g: grasasConsumidasG,
-    agua_consumida_ml: 0,
-    pasos_actuales: pasosHoy,
-    bmr: Math.round(bmr),
-    tdee: tdee,
-    origen_datos: origenDatos,
-    es_fallback: false,
-
-    // Campos nuevos (Android los ignora con Gson — no rompe nada)
-    peso_actual: peso,
-    peso_fuente: pesoData.fuente,
-    grasa_pct: grasaPct,
-    multiplicador_usado: multiplicador,
-    ajuste_tendencia: ajusteTendencia,
-    razon_tendencia: razonTendencia,
-    ajuste_neat_kcal: ajusteNeat,
-    razon_neat: razonNeat,
-    tendencia: tendencia,
-    sleep_score: sleepScore
-  };
-}
-
-// ─── SERVICIOS POST ───────────────────────────────────────────
-
-/**
- * Guarda el log de una serie completada.
- * Alimenta el motor de progresión (ACSM 2009 — REG-LOG-01).
- */
-function guardarEjercicioLog(datos) {
-  const hoja = getHoja(HOJAS.EJERCICIOS_LOG);
-  const logId = generarId('LOG');
-
-  const fila = [
-    logId,
-    datos.plan_id || '',
-    datos.sesion_id,
-    datos.ejercicio_id,
-    datos.num_serie,
-    datos.num_peso_usado_kg,
-    datos.num_reps_completadas,
-    datos.num_rir_percibido,
-    datos.str_sensacion || 'bien',
-    new Date().toISOString()
-  ];
-
-  hoja.appendRow(fila);
-  limpiarEjerciciosLogUltimos7Dias();
-
-  return { ok: true, log_id: logId };
-}
-
-/**
- * Guarda medición de peso.
- */
-function guardarPeso(datos) {
-  const hoja = getHoja(HOJAS.PESO_LOG);
-  const pesoId = generarId('PES');
-
-  const fila = [
-    pesoId,
-    datos.fecha || Utilities.formatDate(new Date(), 'Europe/Madrid', 'yyyy-MM-dd'),
-    datos.peso_kg,
-    datos.grasa_pct || '',
-    datos.hidratacion_pct || '',
-    datos.grasa_visceral || '',
-    new Date().toISOString()
-  ];
-
-  hoja.appendRow(fila);
-  return { ok: true, peso_id: pesoId };
-}
-
-/**
- * Guarda métricas de Zepp/Health Connect.
- */
-function guardarMetricas(datos) {
-  const hoja = getHoja(HOJAS.METRICAS_ZEPP);
-  const metricaId = generarId('ZEP');
-
-  const fila = [
-    metricaId,
-    datos.fecha,
-    datos.sleep_score || 0,
-    datos.pasos || 0,
-    datos.hr_reposo || 0,
-    datos.vo2max || 0,
-    new Date().toISOString()
-  ];
-
-  hoja.appendRow(fila);
-  return { ok: true, metrica_id: metricaId };
-}
-
-/**
- * Guarda una comida en el log nutricional.
- */
-function guardarComida(datos) {
-  return { ok: false, error: 'comida_no_persistida' };
-}
-
-/**
- * Guarda adherencia a suplementos del día.
- */
-function guardarSuplemento(datos) {
-  return { ok: false, error: 'suplementos_fuera_de_alcance' };
-}
-
-/**
- * Marca sesión como completada.
- */
-function completarSesion(datos) {
-  const hoja = getHoja(HOJAS.SESIONES_PLAN);
-  const allDatos = hoja.getDataRange().getValues();
-  const cabeceras = allDatos[0];
-  const colSesionId = cabeceras.indexOf('sesion_id');
-  const colCompletada = cabeceras.indexOf('bool_completada');
-  const colFin = cabeceras.indexOf('date_fin');
-
-  for (let i = 1; i < allDatos.length; i++) {
-    if (allDatos[i][colSesionId] === datos.sesion_id) {
-      hoja.getRange(i + 1, colCompletada + 1).setValue(true);
-      hoja.getRange(i + 1, colFin + 1).setValue(new Date().toISOString());
-      break;
-    }
-  }
-
-  return { ok: true, sesion_id: datos.sesion_id };
-}
-
-/**
- * Guarda una excepción (viaje, enfermedad, lesión).
- */
-function guardarExcepcion(datos) {
-  return { ok: false, error: 'excepciones_fuera_de_alcance' };
-}
-
-// ─── DETECCIÓN AUSENCIA (abre app y no entrenó) ──────────────
-
-/**
- * Detecta días sin abrir la app (sesiones no completadas).
- * Si el usuario no abrió la app en todo el día → asumir que no entrenó.
- * Al día siguiente se notifica y se redistribuye volumen semanal.
- */
-function checkAusencia() {
+  const cab = datos[0];
   const hoy = new Date();
-  const hoja = getHoja(HOJAS.SESIONES_PLAN);
-  const datos = hoja.getDataRange().getValues();
-  const cabeceras = datos[0];
-  const colFecha = cabeceras.indexOf('date_fecha');
-  const colCompletada = cabeceras.indexOf('bool_completada');
-
+  const hace7 = new Date(hoy.getTime() - 7 * 86400000);
   const diasPerdidos = [];
-  const hace7dias = new Date(hoy.getTime() - 7 * 24 * 60 * 60 * 1000);
 
   for (let i = 1; i < datos.length; i++) {
-    const fechaFila = new Date(datos[i][colFecha]);
-    if (fechaFila >= hace7dias && fechaFila < hoy && !datos[i][colCompletada]) {
+    const f = parseDate_(datos[i][cab.indexOf('date_fecha')]);
+    if (f && f >= hace7 && f < hoy && !datos[i][cab.indexOf('bool_completada')]) {
       diasPerdidos.push({
-        fecha: Utilities.formatDate(fechaFila, 'Europe/Madrid', 'yyyy-MM-dd'),
-        tipo: datos[i][cabeceras.indexOf('str_tipo')],
-        sesion_id: datos[i][cabeceras.indexOf('sesion_id')]
+        fecha: formatDate_(f),
+        tipo: datos[i][cab.indexOf('str_tipo')],
+        sesion_id: datos[i][cab.indexOf('sesion_id')]
       });
     }
   }
 
-  // Calcular redistribución si hay días perdidos esta semana
-  let redistribucion = null;
+  var redistribucion = null;
   if (diasPerdidos.length > 0) {
-    redistribucion = calcularRedistribucion(diasPerdidos);
+    redistribucion = {
+      volumen_perdido_series: diasPerdidos.length * 18,
+      series_extra_por_sesion: Math.min(4, Math.ceil(diasPerdidos.length * 6)),
+      accion: 'Añadir series extra distribuidas en sesiones restantes'
+    };
   }
 
   return {
@@ -747,889 +275,690 @@ function checkAusencia() {
     total_perdidos: diasPerdidos.length,
     redistribucion: redistribucion,
     mensaje: diasPerdidos.length > 0
-      ? `No entrenaste ${diasPerdidos.length} día(s). Se redistribuye volumen.`
+      ? 'No entrenaste ' + diasPerdidos.length + ' día(s). Se redistribuye volumen.'
       : 'Todo al día'
   };
 }
 
-/**
- * Calcula redistribución del volumen perdido en los días restantes de la semana.
- * Fuente: Schoenfeld 2019 — volumen semanal total es lo que importa.
- */
-function calcularRedistribucion(diasPerdidos) {
-  // Volumen perdido estimado por tipo de sesión
-  const volPorTipo = { 'Push': 21, 'Pull': 23, 'Pierna': 22, 'Hombros+Brazos': 21 };
-  let volumenPerdido = 0;
-  diasPerdidos.forEach(d => { volumenPerdido += volPorTipo[d.tipo] || 12; });
+// ─── POST handlers ───
 
-  return {
-    volumen_perdido_series: volumenPerdido,
-    accion: 'Añadir series extra distribuidas en sesiones restantes de la semana',
-    series_extra_por_sesion: Math.min(Math.ceil(volumenPerdido / 3), 4) // Máx +4 series/sesión
-  };
+function guardarLog_(datos) {
+  const hoja = getHoja_(HOJAS.EJERCICIOS_LOG);
+  const logId = genId_('LOG');
+  hoja.appendRow([
+    logId, datos.plan_id || '', datos.sesion_id, datos.ejercicio_id,
+    datos.num_serie, datos.num_peso_usado_kg, datos.num_reps_completadas,
+    datos.num_rir_percibido, datos.str_sensacion || 'bien', new Date().toISOString()
+  ]);
+
+  // Motor de cargas: actualizar peso sugerido para PRÓXIMAS sesiones con este ejercicio
+  actualizarPesoFuturo_(datos.ejercicio_id, datos.num_peso_usado_kg, datos.num_reps_completadas, datos.num_rir_percibido);
+  limpiarLogsAntiguos_();
+  return { ok: true, log_id: logId };
 }
 
-/**
- * Registra ausencia extendida (≥1 semana) con opción de redistribuir plan.
- * El usuario indica manualmente fechas de inicio/fin.
- */
-function registrarAusenciaExtendida(datos) {
-  return { ok: false, error: 'ausencia_extendida_fuera_de_alcance' };
+function guardarPeso_(datos) {
+  const hoja = getHoja_(HOJAS.PESO_LOG);
+  const id = genId_('PES');
+  hoja.appendRow([
+    id, datos.fecha || fechaHoy_(), datos.peso_kg,
+    datos.grasa_pct || '', datos.hidratacion_pct || '',
+    datos.grasa_visceral || '', new Date().toISOString()
+  ]);
+  return { ok: true, peso_id: id };
 }
 
-/**
- * Sube peso de un ejercicio manualmente (progresión manual).
- * Fuente: ACSM 2009 — subida controlada 2.5-5%
- */
-function subirPesoManual(datos) {
-  const hoja = getHoja(HOJAS.EJERCICIOS_PLAN);
-  const allDatos = hoja.getDataRange().getValues();
-  const cabeceras = allDatos[0];
-  const colEjId = cabeceras.indexOf('ejercicio_id');
-  const colPeso = cabeceras.indexOf('num_peso_sugerido_kg');
+function guardarMetricas_(datos) {
+  const hoja = getHoja_(HOJAS.METRICAS_ZEPP);
+  const id = genId_('ZEP');
+  hoja.appendRow([
+    id, datos.fecha, datos.sleep_score || 0,
+    datos.pasos || 0, datos.hr_reposo || 0,
+    datos.vo2max || 0, new Date().toISOString()
+  ]);
+  return { ok: true, metrica_id: id };
+}
 
-  let actualizado = false;
-  for (let i = allDatos.length - 1; i >= 1; i--) {
-    if (allDatos[i][colEjId] === datos.ejercicio_id) {
-      const pesoActual = allDatos[i][colPeso];
-      const nuevoPeso = datos.nuevo_peso_kg || pesoActual * 1.025; // +2.5% por defecto
-      hoja.getRange(i + 1, colPeso + 1).setValue(Math.round(nuevoPeso * 10) / 10);
-      actualizado = true;
+function completarSesion_(datos) {
+  const hoja = getHoja_(HOJAS.SESIONES_PLAN);
+  const all = hoja.getDataRange().getValues();
+  const cab = all[0];
+  const col = cab.indexOf('sesion_id');
+  const colComp = cab.indexOf('bool_completada');
+  const colFin = cab.indexOf('date_fin');
+  for (let i = 1; i < all.length; i++) {
+    if (all[i][col] === datos.sesion_id) {
+      hoja.getRange(i + 1, colComp + 1).setValue(true);
+      hoja.getRange(i + 1, colFin + 1).setValue(new Date().toISOString());
       break;
     }
   }
-
-  return { ok: actualizado, ejercicio_id: datos.ejercicio_id, mensaje: 'Peso actualizado manualmente' };
+  return { ok: true, sesion_id: datos.sesion_id };
 }
 
-/**
- * Guarda datos de nutrición recibidos desde Health Connect (Android).
- * FatSecret → Health Connect → FitBase Android → API → Sheets.
- * No se usa la API REST de FatSecret (la cuenta Platform es solo para devs).
- */
-function syncNutricionDesdeHealthConnect(datos) {
-  return { ok: false, error: 'comida_no_persistida' };
-}
+// ─── §4. MOTOR DE CARGAS ──────────────────────────────────────
+// Fuentes: ACSM 2009, Mann 2010 (APRE), Kiviniemi 2007 (FC), Helms 2016 (RIR)
+//
+// FILOSOFÍA:
+// El plan anual define DIRECTRICES (fase, RIR, volumen, foco).
+// Los PESOS son siempre dinámicos: se recalculan tras cada serie
+// basándose en rendimiento real. Esto hace que el programa se
+// adapte automáticamente a la realidad del usuario.
 
 /**
- * Obtiene la última composición corporal semanal de Zepp (peso, grasa, músculo).
- * Se extrae al final de cada semana del último pesaje registrado.
+ * Ajuste global del día basado en fatiga/sueño.
+ * Adaptado de Kiviniemi 2007 (FC reposo como proxy de HRV).
  */
-function getComposicionSemanal() {
-  const hoja = getHoja(HOJAS.PESO_LOG);
-  const datos = hoja.getDataRange().getValues();
-  const cabeceras = datos[0];
+function calcularAjusteDia_() {
+  const hoy = fechaHoy_();
+  const metrica = getUltimaFila_(HOJAS.METRICAS_ZEPP, 'date_fecha', hoy);
+  var factor = 1.0;
+  var razones = [];
 
-  // Buscar último registro con datos de composición
-  for (let i = datos.length - 1; i >= 1; i--) {
-    if (datos[i][cabeceras.indexOf('num_grasa_pct')]) {
-      return {
-        fecha: datos[i][cabeceras.indexOf('date_fecha')],
-        peso_kg: datos[i][cabeceras.indexOf('num_peso_kg')],
-        grasa_pct: datos[i][cabeceras.indexOf('num_grasa_pct')],
-        hidratacion_pct: datos[i][cabeceras.indexOf('num_hidratacion_pct')],
-        grasa_visceral: datos[i][cabeceras.indexOf('num_grasa_visceral')]
-      };
+  if (metrica) {
+    const fcMedia = calcularMediaFC_(10);
+
+    // Kiviniemi 2007: tendencia ascendente 2+ días → recuperación activa
+    if (esTendenciaFCAscendente_(2)) {
+      factor *= 0.70;
+      razones.push('FC ascendente 2+ días (recuperación activa)');
     }
-  }
-  return { error: 'Sin datos de composición corporal' };
-}
-
-/**
- * Guarda mediciones corporales (circunferencias).
- * Solo al inicio del plan y al final de cada fase.
- */
-function guardarMedicion(datos) {
-  return { ok: false, error: 'mediciones_fuera_de_alcance' };
-}
-
-// ─── MOTOR DE CARGAS (REG-LOG-01) ────────────────────────────
-
-/**
- * Calcula el ajuste del día basado en métricas.
- * Fuente: Adaptado de Kiviniemi 2007 (FC reposo como proxy de HRV)
- */
-function calcularAjusteDia() {
-  const hoy = Utilities.formatDate(new Date(), 'Europe/Madrid', 'yyyy-MM-dd');
-  const metricasHoy = getUltimaMetrica(HOJAS.METRICAS_ZEPP, hoy);
-
-  let ajuste = 1.0;
-  let razones = [];
-
-  if (metricasHoy) {
-    // FC reposo elevada (Kiviniemi 2007 adaptado)
-    const fcMedia10d = calcularMediaFC(10);
-    if (metricasHoy.num_hr_reposo > fcMedia10d + 10) {
-      ajuste *= 0.80;
+    // Kiviniemi 2007 adaptado: FC reposo elevada +10 vs media
+    else if (metrica.num_hr_reposo > fcMedia + 10) {
+      factor *= 0.80;
       razones.push('FC reposo elevada (+10 vs media)');
     }
 
-    // Sleep Score bajo (heurístico)
-    if (metricasHoy.num_sleep_score < 60) {
-      ajuste *= 0.90;
-      razones.push('Sleep Score bajo (<60)');
+    // Heurístico: sueño pobre
+    if (metrica.num_sleep_score && metrica.num_sleep_score < 60) {
+      factor *= 0.90;
+      razones.push('Sleep score bajo (<60)');
     }
   }
 
+  // Heurístico: estrés subjetivo (si hay registro hoy)
+  var subjetiva = getUltimaFila_(HOJAS.METRICAS_SUBJETIVAS, 'date_fecha', hoy);
+  if (subjetiva && subjetiva.num_estres > 7) {
+    factor *= 0.85;
+    razones.push('Estrés subjetivo alto (>7/10)');
+  }
+
   return {
-    factor: ajuste,
-    razones: razones.length > 0 ? razones : ['Sin ajustes - sesión normal'],
-    tipo: ajuste >= 1.0 ? 'normal' : (ajuste >= 0.80 ? 'reducida' : 'recuperacion')
+    factor: factor,
+    razones: razones.length ? razones : ['Sesión normal'],
+    tipo: factor >= 1 ? 'normal' : (factor >= 0.8 ? 'reducida' : 'recuperacion')
   };
 }
 
 /**
- * Calcula peso sugerido para próxima sesión.
- * Regla ACSM 2009: Si completó +1-2 reps sobre objetivo con RIR ≥ 2 → subir 2.5%
- * Si el usuario no indica progresión manual, la app sube automáticamente.
- * También se puede subir manualmente vía 'subir_peso_manual'.
+ * Detecta si FC reposo está en tendencia ascendente los últimos N días.
+ * Adaptado de Kiviniemi 2007.
  */
-function calcularPesoSugerido(ejercicioId, pesoBase) {
-  const hoja = getHoja(HOJAS.EJERCICIOS_LOG);
+function esTendenciaFCAscendente_(dias) {
+  const hoja = getHoja_(HOJAS.METRICAS_ZEPP);
+  if (!hoja) return false;
   const datos = hoja.getDataRange().getValues();
-  const cabeceras = datos[0];
+  const cab = datos[0];
+  const colFC = cab.indexOf('num_hr_reposo');
+  if (colFC < 0) return false;
 
-  // Buscar último log de este ejercicio
-  let ultimoLog = null;
+  var ultimos = [];
+  for (let i = Math.max(1, datos.length - dias - 1); i < datos.length; i++) {
+    if (datos[i][colFC]) ultimos.push(Number(datos[i][colFC]));
+  }
+  if (ultimos.length < dias + 1) return false;
+
+  // Verificar tendencia: cada día mayor que el anterior
+  for (let i = ultimos.length - dias; i < ultimos.length; i++) {
+    if (ultimos[i] <= ultimos[i - 1]) return false;
+  }
+  return true;
+}
+
+/**
+ * Peso sugerido para un ejercicio — SIEMPRE DINÁMICO.
+ *
+ * Protocolo APRE simplificado (Mann 2010):
+ *   - Reps 13+ en última serie → +5kg
+ *   - Reps 8-12 → +2.5kg
+ *   - Reps 5-7 → mantener
+ *   - Reps ≤4 → -2.5kg
+ *
+ * Multiplicado por ajuste del día (Kiviniemi 2007).
+ * Si no hay historial → devuelve 0 (app muestra "Elige tu peso").
+ */
+function calcularPesoSugerido_(ejercicioId, pesoBase, ajusteDia) {
+  const hoja = getHoja_(HOJAS.EJERCICIOS_LOG);
+  const datos = hoja.getDataRange().getValues();
+  const cab = datos[0];
+  const colEj = cab.indexOf('ejercicio_id');
+
+  // Último log de este ejercicio
+  var ultimo = null;
   for (let i = datos.length - 1; i >= 1; i--) {
-    if (datos[i][cabeceras.indexOf('ejercicio_id')] === ejercicioId) {
-      ultimoLog = filaAObjeto(cabeceras, datos[i]);
+    if (datos[i][colEj] === ejercicioId) {
+      ultimo = rowToObj_(cab, datos[i]);
       break;
     }
   }
 
-  if (!ultimoLog) return pesoBase;
+  // Sin historial → usar peso base del plan (puede ser 0), pero aplicar ajuste del día
+  if (!ultimo) return Math.round(pesoBase * ajusteDia * 4) / 4;
 
-  const repsCompletadas = ultimoLog.num_reps_completadas;
-  const pesoUsado = ultimoLog.num_peso_usado_kg;
+  const reps = ultimo.num_reps_completadas;
+  const pesoUsado = ultimo.num_peso_usado_kg;
+  var nuevoPeso = pesoUsado;
 
   // APRE simplificado (Mann 2010)
-  if (repsCompletadas >= 13) {
-    return pesoUsado + 5;
-  } else if (repsCompletadas >= 8) {
-    return pesoUsado + 2.5;
-  } else if (repsCompletadas <= 4) {
-    return Math.max(pesoUsado - 2.5, 0);
-  }
+  if (reps >= 13)      nuevoPeso += 5;
+  else if (reps >= 8)  nuevoPeso += 2.5;
+  else if (reps <= 4)  nuevoPeso = Math.max(0, nuevoPeso - 2.5);
+  // 5-7 reps → mantener
 
-  return pesoUsado;
+  // Aplicar ajuste del día (Kiviniemi 2007)
+  nuevoPeso = Math.round(nuevoPeso * ajusteDia * 4) / 4; // Redondear a 0.25kg
+
+  return Math.max(0, nuevoPeso);
 }
 
 /**
- * Actualiza log de progresión (1RM estimado, PRs).
+ * Tras registrar serie: actualizar peso sugerido en ejercicios_plan
+ * para TODAS las futuras sesiones con ese ejercicio.
+ *
+ * Esto hace el plan ADAPTATIVO: el plan anual marca directrices,
+ * pero los pesos siempre reflejan el rendimiento real.
+ *
+ * Criterios (ACSM 2009 + Mann 2010):
+ *   - Reps >= 13 → +5kg (muy fácil)
+ *   - Reps >= 8 con RIR >= 2 → +2.5kg (bien)
+ *   - Reps <= 4 o RIR == 0 → -2.5kg (demasiado pesado)
+ *   - Resto → mantener
  */
-function actualizarProgresion(ejercicioId, peso, reps) {
-  return { ok: false, error: 'progresion_historica_fuera_de_alcance' };
+function actualizarPesoFuturo_(ejercicioId, pesoUsado, reps, rir) {
+  var nuevoPeso = pesoUsado;
+
+  if (reps >= 13) nuevoPeso += 5;
+  else if (reps >= 8 && rir >= 2) nuevoPeso += 2.5;
+  else if (reps <= 4 || rir === 0) nuevoPeso = Math.max(0, nuevoPeso - 2.5);
+
+  nuevoPeso = Math.round(nuevoPeso * 4) / 4; // Redondear a 0.25
+
+  // Obtener sesiones futuras
+  const hojaSes = getHoja_(HOJAS.SESIONES_PLAN);
+  const sesiones = hojaSes.getDataRange().getValues();
+  const cabSes = sesiones[0];
+  const hoy = new Date();
+  const sesionesFuturas = {};
+  for (let i = 1; i < sesiones.length; i++) {
+    const f = parseDate_(sesiones[i][cabSes.indexOf('date_fecha')]);
+    if (f && f > hoy) sesionesFuturas[sesiones[i][cabSes.indexOf('sesion_id')]] = true;
+  }
+
+  // Actualizar peso en ejercicios_plan para todas las instancias futuras
+  const hoja = getHoja_(HOJAS.EJERCICIOS_PLAN);
+  const datos = hoja.getDataRange().getValues();
+  const cab = datos[0];
+  const colEj = cab.indexOf('ejercicio_id');
+  const colPeso = cab.indexOf('num_peso_sugerido_kg');
+  const colSesId = cab.indexOf('sesion_id');
+
+  for (let i = 1; i < datos.length; i++) {
+    if (datos[i][colEj] === ejercicioId && sesionesFuturas[datos[i][colSesId]]) {
+      hoja.getRange(i + 1, colPeso + 1).setValue(nuevoPeso);
+    }
+  }
 }
 
-// ─── UTILIDADES ───────────────────────────────────────────────
+function calcularMediaFC_(dias) {
+  const hoja = getHoja_(HOJAS.METRICAS_ZEPP);
+  const datos = hoja.getDataRange().getValues();
+  const cab = datos[0];
+  const colFC = cab.indexOf('num_hr_reposo');
+  var vals = [];
+  for (let i = Math.max(1, datos.length - dias); i < datos.length; i++) {
+    if (datos[i][colFC]) vals.push(datos[i][colFC]);
+  }
+  return vals.length ? vals.reduce(function(a, b) { return a + b; }, 0) / vals.length : 53;
+}
 
-function getHoja(nombre) {
+// ─── §5. AUXILIARES ───────────────────────────────────────────
+
+function getHoja_(nombre) {
   return SpreadsheetApp.getActiveSpreadsheet().getSheetByName(nombre);
 }
 
-function appendRowsBatch(hoja, filas, batchSize = 500) {
-  if (!filas || filas.length === 0) return;
-  const totalCols = filas[0].length;
-  for (let i = 0; i < filas.length; i += batchSize) {
-    const bloque = filas.slice(i, i + batchSize);
-    hoja.getRange(hoja.getLastRow() + 1, 1, bloque.length, totalCols).setValues(bloque);
-  }
+function jsonOutput_(json) {
+  return ContentService.createTextOutput(typeof json === 'string' ? json : JSON.stringify(json))
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
-function generarId(prefijo) {
-  const ahora = Utilities.formatDate(new Date(), 'Europe/Madrid', 'yyyyMMdd');
-  const random = Math.floor(Math.random() * 9999).toString().padStart(4, '0');
-  return `${prefijo}_${ahora}_${random}`;
+function genId_(pre) {
+  return pre + '_' + Utilities.formatDate(new Date(), 'Europe/Madrid', 'yyyyMMdd') + '_' + Math.floor(Math.random() * 9999).toString().padStart(4, '0');
 }
 
-function filaAObjeto(cabeceras, fila) {
-  const obj = {};
-  for (let i = 0; i < cabeceras.length; i++) {
-    obj[cabeceras[i]] = fila[i];
-  }
-  return obj;
+function fechaHoy_() {
+  return Utilities.formatDate(new Date(), 'Europe/Madrid', 'yyyy-MM-dd');
 }
 
-function parseSheetDate(valor) {
-  if (!valor && valor !== 0) return null;
-  if (valor instanceof Date) return valor;
-  if (typeof valor === 'number') {
-    // Formato serial de Google Sheets (dias desde 1899-12-30)
-    const ms = (valor - 25569) * 86400 * 1000;
-    const d = new Date(ms);
+function formatDate_(d) {
+  return d ? Utilities.formatDate(d, 'Europe/Madrid', 'yyyy-MM-dd') : null;
+}
+
+function parseDate_(v) {
+  if (!v && v !== 0) return null;
+  if (v instanceof Date) return v;
+  if (typeof v === 'number') {
+    var d = new Date((v - 25569) * 86400000);
     return isNaN(d.getTime()) ? null : d;
   }
-  const d = new Date(valor);
+  var d = new Date(v);
   return isNaN(d.getTime()) ? null : d;
 }
 
-function getEjerciciosDeSesion(sesionId) {
-  const hoja = getHoja(HOJAS.EJERCICIOS_PLAN);
-  const datos = hoja.getDataRange().getValues();
-  const cabeceras = datos[0];
-  const ejercicios = [];
-
-  for (let i = 1; i < datos.length; i++) {
-    if (datos[i][cabeceras.indexOf('sesion_id')] === sesionId) {
-      ejercicios.push(filaAObjeto(cabeceras, datos[i]));
-    }
-  }
-  return ejercicios.sort((a, b) => a.num_orden - b.num_orden);
+function rowToObj_(cab, fila) {
+  var o = {};
+  for (var i = 0; i < cab.length; i++) o[cab[i]] = fila[i];
+  return o;
 }
 
-function getUltimaMetrica(nombreHoja, fecha) {
-  const hoja = getHoja(nombreHoja);
+function getEjerciciosSesion_(sesionId) {
+  const hoja = getHoja_(HOJAS.EJERCICIOS_PLAN);
   const datos = hoja.getDataRange().getValues();
-  const cabeceras = datos[0];
-  const colFecha = cabeceras.indexOf('date_fecha');
+  const cab = datos[0];
+  const col = cab.indexOf('sesion_id');
+  var res = [];
+  for (let i = 1; i < datos.length; i++) {
+    if (datos[i][col] === sesionId) res.push(rowToObj_(cab, datos[i]));
+  }
+  res.sort(function(a, b) { return a.num_orden - b.num_orden; });
 
-  for (let i = datos.length - 1; i >= 1; i--) {
-    const parsed = parseSheetDate(datos[i][colFecha]);
-    if (!parsed) continue;
-    const fechaFila = Utilities.formatDate(parsed, 'Europe/Madrid', 'yyyy-MM-dd');
-    if (fechaFila === fecha) {
-      return filaAObjeto(cabeceras, datos[i]);
+  // Enriquecer con nombre del catálogo
+  const catalogo = getCatalogoMap_();
+  res.forEach(function(ej) {
+    var cat = catalogo[ej.ejercicio_id];
+    if (cat) {
+      ej.nombre = cat.str_nombre;
+      ej.str_grupo_principal = cat.str_grupo_principal;
     }
+  });
+  return res;
+}
+
+function getCatalogoMap_() {
+  const hoja = getHoja_(HOJAS.EJERCICIOS_CATALOGO);
+  if (!hoja) return {};
+  const datos = hoja.getDataRange().getValues();
+  const cab = datos[0];
+  var mapa = {};
+  for (let i = 1; i < datos.length; i++) {
+    var obj = rowToObj_(cab, datos[i]);
+    mapa[obj.ejercicio_id] = obj;
+  }
+  return mapa;
+}
+
+function getUltimaFila_(hoja, colFecha, fecha) {
+  const h = getHoja_(hoja);
+  if (!h) return null;
+  const datos = h.getDataRange().getValues();
+  const cab = datos[0];
+  const idx = cab.indexOf(colFecha);
+  if (idx < 0) return null;
+  for (let i = datos.length - 1; i >= 1; i--) {
+    const f = parseDate_(datos[i][idx]);
+    if (f && formatDate_(f) === fecha) return rowToObj_(cab, datos[i]);
   }
   return null;
 }
 
-function calcularMediaFC(dias) {
-  const hoja = getHoja(HOJAS.METRICAS_ZEPP);
+function leerDatosDesdeFecha_(nombreHoja, colFecha, desde, mapper) {
+  const hoja = getHoja_(nombreHoja);
+  if (!hoja) return [];
   const datos = hoja.getDataRange().getValues();
-  const cabeceras = datos[0];
-  const colFC = cabeceras.indexOf('num_hr_reposo');
-
-  const valores = [];
-  for (let i = Math.max(1, datos.length - dias); i < datos.length; i++) {
-    if (datos[i][colFC]) {
-      valores.push(datos[i][colFC]);
-    }
-  }
-
-  if (valores.length === 0) return 53; // baseline del usuario
-  return valores.reduce((a, b) => a + b, 0) / valores.length;
-}
-
-function calcularMediaPeso(dias) {
-  const hoja = getHoja(HOJAS.PESO_LOG);
-  const datos = hoja.getDataRange().getValues();
-  const cabeceras = datos[0];
-  const colPeso = cabeceras.indexOf('num_peso_kg');
-
-  const valores = [];
-  for (let i = Math.max(1, datos.length - dias); i < datos.length; i++) {
-    if (datos[i][colPeso]) {
-      valores.push(datos[i][colPeso]);
-    }
-  }
-
-  if (valores.length === 0) return 78.2;
-  return Math.round((valores.reduce((a, b) => a + b, 0) / valores.length) * 10) / 10;
-}
-
-function getUltimo1RM(ejercicioId) {
-  const hoja = getHoja(HOJAS.PROGRESION_LOG);
-  const datos = hoja.getDataRange().getValues();
-  const cabeceras = datos[0];
-  const col1RM = cabeceras.indexOf('num_1rm_estimado');
-  const colEjId = cabeceras.indexOf('ejercicio_id');
-
-  let max1RM = 0;
+  const cab = datos[0];
+  const idx = cab.indexOf(colFecha);
+  if (idx < 0) return [];
+  var res = [];
   for (let i = 1; i < datos.length; i++) {
-    if (datos[i][colEjId] === ejercicioId && datos[i][col1RM] > max1RM) {
-      max1RM = datos[i][col1RM];
+    const f = parseDate_(datos[i][idx]);
+    if (f && f >= desde) {
+      var row = rowToObj_(cab, datos[i]);
+      row[colFecha] = formatDate_(f);
+      res.push(mapper(row));
     }
   }
-  return max1RM;
+  return res.sort(function(a, b) { return (a.fecha || '').localeCompare(b.fecha || ''); });
 }
 
-// ─── INICIALIZACIÓN ───────────────────────────────────────────
-
-// ─── PROGRESIÓN DE MÉTRICAS (pantalla de seguimiento) ─────────
-
-/**
- * Devuelve historial de métricas clave para la pantalla de progresión.
- * Métricas: peso, grasa%, sueño (score + horas), FC reposo, HRV, pasos.
- * @param {number} dias — últimos N días (default 30)
- */
-function getProgresionMetricas(dias) {
-  dias = parseInt(dias) || 30;
-  const hoy = new Date();
-  const desde = new Date(hoy.getTime() - dias * 24 * 60 * 60 * 1000);
-
-  // 1. Peso + composición
-  const pesoData = [];
-  const hojaPeso = getHoja(HOJAS.PESO_LOG);
-  const datosPeso = hojaPeso.getDataRange().getValues();
-  const cabPeso = datosPeso[0];
-  for (let i = 1; i < datosPeso.length; i++) {
-    const fecha = parseSheetDate(datosPeso[i][cabPeso.indexOf('date_fecha')]);
-    const pesoVal = Number(datosPeso[i][cabPeso.indexOf('num_peso_kg')]);
-    if (fecha && fecha >= desde && pesoVal > 0) {
-      pesoData.push({
-        fecha: Utilities.formatDate(fecha, 'Europe/Madrid', 'yyyy-MM-dd'),
-        peso_kg: pesoVal,
-        grasa_pct: datosPeso[i][cabPeso.indexOf('num_grasa_pct')] || null,
-        hidratacion_pct: datosPeso[i][cabPeso.indexOf('num_hidratacion_pct')] || null,
-        grasa_visceral: datosPeso[i][cabPeso.indexOf('num_grasa_visceral')] || null
-      });
-    }
+function getPesoActual_() {
+  const hoja = getHoja_(HOJAS.PESO_LOG);
+  if (!hoja) return 78.2;
+  const datos = hoja.getDataRange().getValues();
+  if (datos.length <= 1) return 78.2;
+  const cab = datos[0];
+  const colP = cab.indexOf('num_peso_kg');
+  for (let i = datos.length - 1; i >= 1; i--) {
+    const p = Number(datos[i][colP]);
+    if (p > 0) return p;
   }
-  pesoData.sort((a, b) => a.fecha.localeCompare(b.fecha));
-
-  // 2. Métricas Zepp (sueño, FC, HRV, estrés, pasos)
-  const zeppData = [];
-  const hojaZepp = getHoja(HOJAS.METRICAS_ZEPP);
-  const datosZepp = hojaZepp.getDataRange().getValues();
-  const cabZepp = datosZepp[0];
-  for (let i = 1; i < datosZepp.length; i++) {
-    const fecha = parseSheetDate(datosZepp[i][cabZepp.indexOf('date_fecha')]);
-    if (fecha && fecha >= desde) {
-      zeppData.push({
-        fecha: Utilities.formatDate(fecha, 'Europe/Madrid', 'yyyy-MM-dd'),
-        sleep_score: datosZepp[i][cabZepp.indexOf('num_sleep_score')] || 0,
-        sleep_horas: 0,
-        sleep_deep_min: 0,
-        hrv_rmssd: 0,
-        hr_reposo: datosZepp[i][cabZepp.indexOf('num_hr_reposo')] || 0,
-        stress_avg: 0,
-        pasos: datosZepp[i][cabZepp.indexOf('num_pasos')] || 0,
-        vo2max: datosZepp[i][cabZepp.indexOf('num_vo2max')] || 0
-      });
-    }
-  }
-  zeppData.sort((a, b) => a.fecha.localeCompare(b.fecha));
-
-  // 3. Volumen de entrenamiento por día
-  const volumenData = [];
-  const hojaLog = getHoja(HOJAS.EJERCICIOS_LOG);
-  const datosLog = hojaLog.getDataRange().getValues();
-  const cabLog = datosLog[0];
-  const volPorDia = {};
-  for (let i = 1; i < datosLog.length; i++) {
-    const fechaStr = datosLog[i][cabLog.indexOf('date_timestamp')];
-    if (!fechaStr) continue;
-    const fecha = parseSheetDate(fechaStr);
-    if (!fecha) continue;
-    if (fecha < desde) continue;
-    const dia = Utilities.formatDate(fecha, 'Europe/Madrid', 'yyyy-MM-dd');
-    const peso = datosLog[i][cabLog.indexOf('num_peso_usado_kg')] || 0;
-    const reps = datosLog[i][cabLog.indexOf('num_reps_completadas')] || 0;
-    volPorDia[dia] = (volPorDia[dia] || 0) + (peso * reps);
-  }
-  for (const [dia, vol] of Object.entries(volPorDia)) {
-    volumenData.push({ fecha: dia, volumen_kg: Math.round(vol) });
-  }
-  volumenData.sort((a, b) => a.fecha.localeCompare(b.fecha));
-
-  return {
-    dias_solicitados: dias,
-    peso: pesoData,
-    zepp: zeppData,
-    volumen_entreno: volumenData,
-    resumen: {
-      peso_actual: pesoData.length > 0 ? pesoData[pesoData.length - 1].peso_kg : null,
-      peso_inicio: pesoData.length > 0 ? pesoData[0].peso_kg : null,
-      grasa_actual: pesoData.length > 0 ? pesoData[pesoData.length - 1].grasa_pct : null,
-      sleep_media: zeppData.length > 0
-        ? Math.round(zeppData.reduce((s, d) => s + d.sleep_score, 0) / zeppData.length)
-        : null,
-      pasos_media: zeppData.length > 0
-        ? Math.round(zeppData.reduce((s, d) => s + d.pasos, 0) / zeppData.length)
-        : null
-    }
-  };
+  return 78.2; // Fallback biometria.md
 }
 
-// ─── VACIAR BASE DE DATOS (reset para demos) ─────────────────
-
-/**
- * Vacía TODAS las hojas de datos (elimina filas, conserva cabeceras).
- * CUIDADO: Irreversible. Usar solo para resetear antes de la fecha de inicio real.
- *
- * Requiere: datos.confirmar === 'VACIAR_TODO'
- * Opción: datos.hojas_excluir — array de nombres de hojas que NO se vacían
- *         (p.ej. ['ejercicios_catalogo', 'plan_anual'] para mantener el plan)
- */
-function vaciarBaseDatos(datos) {
-  // Seguridad: requiere confirmación explícita
-  if (datos.confirmar !== 'VACIAR_TODO') {
-    return {
-      ok: false,
-      error: 'Debes enviar confirmar: "VACIAR_TODO" para proceder',
-      mensaje: 'Esto borra TODOS los datos de la BBDD (excepto cabeceras y catálogo)'
-    };
-  }
-
-  const excluir = datos.hojas_excluir || [];
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const resultados = {};
-
-  for (const [key, nombre] of Object.entries(HOJAS)) {
-    if (excluir.includes(nombre)) {
-      resultados[nombre] = 'EXCLUIDA (no vaciada)';
-      continue;
-    }
-
-    const hoja = ss.getSheetByName(nombre);
-    if (!hoja) {
-      resultados[nombre] = 'NO EXISTE';
-      continue;
-    }
-
-    const ultimaFila = hoja.getLastRow();
-    if (ultimaFila <= 1) {
-      resultados[nombre] = 'YA VACÍA (solo cabeceras)';
-      continue;
-    }
-
-    // Borrar todas las filas excepto la primera (cabeceras)
-    hoja.deleteRows(2, ultimaFila - 1);
-    resultados[nombre] = `VACIADA (${ultimaFila - 1} filas eliminadas)`;
-  }
-
-  return {
-    ok: true,
-    mensaje: 'Base de datos vaciada correctamente',
-    detalle: resultados,
-    timestamp: new Date().toISOString()
-  };
+function getPasosHoy_() {
+  const m = getUltimaFila_(HOJAS.METRICAS_ZEPP, 'date_fecha', fechaHoy_());
+  return m ? (m.num_pasos || 0) : 0;
 }
 
-/**
- * Función auxiliar para ejecutar desde el editor de Apps Script directamente.
- * Vacía toda la BBDD excepto datos pre-generados (catálogo, plan, sesiones, ejercicios plan).
- * EJECUTAR MANUALMENTE antes de la fecha de inicio real (31/08/2026).
- * Solo borra LOGS (registros de uso durante pruebas).
- */
-function resetParaInicio() {
-  const resultado = vaciarBaseDatos({
-    confirmar: 'VACIAR_TODO',
-    hojas_excluir: [
-      'ejercicios_catalogo',  // Catálogo de ejercicios (referencia)
-      'plan_anual',           // Fases del año (pre-generado)
-      'plan_semanal',         // Microciclos (pre-generado)
-      'sesiones_plan',        // 192 sesiones pre-generadas
-      'ejercicios_plan'       // 1300 ejercicios pre-generados
-    ]
-  });
-  Logger.log(JSON.stringify(resultado, null, 2));
-  return resultado;
+function limpiarLogsAntiguos_() {
+  const hoja = getHoja_(HOJAS.EJERCICIOS_LOG);
+  if (!hoja) return;
+  const datos = hoja.getDataRange().getValues();
+  if (datos.length <= 1) return;
+  const cab = datos[0];
+  const col = cab.indexOf('date_timestamp');
+  if (col < 0) return;
+  const limite = new Date();
+  limite.setDate(limite.getDate() - 30);
+  // Borrar de abajo a arriba para no desplazar índices
+  for (let i = datos.length - 1; i >= 1; i--) {
+    const f = parseDate_(datos[i][col]);
+    if (!f || f < limite) hoja.deleteRow(i + 1);
+  }
 }
 
-/**
- * Crea todas las hojas con cabeceras.
- * Ejecutar UNA SOLA VEZ al configurar.
- */
+// ─── §6. INICIALIZAR ──────────────────────────────────────────
+// Ejecutar UNA VEZ desde el editor de Apps Script.
+// Crea todas las hojas con sus cabeceras correctas.
+
 function inicializarHojas() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-
-  const estructuras = {
-    [HOJAS.METRICAS_ZEPP]: ['metrica_id', 'date_fecha', 'num_sleep_score', 'num_pasos', 'num_hr_reposo', 'num_vo2max', 'date_sync'],
-    [HOJAS.PESO_LOG]: ['peso_id', 'date_fecha', 'num_peso_kg', 'num_grasa_pct', 'num_hidratacion_pct', 'num_grasa_visceral', 'date_sync'],
-    [HOJAS.SESIONES_PLAN]: ['sesion_id', 'date_fecha', 'str_tipo', 'num_semana_meso', 'str_fase', 'num_ajuste_volumen', 'num_duracion_est_min', 'bool_completada', 'date_inicio', 'date_fin', 'date_creado'],
-    [HOJAS.EJERCICIOS_PLAN]: ['plan_id', 'sesion_id', 'ejercicio_id', 'num_orden', 'num_series_plan', 'num_reps_plan', 'num_peso_sugerido_kg', 'num_rir_objetivo', 'num_descanso_seg', 'str_notas', 'bool_es_warmup'],
-    [HOJAS.EJERCICIOS_LOG]: ['log_id', 'plan_id', 'sesion_id', 'ejercicio_id', 'num_serie', 'num_peso_usado_kg', 'num_reps_completadas', 'num_rir_percibido', 'str_sensacion', 'date_timestamp'],
-    [HOJAS.PLAN_ANUAL]: ['fase_id', 'num_año', 'num_orden', 'str_nombre_fase', 'str_tipo', 'date_inicio', 'date_fin', 'num_semanas', 'num_volumen_objetivo', 'str_rir_rango', 'str_foco_muscular', 'str_objetivo_nutri', 'str_notas'],
-    [HOJAS.PLAN_SEMANAL]: ['semana_id', 'fase_id', 'num_semana_año', 'num_semana_fase', 'str_lunes', 'str_martes', 'str_miercoles', 'str_jueves', 'str_viernes', 'str_sabado', 'str_domingo', 'str_rir_semana', 'bool_deload'],
-    [HOJAS.EJERCICIOS_CATALOGO]: ['ejercicio_id', 'str_nombre', 'str_nombre_en', 'str_grupo_principal', 'arr_grupos_secundarios', 'str_patron', 'str_equipamiento', 'bool_compuesto', 'bool_favorito', 'bool_excluido', 'str_razon_exclusion', 'str_alternativa']
+  const esquema = {
+    [HOJAS.METRICAS_ZEPP]: ['metrica_id','date_fecha','num_sleep_score','num_pasos','num_hr_reposo','num_vo2max','date_sync'],
+    [HOJAS.METRICAS_SUBJETIVAS]: ['subjetiva_id','date_fecha','num_energia','num_estres','num_doms','str_grupo_doms','str_notas'],
+    [HOJAS.PESO_LOG]: ['peso_id','date_fecha','num_peso_kg','num_grasa_pct','num_hidratacion_pct','num_grasa_visceral','date_sync'],
+    [HOJAS.PLAN_ANUAL]: ['fase_id','num_año','num_orden','str_nombre_fase','str_tipo','date_inicio','date_fin','num_semanas','num_volumen_objetivo','str_rir_rango','str_foco_muscular','str_objetivo_nutri','str_notas'],
+    [HOJAS.PLAN_SEMANAL]: ['semana_id','fase_id','num_semana_año','num_semana_fase','str_lunes','str_martes','str_miercoles','str_jueves','str_viernes','str_sabado','str_domingo','str_rir_semana','bool_deload'],
+    [HOJAS.SESIONES_PLAN]: ['sesion_id','date_fecha','str_tipo','num_semana_meso','str_fase','num_ajuste_volumen','num_duracion_est_min','bool_completada','date_inicio','date_fin','date_creado'],
+    [HOJAS.EJERCICIOS_PLAN]: ['plan_id','sesion_id','ejercicio_id','num_orden','num_series_plan','num_reps_plan','num_peso_sugerido_kg','num_rir_objetivo','num_descanso_seg','str_notas','bool_es_warmup'],
+    [HOJAS.EJERCICIOS_LOG]: ['log_id','plan_id','sesion_id','ejercicio_id','num_serie','num_peso_usado_kg','num_reps_completadas','num_rir_percibido','str_sensacion','date_timestamp'],
+    [HOJAS.EJERCICIOS_CATALOGO]: ['ejercicio_id','str_nombre','str_nombre_en','str_grupo_principal','arr_grupos_secundarios','str_patron','str_equipamiento','bool_compuesto','bool_favorito','bool_excluido','str_razon_exclusion','str_alternativa']
   };
 
-  for (const [nombre, cabeceras] of Object.entries(estructuras)) {
-    let hoja = ss.getSheetByName(nombre);
-    if (!hoja) {
-      hoja = ss.insertSheet(nombre);
-    }
-
-    // Mantener cabeceras y limpiar contenido previo para evitar duplicados acumulados.
-    if (hoja.getLastRow() > 1) {
-      hoja.getRange(2, 1, hoja.getLastRow() - 1, hoja.getMaxColumns()).clearContent();
-    }
-
-    hoja.getRange(1, 1, 1, cabeceras.length).setValues([cabeceras]);
-    // Formato cabeceras
-    hoja.getRange(1, 1, 1, cabeceras.length).setFontWeight('bold');
-    hoja.setFrozenRows(1);
+  for (const [nombre, cabs] of Object.entries(esquema)) {
+    var h = ss.getSheetByName(nombre);
+    if (!h) h = ss.insertSheet(nombre);
+    h.getRange(1, 1, 1, cabs.length).setValues([cabs]).setFontWeight('bold');
+    h.setFrozenRows(1);
   }
-
-  return { ok: true, mensaje: 'Hojas inicializadas correctamente (esquema usuario unico simplificado)' };
+  return { ok: true, mensaje: 'Hojas creadas con cabeceras' };
 }
 
-// ═══════════════════════════════════════════════════════════════
-// PRE-GENERACIÓN DEL PLAN COMPLETO (ejecutar UNA VEZ post-inicialización)
-// Fuente: base_datos.md §7, programacion.md, ENTREGABLE_5_PLAN_EJERCICIOS.html
-// ═══════════════════════════════════════════════════════════════
+// ─── §7. RELLENAR ─────────────────────────────────────────────
+// Genera plan anual, semanal, sesiones y ejercicios.
+// Ejecutar DESPUÉS de inicializarHojas().
+// Los PESOS quedan en 0 — el motor los calcula dinámicamente
+// basándose en rendimiento real (APRE Mann 2010).
 
-/**
- * Genera TODAS las sesiones del año (31/08/2026 → 31/07/2027).
- * Pre-carga ~192 sesiones + ~1300 ejercicios.
- * Ejecutar DESPUÉS de inicializarHojas().
- * El usuario abre la app cualquier día y su sesión ya está lista.
- */
-function generarPlanCompleto() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-
-  const hojaPlanAnual = getHoja(HOJAS.PLAN_ANUAL);
-  const hojaSesiones = getHoja(HOJAS.SESIONES_PLAN);
-  const hojaEjercicios = getHoja(HOJAS.EJERCICIOS_PLAN);
-  const hojaSemanal = getHoja(HOJAS.PLAN_SEMANAL);
-  const hojaCatalogo = getHoja(HOJAS.EJERCICIOS_CATALOGO);
-
-  // Limpiar datos previos (mantener cabeceras) para que re-ejecutar no multiplique filas.
-  [hojaPlanAnual, hojaSesiones, hojaEjercicios, hojaSemanal, hojaCatalogo].forEach(hoja => {
-    if (hoja && hoja.getLastRow() > 1) {
-      hoja.getRange(2, 1, hoja.getLastRow() - 1, hoja.getMaxColumns()).clearContent();
-    }
-  });
-
-  // ═══ 1. DEFINIR FASES (plan_anual) ═══
-  // Refleja prioridades: P1 Estética V-taper > P2 Postura > P3 Hipertrofia > P4 Flexibilidad
+function rellenarPlanCompleto() {
+  // --- FASES (prioridades.md → P1 Estética > P2 Postura > P3 Hipertrofia > P4 Flex) ---
   const FASES = [
-    { id: 'FAS_01', nombre: 'Adaptación + Postura', tipo: 'VOL', inicio: '2026-08-31', fin: '2026-09-27', semanas: 4, rir: '3-4', foco: 'Full Body · Correctivos posturales · Wall Angels', nutri: 'bulk', kcal: 3280 },
-    { id: 'FAS_02', nombre: 'Hipertrofia I — V-Taper', tipo: 'VOL', inicio: '2026-09-28', fin: '2026-11-08', semanas: 6, rir: '2-3', foco: 'Hombros, Espalda (V-taper) · Postura', nutri: 'bulk', kcal: 3280 },
-    { id: 'FAS_03', nombre: 'Deload 1', tipo: 'DELOAD', inicio: '2026-11-09', fin: '2026-11-15', semanas: 1, rir: '5-6', foco: 'Movilidad + Flex · Test Wall Angel', nutri: 'mantener', kcal: 3100 },
-    { id: 'FAS_04', nombre: 'Hipertrofia II — Brazos', tipo: 'VOL', inicio: '2026-11-16', fin: '2026-12-27', semanas: 6, rir: '2-3', foco: 'Bíceps, Tríceps, Pecho · Mantener hombros', nutri: 'bulk', kcal: 3280 },
-    { id: 'FAS_05', nombre: 'Deload 2', tipo: 'DELOAD', inicio: '2026-12-28', fin: '2027-01-03', semanas: 1, rir: '5-6', foco: 'Movilidad + Flex · Descanso activo', nutri: 'mantener', kcal: 3100 },
-    { id: 'FAS_06', nombre: 'Fuerza — Compuestos', tipo: 'FZA', inicio: '2027-01-04', fin: '2027-02-14', semanas: 6, rir: '1-2', foco: 'Press militar, Dominadas, Sentadilla', nutri: 'bulk', kcal: 3280 },
-    { id: 'FAS_07', nombre: 'Hipertrofia III — Balance', tipo: 'VOL', inicio: '2027-02-15', fin: '2027-03-28', semanas: 6, rir: '2-3', foco: 'Piernas, Core · Mantener V-taper', nutri: 'bulk', kcal: 3280 },
-    { id: 'FAS_08', nombre: 'Deload 3', tipo: 'DELOAD', inicio: '2027-03-29', fin: '2027-04-04', semanas: 1, rir: '5-6', foco: 'Movilidad + Flex · Test postural final', nutri: 'mantener', kcal: 3100 },
-    { id: 'FAS_09', nombre: 'Definición', tipo: 'DEF', inicio: '2027-04-05', fin: '2027-05-16', semanas: 6, rir: '2-3', foco: 'Mantener masa · Déficit controlado', nutri: 'cut', kcal: 2460 },
-    { id: 'FAS_10', nombre: 'Peak Estético + Mant.', tipo: 'MNT', inicio: '2027-05-17', fin: '2027-07-31', semanas: 11, rir: '2-3', foco: 'Ratio cintura/hombros · Simetría', nutri: 'mantener', kcal: 3050 }
+    {id:'FAS_01', nombre:'Adaptación + Postura', tipo:'VOL', inicio:'2026-08-31', fin:'2026-09-27', sem:4, rir:'3-4', foco:'Full Body + Correctivos posturales', nutri:'bulk'},
+    {id:'FAS_02', nombre:'Hipertrofia I — V-Taper', tipo:'VOL', inicio:'2026-09-28', fin:'2026-11-08', sem:6, rir:'2-3', foco:'Hombros+Espalda (P1: V-taper)', nutri:'bulk'},
+    {id:'FAS_03', nombre:'Deload 1', tipo:'DELOAD', inicio:'2026-11-09', fin:'2026-11-15', sem:1, rir:'5-6', foco:'Movilidad + Test Wall Angel', nutri:'mantener'},
+    {id:'FAS_04', nombre:'Hipertrofia II — Brazos', tipo:'VOL', inicio:'2026-11-16', fin:'2026-12-27', sem:6, rir:'2-3', foco:'Bíceps+Tríceps+Pecho', nutri:'bulk'},
+    {id:'FAS_05', nombre:'Deload 2', tipo:'DELOAD', inicio:'2026-12-28', fin:'2027-01-03', sem:1, rir:'5-6', foco:'Descanso activo + Flex', nutri:'mantener'},
+    {id:'FAS_06', nombre:'Fuerza — Compuestos', tipo:'FZA', inicio:'2027-01-04', fin:'2027-02-14', sem:6, rir:'1-2', foco:'Press militar+Dominadas+Sentadilla', nutri:'bulk'},
+    {id:'FAS_07', nombre:'Hipertrofia III — Balance', tipo:'VOL', inicio:'2027-02-15', fin:'2027-03-28', sem:6, rir:'2-3', foco:'Piernas+Core + Mantener V-taper', nutri:'bulk'},
+    {id:'FAS_08', nombre:'Deload 3', tipo:'DELOAD', inicio:'2027-03-29', fin:'2027-04-04', sem:1, rir:'5-6', foco:'Test postural final + Flex', nutri:'mantener'},
+    {id:'FAS_09', nombre:'Definición', tipo:'DEF', inicio:'2027-04-05', fin:'2027-05-16', sem:6, rir:'2-3', foco:'Mantener masa + Déficit controlado', nutri:'cut'},
+    {id:'FAS_10', nombre:'Peak Estético + Mant.', tipo:'MNT', inicio:'2027-05-17', fin:'2027-07-31', sem:11, rir:'2-3', foco:'Ratio cintura/hombros + Simetría', nutri:'mantener'}
   ];
 
-  // ═══ 2. DEFINIR TEMPLATES DE EJERCICIOS POR FASE ═══
-  // Formato: [ejercicio_id, nombre, series, reps_min, reps_max, descanso_seg, notas]
-  const TEMPLATES = {
-    PUSH_ADAPT: [
-      ['EJE_PRESS_INC', 'Press inclinado mancuernas', 3, 10, 12, 150, 'Ligero - sentir el pecho'],
-      ['EJE_CRUCES', 'Cruces polea alta', 3, 12, 15, 90, 'Contracción pico'],
-      ['EJE_PRESS_HOMB', 'Press hombro mancuernas sentado', 3, 10, 12, 120, ''],
-      ['EJE_LAT_SENT', 'Elevaciones laterales sentado', 3, 15, 15, 90, 'Peso mínimo - técnica'],
-      ['EJE_FRANC', 'Press francés banco 30°', 2, 12, 15, 90, 'Rango parcial codo'],
-      ['EJE_EXT_POLEA', 'Extensión unilateral polea', 2, 15, 15, 60, 'Peso ligero']
+  // --- TEMPLATES EJERCICIOS (por tipo sesión × tipo fase) ---
+  // Formato: [ejercicio_id, nombre, series, reps, descanso_seg, notas]
+  const T = {
+    PUSH_VOL: [
+      ['EJE_PRESS_HOMB','Press hombro mancuernas',4,'8-10',150,'Compuesto hombros'],
+      ['EJE_LAT_SENT','Elev. laterales sentado',4,'12-15',90,'P1: V-taper'],
+      ['EJE_LAT_POLEA','Elev. laterales polea',3,'12-15',90,''],
+      ['EJE_PRESS_INC','Press inclinado mancuernas',4,'8-10',150,'Pecho'],
+      ['EJE_CRUCES','Cruces polea alta',3,'10-12',90,''],
+      ['EJE_FRANC','Press francés 30°',3,'10-12',120,'Tríceps'],
+      ['EJE_EXT_POLEA','Extensión unilateral polea',3,'12-15',60,''],
+      ['EJE_FACE_PULL','Face pulls',3,'15-20',60,'P2: Postura']
     ],
-    PIERNA_ADAPT: [
-      ['EJE_SENTADILLA', 'Sentadilla barra', 3, 10, 12, 150, 'Solo barra + poco peso'],
-      ['EJE_RDL', 'RDL', 3, 10, 12, 150, 'Aprender hip hinge'],
-      ['EJE_HIP_THRUST', 'Hip thrust', 3, 12, 15, 120, 'Activación glúteo'],
-      ['EJE_EXT_QUAD', 'Extensión cuádriceps', 2, 15, 15, 90, 'Máquina ligero'],
-      ['EJE_CURL_FEM', 'Curl femoral tumbado', 2, 12, 15, 90, ''],
-      ['EJE_PLANCHA', 'Plancha', 3, 30, 45, 60, 'Core base (segundos)']
+    PIERNA_VOL: [
+      ['EJE_SENTADILLA','Sentadilla barra',4,'6-8',180,'Compuesto'],
+      ['EJE_RDL','RDL',4,'8-10',150,'Isquios+glúteo'],
+      ['EJE_HIP_THRUST','Hip thrust',3,'10-12',120,''],
+      ['EJE_EXT_QUAD','Extensión cuádriceps',3,'12-15',90,''],
+      ['EJE_CURL_FEM','Curl femoral',3,'10-12',90,''],
+      ['EJE_HOLLOW','Hollow hold',3,'30s',60,'Core anti-extensión'],
+      ['EJE_PALLOF','Press Pallof',3,'12/lado',60,'Core anti-rotación']
     ],
-    PULL_ADAPT: [
-      ['EJE_DOMINADAS', 'Dominadas asistidas', 3, 6, 8, 150, 'Agarre prono ancho'],
-      ['EJE_REMO_NEUTRO', 'Remo polea agarre neutro', 3, 10, 12, 120, ''],
-      ['EJE_REMO_ROT', 'Remo unilateral con rotación', 3, 12, 12, 120, 'Aprender rotación'],
-      ['EJE_FACE_PULL', 'Face pulls', 3, 15, 20, 90, 'Postura'],
-      ['EJE_CURL_Z', 'Curl Z de pie', 3, 12, 12, 90, 'Peso muy ligero'],
-      ['EJE_ROT_EXT', 'Rotación externa hombro', 2, 15, 15, 60, 'Manguito rotador']
+    PULL_VOL: [
+      ['EJE_DOMINADAS','Dominadas',4,'6-8',180,'Tirón vertical (P1)'],
+      ['EJE_REMO_NEUTRO','Remo neutro polea',4,'8-10',150,''],
+      ['EJE_REMO_ROT','Remo unilateral con rotación',3,'10-12',120,''],
+      ['EJE_KELSO','Kelso shrug',3,'12-15',90,'P2: Retracción escapular'],
+      ['EJE_CURL_Z','Curl Z barra',3,'8-10',90,'Bíceps (P3)'],
+      ['EJE_CURL_PRED','Curl predicador',3,'10-12',90,''],
+      ['EJE_BAND_PULL','Band pull-aparts',3,'15-20',45,'P2: Postura'],
+      ['EJE_WALL_ANGEL','Wall angels',3,'8-10',60,'P2: Test postural']
     ],
-    HOMBR_ADAPT: [
-      ['EJE_LAT_POLEA', 'Elevaciones laterales polea media', 3, 15, 15, 90, ''],
-      ['EJE_LAT_SENT', 'Elevaciones laterales sentado', 2, 15, 15, 90, 'Técnica'],
-      ['EJE_CURL_PRED', 'Curl predicador', 3, 12, 12, 90, ''],
-      ['EJE_ZOTTMAN', 'Zottman curl', 2, 12, 12, 90, ''],
-      ['EJE_EXT_POLEA', 'Extensión unilateral polea', 2, 15, 15, 90, 'Rango parcial codo'],
-      ['EJE_FACE_PULL', 'Face pulls', 2, 15, 15, 60, 'Postura']
-    ],
-    PUSH_H1: [
-      ['EJE_PRESS_INC', 'Press inclinado mancuernas', 4, 8, 10, 150, 'Compuesto principal'],
-      ['EJE_CRUCES', 'Cruces polea alta', 3, 10, 12, 120, 'Aislamiento pecho'],
-      ['EJE_PRESS_HOMB', 'Press hombro mancuernas sentado', 3, 8, 10, 150, 'Deltoides ant+med'],
-      ['EJE_LAT_SENT', 'Elevaciones laterales sentado', 4, 12, 15, 90, 'SS con Press francés'],
-      ['EJE_FRANC', 'Press francés banco 30°', 4, 10, 12, 90, 'Rango parcial codo'],
-      ['EJE_EXT_POLEA', 'Extensión unilateral polea', 3, 12, 15, 0, 'SS con Laterales']
-    ],
-    PIERNA_H1: [
-      ['EJE_SENTADILLA', 'Sentadilla barra', 4, 6, 8, 180, 'Compuesto principal'],
-      ['EJE_RDL', 'RDL', 4, 8, 10, 150, 'Isquios + glúteo'],
-      ['EJE_HIP_THRUST', 'Hip thrust', 3, 10, 12, 120, 'Glúteos'],
-      ['EJE_EXT_QUAD', 'Extensión cuádriceps', 3, 12, 15, 0, 'SS con Curl femoral'],
-      ['EJE_CURL_FEM', 'Curl femoral tumbado', 3, 10, 12, 90, 'Isquios extra'],
-      ['EJE_HOLLOW', 'Hollow hold/rock', 3, 30, 45, 0, 'SS con Pallof (seg)'],
-      ['EJE_PALLOF', 'Press Pallof', 2, 12, 12, 60, 'Anti-rotación por lado']
-    ],
-    PULL_H1: [
-      ['EJE_DOMINADAS', 'Dominadas', 4, 6, 8, 150, 'Asistidas→libres'],
-      ['EJE_REMO_NEUTRO', 'Remo polea agarre neutro', 4, 8, 10, 150, 'Tirón horizontal'],
-      ['EJE_REMO_ROT', 'Remo unilateral con rotación', 3, 10, 12, 120, 'Espalda media'],
-      ['EJE_KELSO', 'Kelso shrug', 3, 12, 15, 0, 'SS con Face pulls'],
-      ['EJE_FACE_PULL', 'Face pulls', 3, 15, 20, 90, 'Postura + rear delt'],
-      ['EJE_CURL_Z', 'Curl Z de pie', 3, 8, 10, 0, 'SS con Zottman'],
-      ['EJE_ZOTTMAN', 'Zottman curl', 3, 10, 12, 90, 'Bíceps + antebrazo']
-    ],
-    HOMBR_H1: [
-      ['EJE_LAT_POLEA', 'Elevaciones laterales polea media', 4, 12, 15, 90, 'Deltoides medial'],
-      ['EJE_LAT_SENT', 'Elevaciones laterales sentado', 3, 12, 15, 0, 'SS con Curl predicador'],
-      ['EJE_CURL_PRED', 'Curl predicador', 3, 10, 12, 90, 'Bíceps pico'],
-      ['EJE_CURL_Z', 'Curl Z de pie', 3, 8, 10, 0, 'SS con Extensión polea'],
-      ['EJE_EXT_POLEA', 'Extensión unilateral polea', 3, 12, 15, 90, 'Rango parcial codo'],
-      ['EJE_ROT_EXT', 'Rotación externa hombro', 2, 15, 15, 0, 'SS con Face pulls'],
-      ['EJE_FACE_PULL', 'Face pulls', 3, 15, 20, 60, 'Postura + rear delt']
-    ],
-    PUSH_H2: [
-      ['EJE_PRESS_INC', 'Press inclinado mancuernas', 4, 8, 10, 150, 'Compuesto principal'],
-      ['EJE_CRUCES', 'Cruces polea alta', 3, 10, 12, 120, 'Aislamiento pecho'],
-      ['EJE_FONDOS', 'Fondos (lastre progresivo)', 3, 8, 10, 150, 'Especialización pecho'],
-      ['EJE_PRESS_HOMB', 'Press hombro mancuernas sentado', 3, 8, 10, 150, ''],
-      ['EJE_LAT_SENT', 'Elevaciones laterales sentado', 4, 12, 15, 0, 'SS con Press francés'],
-      ['EJE_FRANC', 'Press francés banco 30°', 4, 10, 12, 90, ''],
-      ['EJE_EXT_POLEA', 'Extensión unilateral polea', 3, 12, 15, 0, 'SS con Laterales']
-    ],
-    HOMBR_H2: [
-      ['EJE_LAT_POLEA', 'Elevaciones laterales polea media', 4, 12, 15, 90, ''],
-      ['EJE_LAT_SENT', 'Elevaciones laterales sentado', 3, 12, 15, 0, 'SS con Curl predicador'],
-      ['EJE_CURL_PRED', 'Curl predicador', 3, 10, 12, 90, ''],
-      ['EJE_CURL_Z', 'Curl Z de pie', 3, 8, 10, 0, 'SS con Extensión polea'],
-      ['EJE_EXT_POLEA', 'Extensión unilateral polea', 3, 12, 15, 90, ''],
-      ['EJE_CURL_INC', 'Curl inclinado mancuernas', 3, 10, 12, 0, 'Especialización bíceps'],
-      ['EJE_FRANC', 'Press francés banco 30°', 2, 10, 12, 90, 'Extra tríceps'],
-      ['EJE_FACE_PULL', 'Face pulls', 3, 15, 20, 60, 'Postura']
+    HOMBR_VOL: [
+      ['EJE_PRESS_HOMB','Press hombro mancuernas',4,'8-10',150,''],
+      ['EJE_LAT_SENT','Elev. laterales sentado',4,'12-15',90,'P1: V-taper extra'],
+      ['EJE_LAT_POLEA','Elev. laterales polea (tras nuca)',3,'12-15',90,''],
+      ['EJE_PAJARO','Pájaro inclinado',3,'12-15',90,'Rear delt'],
+      ['EJE_ZOTTMAN','Curl Zottman',3,'10-12',90,'Bíceps+Antebrazo'],
+      ['EJE_CURL_INC','Curl inclinado 45°',3,'10-12',90,''],
+      ['EJE_EXT_OVERHEAD','Extensión overhead polea',3,'10-12',90,'Tríceps'],
+      ['EJE_ROT_EXT','Rotación externa banda',3,'15/lado',45,'P2: Manguito rotador']
     ],
     PUSH_FZA: [
-      ['EJE_PRESS_INC', 'Press inclinado mancuernas', 5, 4, 6, 210, 'Carga alta'],
-      ['EJE_PRESS_HOMB', 'Press hombro mancuernas sentado', 4, 5, 7, 180, 'Pesado'],
-      ['EJE_LAT_SENT', 'Elevaciones laterales sentado', 4, 10, 12, 90, 'Mantener volumen'],
-      ['EJE_FRANC', 'Press francés banco 30°', 3, 6, 8, 120, 'Más carga menos reps']
+      ['EJE_PRESS_INC','Press inclinado mancuernas',5,'4-6',210,'Pesado'],
+      ['EJE_PRESS_HOMB','Press hombro sentado',4,'5-7',180,''],
+      ['EJE_LAT_SENT','Elev. laterales sentado',4,'10-12',90,'Mantener volumen hombros'],
+      ['EJE_FRANC','Press francés',3,'6-8',120,'']
     ],
     PIERNA_FZA: [
-      ['EJE_SENTADILLA', 'Sentadilla barra', 5, 4, 6, 270, 'Compuesto rey'],
-      ['EJE_RDL', 'RDL', 4, 5, 7, 180, 'Pesado'],
-      ['EJE_HIP_THRUST', 'Hip thrust', 3, 6, 8, 150, 'Carga alta'],
-      ['EJE_PLANCHA', 'Plancha lastrada', 3, 45, 60, 90, 'Core anti-extensión (seg)']
+      ['EJE_SENTADILLA','Sentadilla barra',5,'4-6',270,'Pesado'],
+      ['EJE_RDL','RDL',4,'5-7',180,''],
+      ['EJE_HIP_THRUST','Hip thrust',3,'6-8',150,''],
+      ['EJE_PLANCHA','Plancha lastrada',3,'45-60s',90,'Core']
     ],
     PULL_FZA: [
-      ['EJE_DOMINADAS', 'Dominadas lastradas', 5, 4, 6, 210, 'Tirón vertical pesado'],
-      ['EJE_REMO_NEUTRO', 'Remo polea agarre neutro', 4, 6, 8, 180, 'Pesado'],
-      ['EJE_REMO_ROT', 'Remo unilateral con rotación', 3, 8, 10, 150, ''],
-      ['EJE_CURL_Z', 'Curl Z de pie', 3, 6, 8, 120, 'Pesado'],
-      ['EJE_FACE_PULL', 'Face pulls', 2, 15, 15, 60, 'Postura mantenimiento']
+      ['EJE_DOMINADAS','Dominadas lastradas',5,'4-6',210,'Pesado'],
+      ['EJE_REMO_NEUTRO','Remo neutro',4,'6-8',180,''],
+      ['EJE_REMO_ROT','Remo unilateral',3,'8-10',150,''],
+      ['EJE_CURL_Z','Curl Z',3,'6-8',120,'Pesado'],
+      ['EJE_FACE_PULL','Face pulls',2,'15',60,'Postura mantenimiento']
     ],
     HOMBR_FZA: [
-      ['EJE_PRESS_MIL', 'Press militar barra de pie', 4, 5, 7, 180, 'Compuesto hombros pesado'],
-      ['EJE_LAT_POLEA', 'Elevaciones laterales polea media', 4, 10, 12, 90, 'Volumen medial'],
-      ['EJE_CURL_PRED', 'Curl predicador', 4, 6, 8, 120, 'Pesado'],
-      ['EJE_EXT_POLEA', 'Extensión unilateral polea', 3, 8, 10, 120, '']
-    ],
-    PIERNA_H3: [
-      ['EJE_SENTADILLA', 'Sentadilla barra', 4, 6, 8, 180, 'Compuesto principal'],
-      ['EJE_RDL', 'RDL', 4, 8, 10, 150, 'Isquios'],
-      ['EJE_LEG_PRESS', 'Leg press', 3, 10, 12, 120, 'Cuádriceps extra'],
-      ['EJE_HIP_THRUST', 'Hip thrust', 3, 10, 12, 120, 'Glúteos'],
-      ['EJE_EXT_QUAD', 'Extensión cuádriceps', 3, 12, 15, 0, 'SS con Curl femoral'],
-      ['EJE_CURL_FEM', 'Curl femoral tumbado', 3, 10, 12, 90, ''],
-      ['EJE_HOLLOW', 'Hollow hold/rock', 3, 30, 45, 0, 'SS con Pallof (seg)'],
-      ['EJE_PALLOF', 'Press Pallof', 3, 12, 12, 0, 'SS con Plancha'],
-      ['EJE_PLANCHA', 'Plancha lastrada', 2, 45, 60, 60, 'Core extra (seg)']
-    ],
-    PUSH_DEF: [
-      ['EJE_PRESS_INC', 'Press inclinado mancuernas', 4, 8, 10, 150, 'Mantener carga'],
-      ['EJE_CRUCES', 'Cruces polea alta', 3, 12, 15, 0, 'SS con Press hombro'],
-      ['EJE_PRESS_HOMB', 'Press hombro mancuernas sentado', 3, 8, 10, 120, ''],
-      ['EJE_LAT_SENT', 'Elevaciones laterales sentado', 4, 15, 15, 0, 'SS con Press francés'],
-      ['EJE_FRANC', 'Press francés banco 30°', 4, 12, 15, 60, 'Reps más altas'],
-      ['EJE_EXT_POLEA', 'Extensión unilateral polea', 3, 15, 15, 0, 'SS con Laterales']
+      ['EJE_PRESS_MIL','Press militar barra',4,'5-7',180,'Compuesto pesado'],
+      ['EJE_LAT_POLEA','Elev. laterales polea',4,'10-12',90,'Volumen medial'],
+      ['EJE_CURL_PRED','Curl predicador',4,'6-8',120,'Pesado'],
+      ['EJE_EXT_POLEA','Extensión polea',3,'8-10',120,'']
     ]
   };
 
-  // ═══ 3. MAPA FASE → TEMPLATES ═══
-  const FASE_TEMPLATES = {
-    'FAS_01': { push: 'PUSH_ADAPT', pierna: 'PIERNA_ADAPT', pull: 'PULL_ADAPT', hombr: 'HOMBR_ADAPT' },
-    'FAS_02': { push: 'PUSH_H1', pierna: 'PIERNA_H1', pull: 'PULL_H1', hombr: 'HOMBR_H1' },
-    'FAS_03': { push: 'PUSH_H1', pierna: 'PIERNA_H1', pull: 'PULL_H1', hombr: 'HOMBR_H1' }, // Deload = mismo template, menos series
-    'FAS_04': { push: 'PUSH_H2', pierna: 'PIERNA_H1', pull: 'PULL_H1', hombr: 'HOMBR_H2' },
-    'FAS_05': { push: 'PUSH_H2', pierna: 'PIERNA_H1', pull: 'PULL_H1', hombr: 'HOMBR_H2' }, // Deload
-    'FAS_06': { push: 'PUSH_FZA', pierna: 'PIERNA_FZA', pull: 'PULL_FZA', hombr: 'HOMBR_FZA' },
-    'FAS_07': { push: 'PUSH_H1', pierna: 'PIERNA_H3', pull: 'PULL_H1', hombr: 'HOMBR_H1' },
-    'FAS_08': { push: 'PUSH_H1', pierna: 'PIERNA_H3', pull: 'PULL_H1', hombr: 'HOMBR_H1' }, // Deload
-    'FAS_09': { push: 'PUSH_DEF', pierna: 'PIERNA_H1', pull: 'PULL_H1', hombr: 'HOMBR_H1' },
-    'FAS_10': { push: 'PUSH_H1', pierna: 'PIERNA_H1', pull: 'PULL_H1', hombr: 'HOMBR_H1' }
-  };
+  // Mapa fase→template: DEF y MNT usan VOL (mantener masa)
+  function getTemplate(faseTipo, sesionTipo) {
+    if (faseTipo === 'FZA') return sesionTipo + '_FZA';
+    return sesionTipo + '_VOL'; // VOL, DELOAD, DEF, MNT → todos usan VOL template
+  }
 
-  // ═══ 4. SPLIT SEMANAL (programacion.md) ═══
-  // LUN=Push, MAR=Nadar, MIÉ=Pierna, JUE=Nadar, VIE=Pull, SÁB=Hombros, DOM=Descanso
-  const DIAS_GYM = { 1: 'push', 3: 'pierna', 5: 'pull', 6: 'hombr' }; // 0=DOM, 1=LUN...
+  // Split semanal FIJO (programacion.md §11):
+  // LUN=Push, MAR=Natación, MIE=Pierna, JUE=Natación, VIE=Pull, SAB=Hombros, DOM=Descanso
+  const DIAS_GYM = {1:'PUSH', 3:'PIERNA', 5:'PULL', 6:'HOMBR'};
 
-  // ═══ 5. ESCRIBIR PLAN_ANUAL ═══
-  const filasPlanAnual = [];
-  FASES.forEach((fase, idx) => {
-    filasPlanAnual.push([
-      fase.id, 2026, idx + 1, fase.nombre, fase.tipo,
-      fase.inicio, fase.fin, fase.semanas, 16, fase.rir, fase.foco, fase.nutri, ''
-    ]);
+  const hojaPlan = getHoja_(HOJAS.PLAN_ANUAL);
+  const hojaSem = getHoja_(HOJAS.PLAN_SEMANAL);
+  const hojaSes = getHoja_(HOJAS.SESIONES_PLAN);
+  const hojaEj = getHoja_(HOJAS.EJERCICIOS_PLAN);
+
+  // Limpiar datos previos (conservar cabeceras)
+  [hojaPlan, hojaSem, hojaSes, hojaEj].forEach(function(h) {
+    if (h && h.getLastRow() > 1) h.deleteRows(2, h.getLastRow() - 1);
   });
-  appendRowsBatch(hojaPlanAnual, filasPlanAnual);
 
-  // ═══ 6. GENERAR SESIONES + EJERCICIOS ═══
-  const filasSesiones = [];
-  const filasEjercicios = [];
-  const filasSemanal = [];
+  // Plan anual
+  const filasPlan = FASES.map(function(f, i) {
+    return [f.id, 2026, i+1, f.nombre, f.tipo, f.inicio, f.fin, f.sem, 16, f.rir, f.foco, f.nutri, ''];
+  });
+  hojaPlan.getRange(2, 1, filasPlan.length, filasPlan[0].length).setValues(filasPlan);
 
-  let sesionCount = 0;
-  let ejercicioCount = 0;
-  let semanaAño = 0;
+  // Sesiones + Ejercicios + Semanal
+  var filasSes = [], filasEj = [], filasSem = [];
+  var sesN = 0, ejN = 0, semAño = 0;
 
-  for (const fase of FASES) {
-    const fechaInicio = new Date(fase.inicio);
-    const fechaFin = new Date(fase.fin);
-    const esDeload = fase.tipo === 'DELOAD';
-    const templates = FASE_TEMPLATES[fase.id];
+  for (var fi = 0; fi < FASES.length; fi++) {
+    var fase = FASES[fi];
+    var fecha = new Date(fase.inicio);
+    var fin = new Date(fase.fin);
+    var esDeload = fase.tipo === 'DELOAD';
+    var semFase = 1;
 
-    // Iterar día a día dentro de la fase
-    let fechaActual = new Date(fechaInicio);
-    let semanaFase = 1;
-    let diaEnSemana = 0;
+    while (fecha <= fin) {
+      var dia = fecha.getDay(); // 0=dom, 1=lun...6=sab
+      var fStr = Utilities.formatDate(fecha, 'Europe/Madrid', 'yyyy-MM-dd');
 
-    while (fechaActual <= fechaFin) {
-      const diaSemana = fechaActual.getDay(); // 0=DOM, 1=LUN...
-      const fechaStr = Utilities.formatDate(fechaActual, 'Europe/Madrid', 'yyyy-MM-dd');
+      if (DIAS_GYM[dia]) {
+        sesN++;
+        var sesId = 'SES_' + fStr.replace(/-/g, '') + '_' + String(sesN).padStart(3,'0');
+        var tipoSesion = DIAS_GYM[dia];
+        var tipoDisplay = {PUSH:'Push',PIERNA:'Pierna',PULL:'Pull',HOMBR:'Hombros+Brazos'}[tipoSesion];
 
-      // RIR de esta semana (necesita estar en scope para plan_semanal que se escribe el domingo)
-      let rirSemana = fase.rir;
-      if (!esDeload && fase.semanas >= 4) {
-        const semMod = ((semanaFase - 1) % 3); // 0, 1, 2 → ciclo de 3 semanas
-        if (semMod === 0) rirSemana = '3-4';
-        else if (semMod === 1) rirSemana = '2-3';
-        else rirSemana = '1-2';
-      }
+        filasSes.push([sesId, fStr, tipoDisplay, semFase, fase.nombre, 1.0, 75, false, '', '', new Date().toISOString()]);
 
-      // ¿Es día de gym?
-      if (DIAS_GYM[diaSemana]) {
-        const tipoSesion = DIAS_GYM[diaSemana]; // push/pierna/pull/hombr
-        const tipoDisplay = { push: 'Push', pierna: 'Pierna', pull: 'Pull', hombr: 'Hombros+Brazos' }[tipoSesion];
-
-        // Crear sesión
-        sesionCount++;
-        const sesionId = `SES_${fechaStr.replace(/-/g, '')}_${String(sesionCount).padStart(3, '0')}`;
-
-        filasSesiones.push([
-          sesionId, fechaStr, tipoDisplay, semanaFase, fase.nombre,
-          1.0, '', 75, false, '', '', new Date().toISOString()
-        ]);
-
-        // Crear ejercicios de la sesión
-        const templateName = templates[tipoSesion];
-        const ejerciciosTemplate = TEMPLATES[templateName];
-
-        if (ejerciciosTemplate) {
-          ejerciciosTemplate.forEach((ej, orden) => {
-            ejercicioCount++;
-            const planId = `PLA_${fechaStr.replace(/-/g, '')}_${String(ejercicioCount).padStart(4, '0')}`;
-
-            // En deload: reducir series ×0.6 (Bompa 2009)
-            let series = ej[2];
-            if (esDeload) {
-              series = Math.max(2, Math.ceil(series * 0.6));
-            }
-
-            const repsStr = ej[3] === ej[4] ? String(ej[3]) : `${ej[3]}-${ej[4]}`;
-
-            filasEjercicios.push([
-              planId, sesionId, ej[0], orden + 1, series, repsStr,
-              0, // num_peso_sugerido_kg = 0 (desconocido hasta primera sesión)
-              parseInt(rirSemana) || 3, // RIR numérico
-              ej[5], // descanso_seg
-              ej[6], // notas
-              false  // no es warmup
-            ]);
-          });
+        // Ejercicios
+        var tmplKey = getTemplate(fase.tipo, tipoSesion);
+        var tmpl = T[tmplKey] || T[tipoSesion + '_VOL'];
+        if (tmpl) {
+          for (var oi = 0; oi < tmpl.length; oi++) {
+            var ej = tmpl[oi];
+            ejN++;
+            var planId = 'PLA_' + fStr.replace(/-/g, '') + '_' + String(ejN).padStart(4,'0');
+            var series = ej[2];
+            if (esDeload) series = Math.max(2, Math.ceil(series * 0.6)); // Bompa 2009: -40% vol
+            // RIR por semana en mesociclo (Helms 2016: 4→3→2→deload)
+            var rirNum = esDeload ? 5 : (((semFase - 1) % 3 === 0) ? 4 : ((semFase - 1) % 3 === 1) ? 3 : 2);
+            filasEj.push([planId, sesId, ej[0], oi+1, series, ej[3], 0, rirNum, ej[4], ej[5], false]);
+          }
         }
       }
 
-      // Control de semana
-      if (diaSemana === 0) { // Domingo = fin de semana
-        semanaAño++;
-        // Escribir plan_semanal
-        filasSemanal.push([
-          `SEM_${String(semanaAño).padStart(3, '0')}`, fase.id,
-          semanaAño, semanaFase,
-          'Push', 'Natación', 'Pierna', 'Natación', 'Pull', 'Hombros+Brazos', 'Descanso',
-          rirSemana || fase.rir, esDeload
-        ]);
-        semanaFase++;
+      // Fin de semana (domingo) → escribir plan_semanal
+      if (dia === 0) {
+        semAño++;
+        filasSem.push(['SEM_' + String(semAño).padStart(3,'0'), fase.id, semAño, semFase,
+          'Push','Natación','Pierna','Natación','Pull','Hombros+Brazos','Descanso',
+          fase.rir, esDeload]);
+        semFase++;
       }
-
-      // Siguiente día
-      fechaActual.setDate(fechaActual.getDate() + 1);
+      fecha.setDate(fecha.getDate() + 1);
     }
   }
 
-  // Persistir lotes principales antes del catálogo.
-  appendRowsBatch(hojaSesiones, filasSesiones);
-  appendRowsBatch(hojaEjercicios, filasEjercicios);
-  appendRowsBatch(hojaSemanal, filasSemanal);
+  // Batch write (mucho más rápido que appendRow)
+  if (filasSes.length) hojaSes.getRange(2, 1, filasSes.length, filasSes[0].length).setValues(filasSes);
+  if (filasEj.length) hojaEj.getRange(2, 1, filasEj.length, filasEj[0].length).setValues(filasEj);
+  if (filasSem.length) hojaSem.getRange(2, 1, filasSem.length, filasSem[0].length).setValues(filasSem);
 
-  // ═══ 7. ESCRIBIR CATÁLOGO DE EJERCICIOS ═══
-  const CATALOGO = [
-    ['EJE_PRESS_INC', 'Press inclinado mancuernas', 'Incline DB Press', 'Pecho', '["Hombro","Tríceps"]', 'Empuje horizontal', 'Mancuernas,Banco inclinado', true, true, false, '', ''],
-    ['EJE_CRUCES', 'Cruces polea alta', 'High Cable Fly', 'Pecho', '[]', 'Empuje horizontal', 'Poleas cruce', false, true, false, '', ''],
-    ['EJE_FONDOS', 'Fondos (lastre progresivo)', 'Weighted Dips', 'Pecho', '["Tríceps","Hombro"]', 'Empuje vertical', 'Barras paralelas', true, true, false, '', ''],
-    ['EJE_PRESS_HOMB', 'Press hombro mancuernas sentado', 'Seated DB Shoulder Press', 'Hombros', '["Tríceps"]', 'Empuje vertical', 'Mancuernas,Banco 90°', true, false, false, '', ''],
-    ['EJE_PRESS_MIL', 'Press militar barra de pie', 'Standing Barbell OHP', 'Hombros', '["Tríceps","Core"]', 'Empuje vertical', 'Barra olímpica', true, false, false, '', ''],
-    ['EJE_LAT_SENT', 'Elevaciones laterales sentado', 'Seated Lateral Raise', 'Hombros', '[]', 'Empuje lateral', 'Mancuernas,Banco', false, true, false, '', ''],
-    ['EJE_LAT_POLEA', 'Elevaciones laterales polea media', 'Cable Lateral Raise', 'Hombros', '[]', 'Empuje lateral', 'Polea', false, true, false, '', ''],
-    ['EJE_FRANC', 'Press francés banco 30°', 'Incline Skullcrusher', 'Tríceps', '[]', 'Extensión', 'Barra Z,Banco 30°', false, true, false, '', ''],
-    ['EJE_EXT_POLEA', 'Extensión unilateral polea', 'Single Arm Cable Extension', 'Tríceps', '[]', 'Extensión', 'Polea alta', false, true, false, '', ''],
-    ['EJE_SENTADILLA', 'Sentadilla barra', 'Barbell Squat', 'Cuádriceps', '["Glúteos","Isquios"]', 'Extensión rodilla', 'Barra,Rack', true, true, false, '', ''],
-    ['EJE_RDL', 'RDL', 'Romanian Deadlift', 'Isquios', '["Glúteos","Espalda baja"]', 'Extensión cadera', 'Barra o Mancuernas', true, true, false, '', ''],
-    ['EJE_HIP_THRUST', 'Hip thrust', 'Barbell Hip Thrust', 'Glúteos', '["Isquios"]', 'Extensión cadera', 'Barra,Banco', true, true, false, '', ''],
-    ['EJE_LEG_PRESS', 'Leg press', 'Leg Press', 'Cuádriceps', '["Glúteos"]', 'Extensión rodilla', 'Leg press máquina', true, false, false, '', ''],
-    ['EJE_EXT_QUAD', 'Extensión cuádriceps', 'Leg Extension', 'Cuádriceps', '[]', 'Extensión rodilla', 'Máquina extensión', false, false, false, '', ''],
-    ['EJE_CURL_FEM', 'Curl femoral tumbado', 'Lying Leg Curl', 'Isquios', '[]', 'Flexión rodilla', 'Máquina curl', false, false, false, '', ''],
-    ['EJE_DOMINADAS', 'Dominadas', 'Pull-ups', 'Espalda', '["Bíceps"]', 'Tirón vertical', 'Barra dominadas', true, true, false, '', ''],
-    ['EJE_REMO_NEUTRO', 'Remo polea agarre neutro', 'Neutral Grip Cable Row', 'Espalda', '["Bíceps"]', 'Tirón horizontal', 'Polea,Agarre neutro', true, true, false, '', ''],
-    ['EJE_REMO_ROT', 'Remo unilateral con rotación', 'Single Arm Row w/ Rotation', 'Espalda', '["Bíceps","Core"]', 'Tirón horizontal', 'Mancuerna', true, true, false, '', ''],
-    ['EJE_KELSO', 'Kelso shrug', 'Kelso Shrug', 'Espalda', '[]', 'Tirón', 'Banco + mancuernas', false, true, false, '', ''],
-    ['EJE_FACE_PULL', 'Face pulls', 'Face Pulls', 'Hombros', '["Trapecios"]', 'Tirón horizontal', 'Polea + cuerda', false, false, false, '', ''],
-    ['EJE_CURL_Z', 'Curl Z de pie', 'EZ Bar Curl', 'Bíceps', '[]', 'Flexión codo', 'Barra Z', false, true, false, '', ''],
-    ['EJE_ZOTTMAN', 'Zottman curl', 'Zottman Curl', 'Bíceps', '["Antebrazo"]', 'Flexión codo', 'Mancuernas', false, true, false, '', ''],
-    ['EJE_CURL_PRED', 'Curl predicador', 'Preacher Curl', 'Bíceps', '[]', 'Flexión codo', 'Máquina predicador', false, true, false, '', ''],
-    ['EJE_CURL_INC', 'Curl inclinado mancuernas', 'Incline DB Curl', 'Bíceps', '[]', 'Flexión codo', 'Mancuernas,Banco 45°', false, false, false, '', ''],
-    ['EJE_ROT_EXT', 'Rotación externa hombro', 'External Rotation', 'Manguito rotador', '[]', 'Rotación externa', 'Mancuerna o Polea', false, false, false, '', ''],
-    ['EJE_HOLLOW', 'Hollow hold/rock', 'Hollow Hold', 'Core', '[]', 'Anti-extensión', 'Suelo', false, true, false, '', ''],
-    ['EJE_PALLOF', 'Press Pallof', 'Pallof Press', 'Core', '[]', 'Anti-rotación', 'Polea', false, true, false, '', ''],
-    ['EJE_PLANCHA', 'Plancha (lastrada)', 'Weighted Plank', 'Core', '[]', 'Anti-extensión', 'Suelo,Disco', false, false, false, '', '']
-  ];
+  // Catálogo de ejercicios
+  rellenarCatalogo_();
 
-  appendRowsBatch(hojaCatalogo, CATALOGO);
-
-  // ═══ 8. RESULTADO ═══
-  Logger.log(`Plan generado: ${sesionCount} sesiones, ${ejercicioCount} ejercicios, ${CATALOGO.length} en catálogo`);
-  return {
-    ok: true,
-    mensaje: 'Plan completo generado',
-    sesiones: sesionCount,
-    ejercicios: ejercicioCount,
-    catalogo: CATALOGO.length,
-    fases: FASES.length,
-    periodo: '31/08/2026 → 31/07/2027'
-  };
+  Logger.log('Plan generado: ' + sesN + ' sesiones, ' + ejN + ' ejercicios');
+  return { ok: true, sesiones: sesN, ejercicios: ejN, semanas: semAño };
 }
 
-function limpiarEjerciciosLogUltimos7Dias() {
-  const hoja = getHoja(HOJAS.EJERCICIOS_LOG);
-  const datos = hoja.getDataRange().getValues();
-  if (datos.length <= 1) return;
+function rellenarCatalogo_() {
+  const hoja = getHoja_(HOJAS.EJERCICIOS_CATALOGO);
+  if (!hoja) return;
+  if (hoja.getLastRow() > 1) hoja.deleteRows(2, hoja.getLastRow() - 1);
+  const cat = [
+    ['EJE_PRESS_INC','Press inclinado mancuernas','Incline DB Press','Pecho','["Hombro","Tríceps"]','Empuje horizontal','Mancuernas,Banco',true,true,false,'',''],
+    ['EJE_CRUCES','Cruces polea alta','High Cable Fly','Pecho','[]','Empuje horizontal','Poleas',false,true,false,'',''],
+    ['EJE_PRESS_HOMB','Press hombro mancuernas','Seated DB Press','Hombros','["Tríceps"]','Empuje vertical','Mancuernas',true,true,false,'',''],
+    ['EJE_PRESS_MIL','Press militar barra','Standing OHP','Hombros','["Tríceps","Core"]','Empuje vertical','Barra',true,false,false,'',''],
+    ['EJE_LAT_SENT','Elev. laterales sentado','Seated Lat Raise','Hombros','[]','Lateral','Mancuernas',false,true,false,'',''],
+    ['EJE_LAT_POLEA','Elev. laterales polea','Cable Lat Raise','Hombros','[]','Lateral','Polea',false,true,false,'',''],
+    ['EJE_FRANC','Press francés 30°','Incline Skullcrusher','Tríceps','[]','Extensión','Barra Z',false,true,false,'',''],
+    ['EJE_EXT_POLEA','Extensión unilateral polea','Cable Extension','Tríceps','[]','Extensión','Polea',false,true,false,'',''],
+    ['EJE_EXT_OVERHEAD','Extensión overhead polea','Overhead Extension','Tríceps','[]','Extensión','Polea',false,false,false,'',''],
+    ['EJE_SENTADILLA','Sentadilla barra','Barbell Squat','Cuádriceps','["Glúteos","Isquios"]','Extensión rodilla','Barra,Rack',true,true,false,'',''],
+    ['EJE_RDL','RDL','Romanian Deadlift','Isquios','["Glúteos"]','Extensión cadera','Barra',true,true,false,'',''],
+    ['EJE_HIP_THRUST','Hip thrust','Hip Thrust','Glúteos','["Isquios"]','Extensión cadera','Barra,Banco',true,true,false,'',''],
+    ['EJE_EXT_QUAD','Extensión cuádriceps','Leg Extension','Cuádriceps','[]','Extensión rodilla','Máquina',false,false,false,'',''],
+    ['EJE_CURL_FEM','Curl femoral','Leg Curl','Isquios','[]','Flexión rodilla','Máquina',false,false,false,'',''],
+    ['EJE_DOMINADAS','Dominadas','Pull-ups','Espalda','["Bíceps"]','Tirón vertical','Barra',true,true,false,'',''],
+    ['EJE_REMO_NEUTRO','Remo neutro polea','Cable Row','Espalda','["Bíceps"]','Tirón horizontal','Polea',true,true,false,'',''],
+    ['EJE_REMO_ROT','Remo unilateral con rotación','Single Arm Row','Espalda','["Core"]','Tirón horizontal','Mancuerna',true,true,false,'',''],
+    ['EJE_KELSO','Kelso shrug','Kelso Shrug','Espalda','[]','Tirón','Mancuernas',false,true,false,'',''],
+    ['EJE_FACE_PULL','Face pulls','Face Pulls','Hombros','["Trapecios"]','Tirón','Polea',false,false,false,'',''],
+    ['EJE_CURL_Z','Curl Z barra','EZ Curl','Bíceps','[]','Flexión codo','Barra Z',false,true,false,'',''],
+    ['EJE_ZOTTMAN','Curl Zottman','Zottman Curl','Bíceps','["Antebrazo"]','Flexión codo','Mancuernas',false,true,false,'',''],
+    ['EJE_CURL_PRED','Curl predicador','Preacher Curl','Bíceps','[]','Flexión codo','Máquina',false,true,false,'',''],
+    ['EJE_CURL_INC','Curl inclinado 45°','Incline Curl','Bíceps','[]','Flexión codo','Mancuernas',false,false,false,'',''],
+    ['EJE_ROT_EXT','Rotación externa','External Rotation','Manguito','[]','Rotación','Banda',false,false,false,'',''],
+    ['EJE_HOLLOW','Hollow hold','Hollow Hold','Core','[]','Anti-extensión','Suelo',false,true,false,'',''],
+    ['EJE_PALLOF','Press Pallof','Pallof Press','Core','[]','Anti-rotación','Polea',false,true,false,'',''],
+    ['EJE_PLANCHA','Plancha lastrada','Weighted Plank','Core','[]','Anti-extensión','Suelo',false,false,false,'',''],
+    ['EJE_BAND_PULL','Band pull-aparts','Band Pull-Aparts','Espalda','["Hombros"]','Tirón','Banda',false,false,false,'',''],
+    ['EJE_WALL_ANGEL','Wall angels','Wall Angels','Postura','["Hombros"]','Correctivo','Pared',false,false,false,'',''],
+    ['EJE_PAJARO','Pájaro inclinado','Reverse Fly','Hombros','[]','Tirón','Mancuernas',false,false,false,'','']
+  ];
+  hoja.getRange(2, 1, cat.length, cat[0].length).setValues(cat);
+}
 
-  const cab = datos[0];
-  const colFecha = cab.indexOf('date_timestamp');
-  if (colFecha < 0) return;
+// ─── §8. LIMPIAR ─────────────────────────────────────────────
+// Borra SOLO datos de test/logs. Conserva estructura + planes.
+// Los datos que se borran: ejercicios_log, metricas_zepp, peso_log
+// Los datos que SE CONSERVAN: plan_anual, plan_semanal, sesiones_plan, ejercicios_plan, catalogo
+// Ejecutar manualmente cuando quieras resetear después de testear.
 
-  const limite = new Date();
-  limite.setHours(0, 0, 0, 0);
-  limite.setDate(limite.getDate() - 7);
+function limpiarDatosTest() {
+  const aLimpiar = [HOJAS.EJERCICIOS_LOG, HOJAS.METRICAS_ZEPP, HOJAS.METRICAS_SUBJETIVAS, HOJAS.PESO_LOG];
+  var resultados = {};
 
-  for (let i = datos.length - 1; i >= 1; i--) {
-    const valor = datos[i][colFecha];
-    if (!valor) {
-      hoja.deleteRow(i + 1);
-      continue;
+  aLimpiar.forEach(function(nombre) {
+    var h = getHoja_(nombre);
+    if (!h) { resultados[nombre] = 'NO EXISTE'; return; }
+    var filas = h.getLastRow();
+    if (filas <= 1) { resultados[nombre] = 'YA VACÍA'; return; }
+    h.deleteRows(2, filas - 1);
+    resultados[nombre] = 'LIMPIA (' + (filas - 1) + ' filas borradas)';
+  });
+
+  // Resetear bool_completada en sesiones (como si no hubieras entrenado)
+  var hSes = getHoja_(HOJAS.SESIONES_PLAN);
+  if (hSes && hSes.getLastRow() > 1) {
+    var datos = hSes.getDataRange().getValues();
+    var cab = datos[0];
+    var colComp = cab.indexOf('bool_completada');
+    var colFin = cab.indexOf('date_fin');
+    var colIni = cab.indexOf('date_inicio');
+    for (var i = 2; i <= datos.length; i++) {
+      hSes.getRange(i, colComp + 1).setValue(false);
+      hSes.getRange(i, colFin + 1).setValue('');
+      if (colIni >= 0) hSes.getRange(i, colIni + 1).setValue('');
     }
-    const fecha = new Date(valor);
-    if (isNaN(fecha.getTime()) || fecha < limite) {
-      hoja.deleteRow(i + 1);
-    }
+    resultados[HOJAS.SESIONES_PLAN] = 'Completadas reseteadas';
   }
+
+  // Resetear pesos sugeridos a 0 (el motor los recalcula dinámicamente)
+  var hEj = getHoja_(HOJAS.EJERCICIOS_PLAN);
+  if (hEj && hEj.getLastRow() > 1) {
+    var datosEj = hEj.getDataRange().getValues();
+    var cabEj = datosEj[0];
+    var colPeso = cabEj.indexOf('num_peso_sugerido_kg');
+    for (var j = 2; j <= datosEj.length; j++) {
+      hEj.getRange(j, colPeso + 1).setValue(0);
+    }
+    resultados[HOJAS.EJERCICIOS_PLAN] = 'Pesos reseteados a 0 (motor recalcula)';
+  }
+
+  Logger.log(JSON.stringify(resultados, null, 2));
+  return { ok: true, detalle: resultados, timestamp: new Date().toISOString() };
 }

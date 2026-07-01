@@ -86,7 +86,12 @@ public class TimerService extends Service {
 
         // Notificacion compacta con cronometro (estilo Dynamic Island)
         Notification notificacion = crearNotificacionCronometro(ejercicioNombre, pendingIntent);
-        startForeground(NOTIFICACION_ID, notificacion);
+        try {
+            startForeground(NOTIFICACION_ID, notificacion);
+        } catch (Exception e) {
+            stopSelf();
+            return START_NOT_STICKY;
+        }
         finishHandled = false;
 
         // Timer interno para detectar finalizacion
@@ -253,19 +258,24 @@ public class TimerService extends Service {
      * Usa AudioDeviceInfo (API 23+) que es mas fiable que BluetoothAdapter.
      */
     private boolean hayAuricularesConectados() {
-        AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-        AudioDeviceInfo[] devices = am.getDevices(AudioManager.GET_DEVICES_OUTPUTS);
-        for (AudioDeviceInfo device : devices) {
-            int type = device.getType();
-            if (type == AudioDeviceInfo.TYPE_WIRED_HEADSET
-                    || type == AudioDeviceInfo.TYPE_WIRED_HEADPHONES
-                    || type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP
-                    || type == AudioDeviceInfo.TYPE_BLE_HEADSET
-                    || type == AudioDeviceInfo.TYPE_USB_HEADSET) {
-                return true;
+        try {
+            AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+            if (am == null) return false;
+            AudioDeviceInfo[] devices = am.getDevices(AudioManager.GET_DEVICES_OUTPUTS);
+            for (AudioDeviceInfo device : devices) {
+                int type = device.getType();
+                if (type == AudioDeviceInfo.TYPE_WIRED_HEADSET
+                        || type == AudioDeviceInfo.TYPE_WIRED_HEADPHONES
+                        || type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP
+                        || type == AudioDeviceInfo.TYPE_BLE_HEADSET
+                        || type == AudioDeviceInfo.TYPE_USB_HEADSET) {
+                    return true;
+                }
             }
+            return false;
+        } catch (Throwable t) {
+            return false;
         }
-        return false;
     }
 
     /**

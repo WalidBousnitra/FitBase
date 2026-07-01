@@ -33,6 +33,21 @@ public class PlanAnualActivity extends AppCompatActivity {
         TextView tvProgreso = findViewById(R.id.tvProgreso);
 
         // Observar datos
+        viewModel.isCargando().observe(this, loading -> {
+            if (Boolean.TRUE.equals(loading)) {
+                tvFaseActual.setText("Cargando plan anual...");
+                tvProgreso.setText("Consultando base de datos");
+            }
+        });
+
+        viewModel.getError().observe(this, err -> {
+            if (err != null && !err.isEmpty()) {
+                tvFaseActual.setText("Plan anual no disponible");
+                tvProgreso.setText(err);
+                rvFases.setAdapter(new FaseAdapter(new java.util.ArrayList<>(), null));
+            }
+        });
+
         viewModel.getPlanAnual().observe(this, plan -> {
             if (plan != null) {
                 // Mostrar fase actual
@@ -41,6 +56,7 @@ public class PlanAnualActivity extends AppCompatActivity {
                 } else {
                     tvFaseActual.setText("PLAN ANUAL");
                 }
+                tvProgreso.setText(String.format("%,d fases cargadas", plan.fases != null ? plan.fases.size() : 0));
 
                 // Adapter de fases (null-safe)
                 FaseAdapter adapter = new FaseAdapter(

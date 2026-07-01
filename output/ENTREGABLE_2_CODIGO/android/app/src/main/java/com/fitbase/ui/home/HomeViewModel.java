@@ -1,6 +1,7 @@
 package com.fitbase.ui.home;
 
 import android.app.Application;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
@@ -36,6 +37,7 @@ import retrofit2.Response;
 public class HomeViewModel extends AndroidViewModel {
 
     private static final String FECHA_INICIO = "2026-08-31";
+    private static final String TAG = "HomeVM";
 
     private final MutableLiveData<MacrosResponse> macros = new MutableLiveData<>();
     private final MutableLiveData<SesionResponse> sesionHoy = new MutableLiveData<>();
@@ -108,6 +110,11 @@ public class HomeViewModel extends AndroidViewModel {
             if (HealthConnectReader.isAvailable(getApplication())) {
                 HealthConnectReader reader = new HealthConnectReader(getApplication());
                 reader.leerDatosHoy(datos -> {
+                    Log.d(TAG, "HC demo pasos=" + datos.pasos
+                            + " kcal=" + datos.caloriasConsumidas
+                            + " p=" + datos.proteinaG
+                            + " c=" + datos.carbosG
+                            + " g=" + datos.grasasG);
                     base.pasosActuales = datos.pasos;
                     base.caloriasConsumidas = Math.max(datos.caloriasConsumidas, 0);
                     base.proteinaConsumidaG = Math.max(datos.proteinaG, 0);
@@ -136,6 +143,11 @@ public class HomeViewModel extends AndroidViewModel {
                     if (HealthConnectReader.isAvailable(getApplication())) {
                         HealthConnectReader reader = new HealthConnectReader(getApplication());
                         reader.leerDatosHoy(datos -> {
+                            Log.d(TAG, "HC real pasos=" + datos.pasos
+                                    + " kcal=" + datos.caloriasConsumidas
+                                    + " p=" + datos.proteinaG
+                                    + " c=" + datos.carbosG
+                                    + " g=" + datos.grasasG);
                             objetivos.pasosActuales = datos.pasos;
                             objetivos.caloriasConsumidas = datos.caloriasConsumidas;
                             objetivos.proteinaConsumidaG = datos.proteinaG;
@@ -146,6 +158,7 @@ public class HomeViewModel extends AndroidViewModel {
                             macros.postValue(objetivos);
                         });
                     } else {
+                        Log.w(TAG, "Health Connect no disponible, usando solo backend");
                         objetivos.origenDatos = "backend";
                         objetivos.esFallback = false;
                         macros.postValue(objetivos);
@@ -155,6 +168,7 @@ public class HomeViewModel extends AndroidViewModel {
 
             @Override
             public void onFailure(Call<MacrosResponse> call, Throwable t) {
+                Log.e(TAG, "Error obteniendo macros_hoy backend", t);
                 MacrosResponse fallback = new MacrosResponse();
                 fallback.caloriasObjetivo = Constants.CALORIAS_FALLBACK;
                 fallback.proteinaG = Constants.PROTEINA_FALLBACK_G;
