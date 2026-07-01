@@ -1,14 +1,11 @@
 package com.fitbase.data.api;
 
 import com.fitbase.data.model.AusenciaResponse;
-import com.fitbase.data.model.CatalogoResponse;
 import com.fitbase.data.model.MacrosResponse;
 import com.fitbase.data.model.PlanAnualResponse;
 import com.fitbase.data.model.PlanSemanalResponse;
-import com.fitbase.data.model.ProgresionResponse;
 import com.fitbase.data.model.SesionResponse;
 import com.fitbase.data.model.MetricasProgresionResponse;
-import com.fitbase.data.model.MetricasResponse;
 import com.fitbase.data.model.GenericResponse;
 
 import java.util.Map;
@@ -40,25 +37,10 @@ public interface FitBaseApi {
     );
 
     @GET("exec")
-    Call<MetricasResponse> getMetricasHoy(@Query("accion") String accion);
-
-    @GET("exec")
-    Call<ProgresionResponse> getProgresion(
-            @Query("accion") String accion,
-            @Query("ejercicio_id") String ejercicioId
-    );
-
-    @GET("exec")
-    Call<CatalogoResponse> getCatalogo(@Query("accion") String accion);
-
-    @GET("exec")
     Call<MacrosResponse> getMacrosHoy(@Query("accion") String accion);
 
     @GET("exec")
     Call<AusenciaResponse> checkAusencia(@Query("accion") String accion);
-
-    @GET("exec")
-    Call<Object> getComposicionSemanal(@Query("accion") String accion);
 
     @GET("exec")
     Call<MetricasProgresionResponse> getProgresionMetricas(

@@ -1,7 +1,10 @@
 package com.fitbase.ui.home;
 
 import android.animation.ObjectAnimator;
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.MotionEvent;
 import android.view.View;
@@ -10,6 +13,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.activity.result.ActivityResultLauncher;
+import androidx.core.app.ActivityCompat;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.dynamicanimation.animation.SpringAnimation;
@@ -34,7 +38,7 @@ import java.util.Set;
  * Pantalla principal.
  * Muestra: calorías/macros RESTANTES, pasos, agua, sesión del día.
  * Datos se actualizan al abrir la app (onResume).
- * En modo demo muestra datos ficticios completos.
+ * En preinicio usa objetivos base y datos reales disponibles de Health Connect.
  */
 public class HomeActivity extends AppCompatActivity {
 
@@ -99,6 +103,7 @@ public class HomeActivity extends AppCompatActivity {
 
         viewModel.cargarDatosDelDia();
         viewModel.checkAusencia();
+        solicitarPermisosIniciales();
     }
 
     /**
@@ -107,6 +112,18 @@ public class HomeActivity extends AppCompatActivity {
     private void solicitarPermisosHC() {
         if (!HealthConnectBridge.isAvailable(this)) return;
         hcPermLauncher.launch(HealthConnectBridge.getRequiredPermissions());
+    }
+
+    private void solicitarPermisosIniciales() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                && ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.POST_NOTIFICATIONS}, 101);
+        }
+        if (HealthConnectBridge.isAvailable(this)) {
+            solicitarPermisosHC();
+        }
     }
 
     private void vincularVistas() {
@@ -143,7 +160,12 @@ public class HomeActivity extends AppCompatActivity {
 
             int restantes = macros.getCaloriasRestantes();
             tvCaloriasRestantes.setText(String.format(Locale.getDefault(), "%,d", restantes));
-            tvCaloriasConsumidas.setText(String.format(Locale.getDefault(), "%,d consumidas", macros.caloriasConsumidas));
+            String tagOrigen = "";
+            if (macros.esFallback) tagOrigen = " · FALLBACK";
+            else if (macros.origenDatos != null && !macros.origenDatos.isEmpty()) {
+                tagOrigen = " · " + macros.origenDatos;
+            }
+            tvCaloriasConsumidas.setText(String.format(Locale.getDefault(), "%,d consumidas%s", macros.caloriasConsumidas, tagOrigen));
             tvCaloriasObjetivo.setText(String.format(Locale.getDefault(), "de %,d kcal", macros.caloriasObjetivo));
 
             // Progreso animado
@@ -185,8 +207,8 @@ public class HomeActivity extends AppCompatActivity {
                 btnEmpezarEntreno.setAlpha(0f);
                 btnEmpezarEntreno.animate().alpha(1f).setDuration(400).start();
             } else {
-                tvSesionHoy.setText("Día de descanso 💤");
-                tvFaseInfo.setText("Recuperación activa — paseo + estiramientos");
+                tvSesionHoy.setText("Descanso + Movilidad");
+                tvFaseInfo.setText("Recuperación activa — Wall Angels + aductores + tríceps overhead");
                 btnEmpezarEntreno.setVisibility(View.GONE);
             }
         });
@@ -226,9 +248,9 @@ public class HomeActivity extends AppCompatActivity {
             feedback.tap();
             Intent intent = new Intent(this, WorkoutActivity.class);
             if (Boolean.TRUE.equals(viewModel.isModoDemo().getValue())) {
-                // Demo: permitir entrenamiento pero avisar que es prueba
+                // Preinicio: permitir entrenamiento de prueba
                 android.widget.Toast.makeText(this,
-                        "Modo demo — datos se guardan en BBDD para verificar funcionamiento",
+                        "Modo preinicio — entrenamiento de prueba activo",
                         android.widget.Toast.LENGTH_SHORT).show();
             }
             startActivity(intent);
@@ -285,8 +307,8 @@ public class HomeActivity extends AppCompatActivity {
     private void mostrarDialogoAusencia() {
         new AlertDialog.Builder(this)
                 .setTitle("Registrar ausencia extendida")
-                .setMessage("¿Has estado sin entrenar 1 semana o más?\nSe redistribuirá tu volumen.")
-                .setPositiveButton("Registrar", (d, w) -> viewModel.registrarAusenciaExtendida())
+                .setMessage("En modo simplificado solo está disponible la detección automática de ausencia (últimos 7 días).")
+                .setPositiveButton("Entendido", (d, w) -> viewModel.checkAusencia())
                 .setNegativeButton("Cancelar", null)
                 .show();
     }

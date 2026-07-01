@@ -18,15 +18,10 @@ const HOJAS = {
   SESIONES_PLAN: 'sesiones_plan',
   EJERCICIOS_PLAN: 'ejercicios_plan',
   EJERCICIOS_LOG: 'ejercicios_log',
-  PROGRESION_LOG: 'progresion_log',
   COMIDAS_LOG: 'comidas_log',
-  HIDRATACION_LOG: 'hidratacion_log',
-  SUPLEMENTOS_LOG: 'suplementos_log',
-  EXCEPCIONES_LOG: 'excepciones_log',
   PLAN_ANUAL: 'plan_anual',
   PLAN_SEMANAL: 'plan_semanal',
-  EJERCICIOS_CATALOGO: 'ejercicios_catalogo',
-  MEDICIONES_LOG: 'mediciones_log'
+  EJERCICIOS_CATALOGO: 'ejercicios_catalogo'
 };
 
 // ─── ENDPOINTS REST ───────────────────────────────────────────
@@ -37,12 +32,9 @@ const HOJAS = {
  *   ?accion=sesion_hoy
  *   ?accion=plan_anual
  *   ?accion=plan_semanal&semana=25
- *   ?accion=metricas_hoy
- *   ?accion=progresion&ejercicio_id=XXX
- *   ?accion=catalogo
  *   ?accion=macros_hoy
- *   ?accion=check_ausencia (detecta días sin abrir app)
- *   ?accion=composicion_semanal (última medición Zepp semanal)
+ *   ?accion=check_ausencia
+ *   ?accion=progresion_metricas
  */
 function doGet(e) {
   try {
@@ -59,29 +51,17 @@ function doGet(e) {
       case 'plan_semanal':
         resultado = getPlanSemanal(e.parameter.semana);
         break;
-      case 'metricas_hoy':
-        resultado = getMetricasHoy();
-        break;
-      case 'progresion':
-        resultado = getProgresion(e.parameter.ejercicio_id);
-        break;
-      case 'catalogo':
-        resultado = getCatalogo();
-        break;
       case 'macros_hoy':
         resultado = getMacrosHoy();
         break;
       case 'check_ausencia':
         resultado = checkAusencia();
         break;
-      case 'composicion_semanal':
-        resultado = getComposicionSemanal();
-        break;
       case 'progresion_metricas':
         resultado = getProgresionMetricas(e.parameter.dias);
         break;
       default:
-        resultado = { error: 'Acción no reconocida', acciones_validas: ['sesion_hoy', 'plan_anual', 'plan_semanal', 'metricas_hoy', 'progresion', 'catalogo', 'macros_hoy', 'check_ausencia', 'composicion_semanal', 'progresion_metricas'] };
+        resultado = { error: 'Acción no reconocida', acciones_validas: ['sesion_hoy', 'plan_anual', 'plan_semanal', 'macros_hoy', 'check_ausencia', 'progresion_metricas'] };
     }
 
     return ContentService.createTextOutput(JSON.stringify(resultado))
@@ -98,10 +78,8 @@ function doGet(e) {
  *   accion=guardar_log (ejercicio completado)
  *   accion=guardar_peso
  *   accion=guardar_metricas
- *   accion=guardar_comida
- *   accion=guardar_suplementos
  *   accion=completar_sesion
- *   accion=guardar_excepcion
+ *   accion=sync_nutricion
  */
 function doPost(e) {
   try {
@@ -119,35 +97,14 @@ function doPost(e) {
       case 'guardar_metricas':
         resultado = guardarMetricas(datos);
         break;
-      case 'guardar_comida':
-        resultado = guardarComida(datos);
-        break;
-      case 'guardar_suplementos':
-        resultado = guardarSuplemento(datos);
-        break;
       case 'completar_sesion':
         resultado = completarSesion(datos);
-        break;
-      case 'guardar_excepcion':
-        resultado = guardarExcepcion(datos);
-        break;
-      case 'registrar_ausencia':
-        resultado = registrarAusenciaExtendida(datos);
-        break;
-      case 'subir_peso_manual':
-        resultado = subirPesoManual(datos);
-        break;
-      case 'guardar_medicion':
-        resultado = guardarMedicion(datos);
         break;
       case 'sync_nutricion':
         resultado = syncNutricionDesdeHealthConnect(datos);
         break;
-      case 'vaciar_bbdd':
-        resultado = vaciarBaseDatos(datos);
-        break;
       default:
-        resultado = { error: 'Acción POST no reconocida' };
+        resultado = { error: 'Acción POST no reconocida', acciones_validas: ['guardar_log', 'guardar_peso', 'guardar_metricas', 'completar_sesion', 'sync_nutricion'] };
     }
 
     return ContentService.createTextOutput(JSON.stringify(resultado))
@@ -595,6 +552,34 @@ function getMacrosHoy() {
   // ═══ 12. SLEEP SCORE (informativo — no afecta nutrición per se) ═══
   const sleepScore = getSleepScoreHoy();
 
+  // ═══ 13. CONSUMO REAL SYNC (Health Connect -> comidas_log) ═══
+  const comidasHoja = getHoja(HOJAS.COMIDAS_LOG);
+  const comidasData = comidasHoja.getDataRange().getValues();
+  const cabComidas = comidasData[0];
+  const comColFecha = cabComidas.indexOf('date_fecha');
+  const comColUser = cabComidas.indexOf('user_id');
+  const comColCal = cabComidas.indexOf('num_calorias');
+  const comColProt = cabComidas.indexOf('num_proteina_g');
+  const comColCarbs = cabComidas.indexOf('num_carbos_g');
+  const comColGrasas = cabComidas.indexOf('num_grasas_g');
+
+  let caloriasConsumidas = 0;
+  let proteinaConsumidaG = 0;
+  let carbosConsumidosG = 0;
+  let grasasConsumidasG = 0;
+
+  for (let i = 1; i < comidasData.length; i++) {
+    if (comidasData[i][comColFecha] === hoy && comidasData[i][comColUser] === USER_ID) {
+      caloriasConsumidas += comidasData[i][comColCal] || 0;
+      proteinaConsumidaG += comidasData[i][comColProt] || 0;
+      carbosConsumidosG += comidasData[i][comColCarbs] || 0;
+      grasasConsumidasG += comidasData[i][comColGrasas] || 0;
+    }
+  }
+  const origenDatos = (caloriasConsumidas > 0 || proteinaConsumidaG > 0 || carbosConsumidosG > 0 || grasasConsumidasG > 0)
+    ? 'health_connect_sync'
+    : 'sin_datos';
+
   return {
     // Contrato original (Android compatible)
     fecha: hoy,
@@ -606,14 +591,16 @@ function getMacrosHoy() {
     grasas_g: grasaG,
     agua_ml: aguaObjetivo,
     pasos_objetivo: 8000,
-    calorias_consumidas: 0,
-    proteina_consumida_g: 0,
-    carbos_consumidos_g: 0,
-    grasas_consumidas_g: 0,
+    calorias_consumidas: caloriasConsumidas,
+    proteina_consumida_g: proteinaConsumidaG,
+    carbos_consumidos_g: carbosConsumidosG,
+    grasas_consumidas_g: grasasConsumidasG,
     agua_consumida_ml: 0,
     pasos_actuales: pasosHoy,
     bmr: Math.round(bmr),
     tdee: tdee,
+    origen_datos: origenDatos,
+    es_fallback: false,
 
     // Campos nuevos (Android los ignora con Gson — no rompe nada)
     peso_actual: peso,
@@ -648,18 +635,11 @@ function guardarEjercicioLog(datos) {
     datos.num_peso_usado_kg,
     datos.num_reps_completadas,
     datos.num_rir_percibido,
-    10 - datos.num_rir_percibido, // RPE = 10 - RIR
     datos.str_sensacion || 'bien',
-    datos.str_notas || '',
-    datos.bool_dolor || false,
-    datos.str_zona_dolor || '',
     new Date().toISOString()
   ];
 
   hoja.appendRow(fila);
-
-  // Actualizar progresión
-  actualizarProgresion(datos.ejercicio_id, datos.num_peso_usado_kg, datos.num_reps_completadas);
 
   return { ok: true, log_id: logId };
 }
@@ -679,7 +659,6 @@ function guardarPeso(datos) {
     datos.grasa_pct || '',
     datos.musculo_kg || '',
     datos.fuente || 'manual',
-    datos.condiciones || '',
     new Date().toISOString()
   ];
 
@@ -699,15 +678,8 @@ function guardarMetricas(datos) {
     USER_ID,
     datos.fecha,
     datos.sleep_score || 0,
-    datos.sleep_horas || 0,
-    datos.sleep_deep_min || 0,
-    datos.sleep_rem_min || 0,
-    datos.hrv_rmssd || 0,
     datos.hr_reposo || 0,
-    datos.readiness || 0,
-    datos.stress_avg || 0,
     datos.pasos_ayer || 0,
-    datos.calorias_activas || 0,
     new Date().toISOString()
   ];
 
@@ -958,8 +930,6 @@ function syncNutricionDesdeHealthConnect(datos) {
       comida.proteina_g || 0,
       comida.carbos_g || 0,
       comida.grasas_g || 0,
-      comida.pre_entreno || false,
-      comida.post_entreno || false,
       comida.nombre || '',
       new Date().toISOString()
     ];
@@ -1277,11 +1247,11 @@ function getProgresionMetricas(dias) {
       zeppData.push({
         fecha: Utilities.formatDate(fecha, 'Europe/Madrid', 'yyyy-MM-dd'),
         sleep_score: datosZepp[i][cabZepp.indexOf('num_sleep_score')] || 0,
-        sleep_horas: datosZepp[i][cabZepp.indexOf('num_sleep_horas')] || 0,
-        sleep_deep_min: datosZepp[i][cabZepp.indexOf('num_sleep_deep_min')] || 0,
-        hrv_rmssd: datosZepp[i][cabZepp.indexOf('num_hrv_rmssd')] || 0,
+        sleep_horas: 0,
+        sleep_deep_min: 0,
+        hrv_rmssd: 0,
         hr_reposo: datosZepp[i][cabZepp.indexOf('num_hr_reposo')] || 0,
-        stress_avg: datosZepp[i][cabZepp.indexOf('num_stress_avg')] || 0,
+        stress_avg: 0,
         pasos: datosZepp[i][cabZepp.indexOf('num_pasos_ayer')] || 0
       });
     }
@@ -1411,21 +1381,16 @@ function inicializarHojas() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
 
   const estructuras = {
-    [HOJAS.USUARIOS]: ['user_id', 'str_nombre', 'date_nacimiento', 'num_altura_cm', 'str_sexo', 'str_objetivo', 'num_dias_entreno', 'str_split', 'bool_ramadan', 'bool_halal', 'date_creado', 'date_modificado'],
-    [HOJAS.METRICAS_ZEPP]: ['metrica_id', 'user_id', 'date_fecha', 'num_sleep_score', 'num_sleep_horas', 'num_sleep_deep_min', 'num_sleep_rem_min', 'num_hrv_rmssd', 'num_hr_reposo', 'num_readiness', 'num_stress_avg', 'num_pasos_ayer', 'num_calorias_activas', 'date_sync'],
-    [HOJAS.PESO_LOG]: ['peso_id', 'user_id', 'date_fecha', 'num_peso_kg', 'num_grasa_pct', 'num_musculo_kg', 'str_fuente', 'str_condiciones', 'date_creado'],
-    [HOJAS.SESIONES_PLAN]: ['sesion_id', 'user_id', 'date_fecha', 'str_tipo', 'num_semana_meso', 'str_fase', 'num_ajuste_volumen', 'str_razon_ajuste', 'num_duracion_est_min', 'bool_completada', 'date_inicio', 'date_fin', 'date_creado'],
+    [HOJAS.USUARIOS]: ['user_id', 'str_nombre', 'num_altura_cm', 'str_sexo', 'str_objetivo', 'str_split', 'date_creado', 'date_modificado'],
+    [HOJAS.METRICAS_ZEPP]: ['metrica_id', 'user_id', 'date_fecha', 'num_sleep_score', 'num_hr_reposo', 'num_pasos_ayer', 'date_sync'],
+    [HOJAS.PESO_LOG]: ['peso_id', 'user_id', 'date_fecha', 'num_peso_kg', 'num_grasa_pct', 'num_musculo_kg', 'str_fuente', 'date_creado'],
+    [HOJAS.SESIONES_PLAN]: ['sesion_id', 'user_id', 'date_fecha', 'str_tipo', 'num_semana_meso', 'str_fase', 'num_ajuste_volumen', 'num_duracion_est_min', 'bool_completada', 'date_inicio', 'date_fin', 'date_creado'],
     [HOJAS.EJERCICIOS_PLAN]: ['plan_id', 'sesion_id', 'ejercicio_id', 'num_orden', 'num_series_plan', 'num_reps_plan', 'num_peso_sugerido_kg', 'num_rir_objetivo', 'num_descanso_seg', 'str_notas', 'bool_es_warmup'],
-    [HOJAS.EJERCICIOS_LOG]: ['log_id', 'plan_id', 'sesion_id', 'ejercicio_id', 'num_serie', 'num_peso_usado_kg', 'num_reps_completadas', 'num_rir_percibido', 'num_rpe', 'str_sensacion', 'str_notas', 'bool_dolor', 'str_zona_dolor', 'date_timestamp'],
-    [HOJAS.PROGRESION_LOG]: ['prog_id', 'user_id', 'ejercicio_id', 'date_fecha', 'num_1rm_estimado', 'num_peso_trabajo', 'num_volumen_total', 'num_reps_max', 'str_pr_tipo'],
-    [HOJAS.COMIDAS_LOG]: ['comida_id', 'user_id', 'date_fecha', 'str_tipo_comida', 'num_calorias', 'num_proteina_g', 'num_carbos_g', 'num_grasas_g', 'bool_pre_entreno', 'bool_post_entreno', 'str_notas', 'date_hora'],
-    [HOJAS.HIDRATACION_LOG]: ['hidra_id', 'user_id', 'date_fecha', 'num_agua_ml', 'num_objetivo_ml', 'date_modificado'],
-    [HOJAS.SUPLEMENTOS_LOG]: ['supp_id', 'user_id', 'date_fecha', 'bool_whey', 'bool_caseina', 'bool_vitd_k', 'bool_omega3', 'bool_magnesio', 'bool_ashwagandha', 'bool_cromo', 'str_notas'],
-    [HOJAS.EXCEPCIONES_LOG]: ['exc_id', 'user_id', 'str_tipo', 'date_inicio', 'date_fin', 'str_detalles', 'str_zona_afectada', 'num_severidad', 'bool_activa'],
+    [HOJAS.EJERCICIOS_LOG]: ['log_id', 'plan_id', 'sesion_id', 'ejercicio_id', 'num_serie', 'num_peso_usado_kg', 'num_reps_completadas', 'num_rir_percibido', 'str_sensacion', 'date_timestamp'],
+    [HOJAS.COMIDAS_LOG]: ['comida_id', 'user_id', 'date_fecha', 'str_tipo_comida', 'num_calorias', 'num_proteina_g', 'num_carbos_g', 'num_grasas_g', 'str_notas', 'date_hora'],
     [HOJAS.PLAN_ANUAL]: ['fase_id', 'user_id', 'num_año', 'num_orden', 'str_nombre_fase', 'str_tipo', 'date_inicio', 'date_fin', 'num_semanas', 'num_volumen_objetivo', 'str_rir_rango', 'str_foco_muscular', 'str_objetivo_nutri', 'str_notas'],
     [HOJAS.PLAN_SEMANAL]: ['semana_id', 'fase_id', 'user_id', 'num_semana_año', 'num_semana_fase', 'str_lunes', 'str_martes', 'str_miercoles', 'str_jueves', 'str_viernes', 'str_sabado', 'str_domingo', 'str_rir_semana', 'bool_deload'],
-    [HOJAS.EJERCICIOS_CATALOGO]: ['ejercicio_id', 'str_nombre', 'str_nombre_en', 'str_grupo_principal', 'arr_grupos_secundarios', 'str_patron', 'str_equipamiento', 'bool_compuesto', 'bool_favorito', 'bool_excluido', 'str_razon_exclusion', 'str_alternativa'],
-    [HOJAS.MEDICIONES_LOG]: ['medicion_id', 'user_id', 'date_fecha', 'str_tipo', 'str_fase', 'num_hombros_cm', 'num_pecho_cm', 'num_cintura_cm', 'num_cadera_cm', 'num_bicep_cm', 'num_muslo_cm', 'num_pantorrilla_cm', 'date_creado']
+    [HOJAS.EJERCICIOS_CATALOGO]: ['ejercicio_id', 'str_nombre', 'str_nombre_en', 'str_grupo_principal', 'arr_grupos_secundarios', 'str_patron', 'str_equipamiento', 'bool_compuesto', 'bool_favorito', 'bool_excluido', 'str_razon_exclusion', 'str_alternativa']
   };
 
   for (const [nombre, cabeceras] of Object.entries(estructuras)) {
@@ -1442,11 +1407,11 @@ function inicializarHojas() {
   // Insertar datos iniciales del usuario
   const hojaUsuarios = ss.getSheetByName(HOJAS.USUARIOS);
   hojaUsuarios.appendRow([
-    USER_ID, 'Usuario', '2001-07-20', 188, 'M', 'bulk', 4, 'Push/Pierna/Pull/Hombros+Brazos',
-    true, true, new Date().toISOString(), new Date().toISOString()
+    USER_ID, 'Usuario', 188, 'M', 'bulk', 'Push/Pierna/Pull/Hombros+Brazos',
+    new Date().toISOString(), new Date().toISOString()
   ]);
 
-  return { ok: true, mensaje: 'Hojas inicializadas correctamente (14 hojas)' };
+  return { ok: true, mensaje: 'Hojas inicializadas correctamente (10 hojas simplificadas)' };
 }
 
 // ═══════════════════════════════════════════════════════════════

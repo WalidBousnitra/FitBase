@@ -5,7 +5,6 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.ServiceInfo;
 import android.media.AudioAttributes;
 import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
@@ -80,8 +79,7 @@ public class TimerService extends Service {
 
         // Notificacion compacta con cronometro (estilo Dynamic Island)
         Notification notificacion = crearNotificacionCronometro(ejercicioNombre, pendingIntent);
-        startForeground(NOTIFICACION_ID, notificacion,
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+        startForeground(NOTIFICACION_ID, notificacion);
 
         // Timer interno para detectar finalizacion
         if (timer != null) timer.cancel();

@@ -55,6 +55,12 @@ public class MacrosResponse {
     @SerializedName("tdee")
     public int tdee;
 
+    @SerializedName("origen_datos")
+    public String origenDatos;
+
+    @SerializedName("es_fallback")
+    public boolean esFallback;
+
     // Helpers
     public int getCaloriasRestantes() { return Math.max(0, caloriasObjetivo - caloriasConsumidas); }
     public int getProteinaRestante() { return Math.max(0, proteinaG - proteinaConsumidaG); }

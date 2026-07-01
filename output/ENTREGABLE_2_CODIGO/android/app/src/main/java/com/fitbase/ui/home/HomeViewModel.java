@@ -74,7 +74,8 @@ public class HomeViewModel extends AndroidViewModel {
     }
 
     public void registrarAusenciaExtendida() {
-        // TODO: date picker → API registrar_ausencia
+        // Endpoint no disponible en modo simplificado.
+        checkAusencia();
     }
 
     private void verificarModoDemo() {
@@ -90,8 +91,7 @@ public class HomeViewModel extends AndroidViewModel {
 
     private void cargarMacros() {
         if (Boolean.TRUE.equals(modoDemo.getValue())) {
-            // DEMO: leer datos REALES de Health Connect (pasos Zepp + calorías FatSecret)
-            // Objetivos fijos hasta que empiece el programa
+            // DEMO: objetivos fijos + SOLO datos reales de HC (sin inventar consumido)
             MacrosResponse base = new MacrosResponse();
             base.caloriasObjetivo = Constants.CALORIAS_FALLBACK;
             base.proteinaG = Constants.PROTEINA_FALLBACK_G;
@@ -101,28 +101,26 @@ public class HomeViewModel extends AndroidViewModel {
             base.pasosObjetivo = Constants.PASOS_OBJETIVO;
             base.esDiaEntreno = true;
             base.fase = "pre-programa";
+            base.origenDatos = "demo";
+            base.esFallback = false;
 
             // Intentar leer datos reales de Health Connect
             if (HealthConnectReader.isAvailable(getApplication())) {
                 HealthConnectReader reader = new HealthConnectReader(getApplication());
                 reader.leerDatosHoy(datos -> {
                     base.pasosActuales = datos.pasos;
-                    // HC nutrition: use if available, else demo values
-                    if (datos.caloriasConsumidas > 0) {
-                        base.caloriasConsumidas = datos.caloriasConsumidas;
-                        base.proteinaConsumidaG = datos.proteinaG;
-                        base.carbosConsumidosG = datos.carbosG;
-                        base.grasasConsumidasG = datos.grasasG;
-                    } else {
-                        // FatSecret no sincroniza a HC en la mayoría de dispositivos
-                        // Mostrar valores demo para que la UI no quede vacía
-                        rellenarNutricionDemo(base);
+                    base.caloriasConsumidas = Math.max(datos.caloriasConsumidas, 0);
+                    base.proteinaConsumidaG = Math.max(datos.proteinaG, 0);
+                    base.carbosConsumidosG = Math.max(datos.carbosG, 0);
+                    base.grasasConsumidasG = Math.max(datos.grasasG, 0);
+                    if (base.caloriasConsumidas == 0 && base.proteinaConsumidaG == 0
+                            && base.carbosConsumidosG == 0 && base.grasasConsumidasG == 0) {
+                        base.origenDatos = "demo_sin_sync_nutricion";
                     }
                     macros.postValue(base);
                 });
             } else {
-                // HC no disponible — mostrar datos demo completos
-                rellenarNutricionDemo(base);
+                base.origenDatos = "demo_sin_hc";
                 macros.setValue(base);
             }
             return;
@@ -143,9 +141,13 @@ public class HomeViewModel extends AndroidViewModel {
                             objetivos.proteinaConsumidaG = datos.proteinaG;
                             objetivos.carbosConsumidosG = datos.carbosG;
                             objetivos.grasasConsumidasG = datos.grasasG;
+                            objetivos.origenDatos = "backend+hc";
+                            objetivos.esFallback = false;
                             macros.postValue(objetivos);
                         });
                     } else {
+                        objetivos.origenDatos = "backend";
+                        objetivos.esFallback = false;
                         macros.postValue(objetivos);
                     }
                 }
@@ -160,6 +162,9 @@ public class HomeViewModel extends AndroidViewModel {
                 fallback.grasasG = Constants.GRASAS_FALLBACK_G;
                 fallback.aguaMl = 3200;
                 fallback.pasosObjetivo = Constants.PASOS_OBJETIVO;
+                fallback.fase = "FALLBACK_LOCAL";
+                fallback.origenDatos = "fallback_local";
+                fallback.esFallback = true;
                 macros.postValue(fallback);
             }
         });
@@ -299,19 +304,4 @@ public class HomeViewModel extends AndroidViewModel {
         return ej;
     }
 
-    /** Rellena nutrición demo según hora del día (simula desayuno/comida/cena) */
-    private void rellenarNutricionDemo(MacrosResponse base) {
-        int hora = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
-        float factor;
-        if (hora < 10) factor = 0.15f;       // Solo desayuno
-        else if (hora < 14) factor = 0.35f;   // Desayuno + snack
-        else if (hora < 18) factor = 0.55f;   // + comida
-        else if (hora < 21) factor = 0.75f;   // + merienda
-        else factor = 0.88f;                   // + cena
-
-        base.caloriasConsumidas = (int)(base.caloriasObjetivo * factor);
-        base.proteinaConsumidaG = (int)(base.proteinaG * factor);
-        base.carbosConsumidosG = (int)(base.carbosG * factor);
-        base.grasasConsumidasG = (int)(base.grasasG * factor);
-    }
 }

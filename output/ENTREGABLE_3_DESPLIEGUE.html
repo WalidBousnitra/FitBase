@@ -107,7 +107,7 @@
 <div class="hero">
     <h1>Despliegue FitBase</h1>
     <p>Guía paso a paso para montar todo desde cero. No tienes BBDD, no tienes nada desplegado. Aquí lo hacemos todo.</p>
-    <div class="status">Estado: TODO POR HACER — Empezar desde el paso 1</div>
+    <div class="status">Estado: BASE VALIDADA — Ejecuta checklist para verificar tu entorno</div>
 </div>
 
 <div class="progress-container">
@@ -127,7 +127,7 @@
             <span class="arch-arrow">→</span>
             <div class="arch-box">Apps Script (Web App)</div>
             <span class="arch-arrow">→</span>
-            <div class="arch-box">Google Sheets (15 hojas)</div>
+            <div class="arch-box">Google Sheets (10 hojas simplificadas)</div>
         </div>
         <div class="arch-row" style="margin-top:12px;">
             <div class="arch-box">Health Connect</div>
@@ -197,7 +197,7 @@
             <div class="step-time">~2 min</div>
         </div>
         <div class="step-body">
-            <p>Esto crea las 15 hojas con cabeceras + inserta tu usuario.</p>
+            <p>Esto crea las 10 hojas simplificadas con cabeceras + inserta tu usuario.</p>
             <ol>
                 <li>En el editor Apps Script, en el dropdown de funciones selecciona: <strong>inicializarHojas</strong></li>
                 <li>Clic en <strong>▶ Ejecutar</strong></li>
@@ -205,7 +205,7 @@
                 <li>Vuelve a la Sheet → verifica que hay 15 pestañas</li>
             </ol>
             <div class="tip-box"><strong>Permisos:</strong> Google te pide autorizar. Como tú eres el owner, clic "Avanzado → Ir a FitBase (no seguro)" → Permitir.</div>
-            <p>Las 15 hojas que se crean:</p>
+            <p>Las 10 hojas que se crean:</p>
             <div class="code-block">
                 <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
                 <code>usuarios, metricas_zepp, peso_log, sesiones_plan,
@@ -216,7 +216,7 @@ ejercicios_catalogo, mediciones_log</code>
             </div>
             <label class="check-item" onclick="updateProgress()">
                 <input type="checkbox"><div class="check-box"></div>
-                <span class="check-label">15 hojas creadas con cabeceras</span>
+                <span class="check-label">10 hojas simplificadas creadas con cabeceras</span>
             </label>
         </div>
     </div>
@@ -368,7 +368,7 @@ Health Connect 1.1.0-alpha07</code>
                 <li>Conecta tu móvil por USB (USB Debugging activado)</li>
                 <li>En Android Studio: <strong>▶ Run 'app'</strong></li>
                 <li>La app se instala y abre</li>
-                <li>Debería mostrar la pantalla Home con banner "Demo activa"</li>
+                <li>Debería mostrar la pantalla Home con banner "Preinicio"</li>
                 <li><strong>Prueba:</strong> Toca "Empezar entreno" → haz una serie → registra RIR</li>
                 <li>Ve a tu Google Sheet → hoja <strong>ejercicios_log</strong> → debería haber una fila nueva</li>
             </ol>
@@ -443,7 +443,7 @@ Health Connect 1.1.0-alpha07</code>
         <h3 style="font-size:1rem; margin-bottom:16px;">Resumen de lo que tienes desplegado:</h3>
         <table style="width:100%; font-size:0.85rem; color:var(--text2);">
             <tr><td style="padding:8px 0; color:var(--text); font-weight:500;">Backend</td><td>Google Apps Script (Web App)</td></tr>
-            <tr><td style="padding:8px 0; color:var(--text); font-weight:500;">Base de datos</td><td>Google Sheets (15 hojas)</td></tr>
+            <tr><td style="padding:8px 0; color:var(--text); font-weight:500;">Base de datos</td><td>Google Sheets (10 hojas simplificadas)</td></tr>
             <tr><td style="padding:8px 0; color:var(--text); font-weight:500;">Frontend</td><td>Android nativo (Java 17, minSdk 26)</td></tr>
             <tr><td style="padding:8px 0; color:var(--text); font-weight:500;">Cache offline</td><td>Room (SQLite) — cola de reintentos si cae la red</td></tr>
             <tr><td style="padding:8px 0; color:var(--text); font-weight:500;">Métricas</td><td>Health Connect ← Zepp + FatSecret</td></tr>
