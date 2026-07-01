@@ -30,8 +30,12 @@ public class ApiClient {
                     .followSslRedirects(true)
                     .build();
 
+            // Retrofit requiere que baseUrl termine en '/' — asegurar siempre
+            String baseUrl = Constants.API_BASE_URL;
+            if (!baseUrl.endsWith("/")) baseUrl = baseUrl + "/";
+
             Retrofit retrofit = new Retrofit.Builder()
-                    .baseUrl(Constants.API_BASE_URL)
+                    .baseUrl(baseUrl)
                     .client(client)
                     .addConverterFactory(GsonConverterFactory.create())
                     .build();

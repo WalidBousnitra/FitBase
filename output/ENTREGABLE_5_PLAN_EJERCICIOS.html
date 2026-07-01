@@ -643,7 +643,7 @@ FAS_10,Peak + Mantenimiento,MNT,2027-05-17,2027-07-31,11,2-3,General,mantener,30
 <!-- TEMPLATES POR FASE PARA SHEETS -->
 <section>
     <h2>Templates de Sesión por Fase</h2>
-    <p class="sec-desc">Cada fase usa un template de ejercicios diferente. La función <code>generarPlanCompleto()</code> mapea fecha → fase → template.</p>
+    <p class="sec-desc">Cada fase usa un template de ejercicios diferente. La función <code>rellenarPlanCompleto()</code> mapea fecha → fase → template.</p>
 
     <div class="day-block" style="overflow-x:auto;">
         <div class="day-header"><div class="day-name">Mapa: qué template usa cada fase</div></div>
@@ -665,7 +665,7 @@ FAS_10,Peak + Mantenimiento,MNT,2027-05-17,2027-07-31,11,2-3,General,mantener,30
 <!-- CSV COMPLETO DE TODOS LOS TEMPLATES -->
 <section>
     <h2>Datos para ejercicios_plan (Google Sheets)</h2>
-    <p class="sec-desc">TODOS los templates. La función <code>generarPlanCompleto()</code> los replica para cada semana del año asignando la fecha y el RIR correspondiente.</p>
+    <p class="sec-desc">TODOS los templates. La función <code>rellenarPlanCompleto()</code> los replica para cada semana del año asignando la fecha y el RIR correspondiente.</p>
 
     <div class="day-block" style="overflow-x:auto;">
         <div class="day-header"><div class="day-name">CSV Completo — Todos los Templates por Fase</div></div>
@@ -826,7 +826,7 @@ EJE_PLANCHA,Plancha (lastrada),Core,,Anti-extensión,"Suelo,Disco",false,false</
         <div class="day-header"><div class="day-name">Flujo de datos (corregido)</div></div>
         <div style="font-family:monospace; font-size:0.8rem; color:var(--text2); line-height:1.8; padding:12px;">
             <div style="color:var(--accent); font-weight:500;">DESPLIEGUE (una vez):</div>
-            <div>inicializarHojas() → generarPlanCompleto()</div>
+            <div>inicializarHojas() → rellenarPlanCompleto()</div>
             <div>→ 10 fases en plan_anual</div>
             <div>→ 48 semanas en plan_semanal</div>
             <div>→ ~192 sesiones en sesiones_plan (4/semana × 48 sem)</div>

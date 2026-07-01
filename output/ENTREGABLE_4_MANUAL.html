@@ -168,7 +168,7 @@
                 <p>Hasta el 31/08/2026 la app está en "modo preinicio" y puede <strong>escribir datos reales en la BBDD</strong> para que verifiques que funciona. Antes del inicio real:</p>
                 <ol>
                     <li>Ve a Apps Script</li>
-                    <li>Ejecuta <strong>resetParaInicio()</strong></li>
+                    <li>Ejecuta <strong>limpiarDatosTest()</strong></li>
                     <li>Esto limpia los logs de prueba pero <strong>mantiene las 192 sesiones y 1300 ejercicios pre-generados</strong></li>
                 </ol>
             </div>
@@ -267,7 +267,7 @@
             <div class="card">
                 <h3>Durante el descanso</h3>
                 <ul>
-                    <li>Se muestra un <strong>cronómetro nativo</strong> en la notificación (estilo "Dynamic Island")</li>
+                    <li>Se muestra un <strong>cronómetro nativo</strong> en la notificación (Chronometer de Android)</li>
                     <li>Si sales de la app, el timer sigue visible en la barra de notificaciones</li>
                     <li>No necesitas estar dentro de la app</li>
                 </ul>
@@ -444,9 +444,9 @@
                 <h3>Vaciar BBDD (reset)</h3>
                 <p>Si necesitas limpiar datos de prueba:</p>
                 <ol>
-                    <li>Apps Script → ejecuta <strong>resetParaInicio()</strong></li>
-                    <li>Mantiene: catálogo de ejercicios, plan anual, plan semanal</li>
-                    <li>Borra: todos los logs, peso, métricas, comidas, etc.</li>
+                    <li>Apps Script → ejecuta <strong>limpiarDatosTest()</strong></li>
+                    <li>Mantiene: catálogo, plan anual, plan semanal, sesiones_plan, ejercicios_plan</li>
+                    <li>Borra: ejercicios_log, metricas_zepp, metricas_subjetivas, peso_log</li>
                 </ol>
                 <div class="warn-box"><strong>Irreversible.</strong> Solo usar antes del inicio real del programa.</div>
             </div>

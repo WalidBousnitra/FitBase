@@ -127,7 +127,7 @@
             <span class="arch-arrow">→</span>
             <div class="arch-box">Apps Script (Web App)</div>
             <span class="arch-arrow">→</span>
-            <div class="arch-box">Google Sheets (10 hojas simplificadas)</div>
+            <div class="arch-box">Google Sheets (9 hojas)</div>
         </div>
         <div class="arch-row" style="margin-top:12px;">
             <div class="arch-box">Health Connect</div>
@@ -197,26 +197,24 @@
             <div class="step-time">~2 min</div>
         </div>
         <div class="step-body">
-            <p>Esto crea las 10 hojas simplificadas con cabeceras + inserta tu usuario.</p>
+            <p>Esto crea las 9 hojas con cabeceras correctas.</p>
             <ol>
                 <li>En el editor Apps Script, en el dropdown de funciones selecciona: <strong>inicializarHojas</strong></li>
                 <li>Clic en <strong>▶ Ejecutar</strong></li>
                 <li>Acepta permisos (tu cuenta de Google)</li>
-                <li>Vuelve a la Sheet → verifica que hay 15 pestañas</li>
+                <li>Vuelve a la Sheet → verifica que hay 9 pestañas nuevas</li>
             </ol>
             <div class="tip-box"><strong>Permisos:</strong> Google te pide autorizar. Como tú eres el owner, clic "Avanzado → Ir a FitBase (no seguro)" → Permitir.</div>
-            <p>Las 10 hojas que se crean:</p>
+            <p>Las 9 hojas que se crean:</p>
             <div class="code-block">
                 <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
-                <code>usuarios, metricas_zepp, peso_log, sesiones_plan,
-ejercicios_plan, ejercicios_log, progresion_log,
-comidas_log, hidratacion_log, suplementos_log,
-excepciones_log, plan_anual, plan_semanal,
-ejercicios_catalogo, mediciones_log</code>
+                <code>metricas_zepp, metricas_subjetivas, peso_log,
+plan_anual, plan_semanal, sesiones_plan,
+ejercicios_plan, ejercicios_log, ejercicios_catalogo</code>
             </div>
             <label class="check-item" onclick="updateProgress()">
                 <input type="checkbox"><div class="check-box"></div>
-                <span class="check-label">10 hojas simplificadas creadas con cabeceras</span>
+                <span class="check-label">9 hojas creadas con cabeceras (verificar en la Sheet)</span>
             </label>
         </div>
     </div>
@@ -225,13 +223,13 @@ ejercicios_catalogo, mediciones_log</code>
     <div class="step" id="step4">
         <div class="step-header" onclick="toggleStep(this.parentElement)">
             <div class="step-number">4</div>
-            <div class="step-title">Ejecutar generarPlanCompleto()</div>
+            <div class="step-title">Ejecutar rellenarPlanCompleto()</div>
             <div class="step-time">~3 min</div>
         </div>
         <div class="step-body">
-            <p>Esto pre-genera <strong>TODAS las sesiones del año</strong>: 192 sesiones + 1300 ejercicios. Cuando abras la app cualquier día, tu sesión ya estará lista.</p>
+            <p>Esto pre-genera <strong>TODAS las sesiones del año</strong>: ~192 sesiones + ~1300 ejercicios. Cuando abras la app cualquier día, tu sesión ya estará lista.</p>
             <ol>
-                <li>En Apps Script, selecciona función: <strong>generarPlanCompleto</strong></li>
+                <li>En Apps Script, selecciona función: <strong>rellenarPlanCompleto</strong></li>
                 <li>Clic <strong>▶ Ejecutar</strong></li>
                 <li>Espera ~30 segundos (genera mucho dato)</li>
                 <li>Vuelve a la Sheet → verifica:</li>
@@ -243,7 +241,7 @@ ejercicios_catalogo, mediciones_log</code>
                 <li><strong>ejercicios_plan</strong>: ~1300 filas (ejercicios de cada sesión)</li>
                 <li><strong>ejercicios_catalogo</strong>: ~27 filas (ejercicios únicos)</li>
             </ul>
-            <div class="info-box"><strong>Los ejercicios concretos están en:</strong><br><code>ENTREGABLE_5_PLAN_EJERCICIOS.html</code> → todos los templates, macros por fase y CSV copiable. La función <code>generarPlanCompleto()</code> usa estos templates internamente.</div>
+            <div class="info-box"><strong>Los ejercicios concretos están en:</strong><br><code>ENTREGABLE_5_PLAN_EJERCICIOS.html</code> → todos los templates, macros por fase y CSV copiable. La función <code>rellenarPlanCompleto()</code> usa estos templates internamente.</div>
             <div class="tip-box"><strong>¿Por qué pre-generar?</strong> Así no dependes de ningún trigger diario. El 31 de agosto de 2026 abres la app y ya tienes tu sesión de Adaptación con todos los ejercicios. El 15 de enero de 2027 abres y tienes tu sesión de Fuerza. Sin internet, sin IA, sin nada extra.</div>
             <label class="check-item" onclick="updateProgress()">
                 <input type="checkbox"><div class="check-box"></div>
@@ -308,8 +306,9 @@ ejercicios_catalogo, mediciones_log</code>
             <div class="code-block">
                 <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
                 <code>public static final String API_BASE_URL =
-    "https://script.google.com/macros/s/TU_DEPLOY_ID/";</code>
+    "https://script.google.com/macros/s/TU_DEPLOY_ID/exec/";</code>
             </div>
+            <div class="tip-box"><strong>¡IMPORTANTE!</strong> La URL DEBE terminar en <code>/</code> (barra final). Sin ella, Retrofit crashea la app con "baseUrl must end in /". Ejemplo correcto:<br><code>https://script.google.com/macros/s/AKfycby.../exec/</code></div>
             <ol start="4">
                 <li>Verifica en <code>build.gradle</code>:</li>
             </ol>
@@ -344,11 +343,14 @@ Health Connect 1.1.0-alpha07</code>
         <div class="step-body">
             <p>Estas apps externas alimentan datos a FitBase via Health Connect.</p>
             <ol>
-                <li><strong>Zepp</strong> (reloj Amazfit): Ya lo tienes. Verifica que sincroniza sueño/peso/pasos a Health Connect.</li>
+                <li><strong>Zepp/Mi Fitness</strong> (reloj Amazfit): Ya lo tienes. Verifica que sincroniza sueño/pasos/FC a Health Connect:<br>Mi Fitness → Perfil → Aplicaciones de terceros → Health Connect → ACTIVAR TODO.</li>
                 <li><strong>FatSecret</strong>: Instala → Ajustes → Apps conectadas → Health Connect → Activar escritura de Nutrición.</li>
-                <li><strong>Health Connect</strong>: Dale a FitBase permiso de LECTURA de: Steps, Heart Rate, Sleep, Nutrition.</li>
+                <li><strong>Health Connect</strong>: Dale a FitBase permiso de LECTURA de: <strong>Pasos, Frecuencia cardíaca, Sueño, Nutrición, Peso corporal</strong>.</li>
             </ol>
-            <div class="info-box"><strong>Flujo:</strong> Tú registras comidas en FatSecret → FatSecret → Health Connect → FitBase lee al abrir → Envía a Sheets.</div>
+            <div class="info-box"><strong>Flujo de datos:</strong><br>
+                • <strong>Pasos + Sueño + FC reposo</strong>: Amazfit GTS 4 → Zepp → Health Connect → FitBase<br>
+                • <strong>Nutrición (calorías, macros)</strong>: Registras en FatSecret → Health Connect → FitBase<br>
+                • <strong>Peso corporal</strong>: Te pesas en báscula → registras en Mi Fitness o HC manual → FitBase</div>
             <label class="check-item" onclick="updateProgress()">
                 <input type="checkbox"><div class="check-box"></div>
                 <span class="check-label">FatSecret + Zepp conectados a Health Connect</span>
@@ -372,7 +374,7 @@ Health Connect 1.1.0-alpha07</code>
                 <li><strong>Prueba:</strong> Toca "Empezar entreno" → haz una serie → registra RIR</li>
                 <li>Ve a tu Google Sheet → hoja <strong>ejercicios_log</strong> → debería haber una fila nueva</li>
             </ol>
-            <div class="info-box"><strong>La demo ESCRIBE en la BBDD real.</strong> Puedes verificar que todo funciona. Antes del inicio real (31/08/2026) ejecutas <code>resetParaInicio()</code> para limpiar.</div>
+            <div class="info-box"><strong>La demo ESCRIBE en la BBDD real.</strong> Puedes verificar que todo funciona. Antes del inicio real (31/08/2026) ejecutas <code>limpiarDatosTest()</code> en Apps Script para limpiar.</div>
 
             <p style="margin-top:16px; font-weight:500; color:var(--text);">Checklist de verificación:</p>
             <label class="check-item" onclick="updateProgress()">
@@ -393,7 +395,7 @@ Health Connect 1.1.0-alpha07</code>
             </label>
             <label class="check-item" onclick="updateProgress()">
                 <input type="checkbox"><div class="check-box"></div>
-                <span class="check-label">Timer muestra cuenta atrás (Dynamic Island style)</span>
+                <span class="check-label">Timer muestra cuenta atrás en la notificación (Chronometer nativo)</span>
             </label>
             <label class="check-item" onclick="updateProgress()">
                 <input type="checkbox"><div class="check-box"></div>
@@ -410,30 +412,33 @@ Health Connect 1.1.0-alpha07</code>
     <div class="step" id="step9">
         <div class="step-header" onclick="toggleStep(this.parentElement)">
             <div class="step-number">9</div>
-            <div class="step-title">Antes del inicio real: resetParaInicio()</div>
+            <div class="step-title">Antes del inicio real: limpiarDatosTest()</div>
             <div class="step-time">~1 min</div>
         </div>
         <div class="step-body">
             <p>Cuando estés satisfecho de que todo funciona y se acerque el 31/08/2026:</p>
             <ol>
                 <li>Ve a Apps Script</li>
-                <li>Selecciona función: <strong>resetParaInicio</strong></li>
+                <li>Selecciona función: <strong>limpiarDatosTest</strong></li>
                 <li>Clic <strong>▶ Ejecutar</strong></li>
-                <li>Esto borra TODOS los logs de prueba pero mantiene:</li>
+                <li>Esto borra SOLO los logs de prueba pero conserva:</li>
             </ol>
             <ul>
-                <li>✅ <strong>ejercicios_catalogo</strong> (tus ejercicios)</li>
-                <li>✅ <strong>plan_anual</strong> (tus fases)</li>
-                <li>✅ <strong>plan_semanal</strong> (tus microciclos)</li>
-                <li>✅ <strong>sesiones_plan</strong> (192 sesiones pre-generadas)</li>
-                <li>✅ <strong>ejercicios_plan</strong> (1300 ejercicios pre-generados)</li>
-                <li>❌ Todo lo demás se vacía (peso_log, métricas, comidas, ejercicios_log...)</li>
+                <li>✅ <strong>ejercicios_catalogo</strong> (tus 27 ejercicios)</li>
+                <li>✅ <strong>plan_anual</strong> (10 fases con fechas)</li>
+                <li>✅ <strong>plan_semanal</strong> (~48 microciclos)</li>
+                <li>✅ <strong>sesiones_plan</strong> (~192 sesiones pre-generadas)</li>
+                <li>✅ <strong>ejercicios_plan</strong> (~1300 ejercicios con peso=0)</li>
+                <li>❌ <strong>ejercicios_log</strong> se vacía (registros de series de prueba)</li>
+                <li>❌ <strong>metricas_zepp</strong> se vacía (datos de sueño/FC de prueba)</li>
+                <li>❌ <strong>metricas_subjetivas</strong> se vacía</li>
+                <li>❌ <strong>peso_log</strong> se vacía (pesadas de prueba)</li>
             </ul>
             <div class="error-box"><strong>IRREVERSIBLE.</strong> Solo ejecútalo cuando estés listo para empezar "de verdad" el 31/08/2026. Los datos de prueba se pierden.</div>
-            <div class="tip-box"><strong>También existe vaciarBaseDatos()</strong> vía POST desde la app o cualquier cliente REST, pero requiere enviar <code>confirmar: "VACIAR_TODO"</code> como seguridad.</div>
+            <div class="tip-box"><strong>Tras limpiar:</strong> Los pesos de ejercicios_plan se resetean a 0. El motor de cargas (APRE Mann 2010) los calculará dinámicamente desde tu primera sesión real basándose en tu rendimiento.</div>
             <label class="check-item" onclick="updateProgress()">
                 <input type="checkbox"><div class="check-box"></div>
-                <span class="check-label">Entendido — ejecutaré resetParaInicio cuando empiece</span>
+                <span class="check-label">Entendido — ejecutaré limpiarDatosTest cuando empiece</span>
             </label>
         </div>
     </div>
@@ -443,11 +448,11 @@ Health Connect 1.1.0-alpha07</code>
         <h3 style="font-size:1rem; margin-bottom:16px;">Resumen de lo que tienes desplegado:</h3>
         <table style="width:100%; font-size:0.85rem; color:var(--text2);">
             <tr><td style="padding:8px 0; color:var(--text); font-weight:500;">Backend</td><td>Google Apps Script (Web App)</td></tr>
-            <tr><td style="padding:8px 0; color:var(--text); font-weight:500;">Base de datos</td><td>Google Sheets (10 hojas simplificadas)</td></tr>
+            <tr><td style="padding:8px 0; color:var(--text); font-weight:500;">Base de datos</td><td>Google Sheets (9 hojas simplificadas)</td></tr>
             <tr><td style="padding:8px 0; color:var(--text); font-weight:500;">Frontend</td><td>Android nativo (Java 17, minSdk 26)</td></tr>
             <tr><td style="padding:8px 0; color:var(--text); font-weight:500;">Cache offline</td><td>Room (SQLite) — cola de reintentos si cae la red</td></tr>
             <tr><td style="padding:8px 0; color:var(--text); font-weight:500;">Métricas</td><td>Health Connect ← Zepp + FatSecret</td></tr>
-            <tr><td style="padding:8px 0; color:var(--text); font-weight:500;">Notificaciones</td><td>Timer Dynamic Island + vibración reloj (Zepp)</td></tr>
+            <tr><td style="padding:8px 0; color:var(--text); font-weight:500;">Notificaciones</td><td>Timer con Chronometer nativo + vibración reloj (Zepp)</td></tr>
             <tr><td style="padding:8px 0; color:var(--text); font-weight:500;">Pantallas</td><td>Home, Entreno, Timer, Resumen, Plan Anual, Progresión</td></tr>
         </table>
     </div>
@@ -524,7 +529,7 @@ Health Connect 1.1.0-alpha07</code>
 </section>
 
 <div class="footer">
-    FitBase © 2026 · Guía de Despliegue v2.0 · Actualizado 24/06/2026
+    FitBase © 2026 · Guía de Despliegue v3.0 · Actualizado 01/07/2026
 </div>
 
 <script>
