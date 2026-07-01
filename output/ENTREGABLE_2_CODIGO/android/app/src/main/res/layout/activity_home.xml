@@ -1,29 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Pantalla Principal — Compacta, sin scroll ni huecos -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/colorBackground"
     android:orientation="vertical"
-    android:paddingHorizontal="20dp"
-    android:paddingTop="12dp"
+    android:paddingHorizontal="18dp"
+    android:paddingTop="10dp"
     android:paddingBottom="8dp">
 
-    <LinearLayout
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:gravity="top">
-
-    <!-- Banner preinicio -->
     <TextView
         android:id="@+id/bannerDemo"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="● Preinicio · Programa inicia 31/08/2026"
         android:textColor="@color/colorTextTertiary"
-        android:textSize="11sp"
-        android:paddingBottom="8dp"
+        android:textSize="10sp"
+        android:paddingBottom="4dp"
         android:visibility="gone" />
 
     <!-- Banner Ausencia -->
@@ -33,42 +25,47 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:visibility="gone"
-        android:paddingBottom="8dp">
+        android:paddingBottom="4dp">
         <TextView
             android:id="@+id/tvAusenciaMensaje"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textColor="@color/colorWarning"
-            android:textSize="12sp" />
+            android:textSize="11sp" />
     </LinearLayout>
 
-    <!-- Header: Saludo + Fecha en una línea -->
     <TextView
         android:id="@+id/tvSaludo"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Buenos días"
         android:textColor="@color/colorTextPrimary"
-        android:textSize="22sp"
-        android:fontFamily="sans-serif-medium" />
+        android:textSize="28sp"
+        android:fontFamily="sans-serif-black" />
 
     <TextView
         android:id="@+id/tvFecha"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:textColor="@color/colorTextTertiary"
-        android:textSize="12sp"
+        android:textSize="13sp"
         android:layout_marginTop="2dp"
-        android:layout_marginBottom="16dp" />
+        android:layout_marginBottom="10dp" />
 
-    <!-- ═══ CALORÍAS (compacto) ═══ -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="2.6"
+        android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:paddingVertical="16dp"
-        android:background="@color/colorSurface">
+        android:padding="14dp"
+        android:background="@drawable/bg_card_flat">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Energia del dia"
+            android:textColor="@color/colorTextTertiary"
+            android:textSize="11sp"
+            android:fontFamily="sans-serif-medium" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -82,15 +79,15 @@
                 android:layout_height="wrap_content"
                 android:text="1830"
                 android:textColor="@color/colorTextPrimary"
-                android:textSize="32sp"
-                android:fontFamily="sans-serif-light" />
+                android:textSize="38sp"
+                android:fontFamily="sans-serif-black" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text=" kcal restantes"
                 android:textColor="@color/colorTextTertiary"
-                android:textSize="13sp"
+                android:textSize="12sp"
                 android:layout_marginStart="6dp" />
         </LinearLayout>
 
@@ -99,7 +96,7 @@
             style="@android:style/Widget.ProgressBar.Horizontal"
             android:layout_width="match_parent"
             android:layout_height="3dp"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="6dp"
             android:max="100"
             android:progress="44"
             android:progressDrawable="@drawable/progress_calorias" />
@@ -117,7 +114,7 @@
                 android:layout_weight="1"
                 android:text="1450 consumidas"
                 android:textColor="@color/colorTextTertiary"
-                android:textSize="11sp" />
+                android:textSize="12sp" />
 
             <TextView
                 android:id="@+id/tvCaloriasObjetivo"
@@ -125,17 +122,16 @@
                 android:layout_height="wrap_content"
                 android:text="de 3280 kcal"
                 android:textColor="@color/colorTextTertiary"
-                android:textSize="11sp" />
+                android:textSize="12sp" />
         </LinearLayout>
     </LinearLayout>
 
-    <!-- Macros restantes -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1.6"
+            android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:paddingVertical="14dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
         android:gravity="center">
 
         <!-- Proteína -->
@@ -151,14 +147,14 @@
                 android:layout_height="wrap_content"
                 android:text="96g"
                 android:textColor="@color/colorTextPrimary"
-                android:textSize="18sp"
+                android:textSize="19sp"
                 android:fontFamily="sans-serif-medium" />
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Prot rest."
                 android:textColor="@color/colorTextTertiary"
-                android:textSize="11sp" />
+                android:textSize="10sp" />
         </LinearLayout>
 
         <!-- Carbos -->
@@ -174,14 +170,14 @@
                 android:layout_height="wrap_content"
                 android:text="288g"
                 android:textColor="@color/colorTextPrimary"
-                android:textSize="18sp"
+                android:textSize="19sp"
                 android:fontFamily="sans-serif-medium" />
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Carbs rest."
                 android:textColor="@color/colorTextTertiary"
-                android:textSize="11sp" />
+                android:textSize="10sp" />
         </LinearLayout>
 
         <!-- Grasas -->
@@ -197,30 +193,24 @@
                 android:layout_height="wrap_content"
                 android:text="48g"
                 android:textColor="@color/colorTextPrimary"
-                android:textSize="18sp"
+                android:textSize="19sp"
                 android:fontFamily="sans-serif-medium" />
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Grasa rest."
                 android:textColor="@color/colorTextTertiary"
-                android:textSize="11sp" />
+                android:textSize="10sp" />
         </LinearLayout>
     </LinearLayout>
 
-    <!-- Separador -->
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="@color/colorSeparator"
-        android:layout_marginVertical="10dp" />
-
-    <!-- Pasos + Agua (una línea) -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1.8"
-        android:orientation="horizontal">
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="14dp"
+        android:background="@drawable/bg_card_flat"
+        android:layout_marginBottom="8dp">
 
         <!-- Pasos -->
         <LinearLayout
@@ -242,7 +232,7 @@
                     android:layout_height="wrap_content"
                     android:text="4,523"
                     android:textColor="@color/colorTextPrimary"
-                    android:textSize="18sp"
+                    android:textSize="26sp"
                     android:fontFamily="sans-serif-medium" />
 
                 <TextView
@@ -251,7 +241,7 @@
                     android:layout_height="wrap_content"
                     android:text=" / 8,000"
                     android:textColor="@color/colorTextTertiary"
-                    android:textSize="11sp" />
+                        android:textSize="12sp" />
             </LinearLayout>
 
             <ProgressBar
@@ -259,27 +249,28 @@
                 style="@android:style/Widget.ProgressBar.Horizontal"
                 android:layout_width="match_parent"
                 android:layout_height="3dp"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="6dp"
                 android:layout_marginEnd="12dp"
                 android:max="100"
                 android:progress="56"
                 android:progressDrawable="@drawable/progress_pasos" />
-        </LinearLayout>
-
-        <!-- Agua — solo objetivo diario -->
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="horizontal"
-            android:paddingStart="12dp"
-            android:gravity="center_vertical">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="💧 "
-                android:textSize="14sp" />
+                android:text="Pasos hoy"
+                android:textColor="@color/colorTextTertiary"
+                android:textSize="11sp"
+                android:layout_marginTop="4dp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:paddingStart="12dp"
+            android:gravity="center_vertical">
 
             <TextView
                 android:id="@+id/tvAgua"
@@ -287,59 +278,66 @@
                 android:layout_height="wrap_content"
                 android:text="3.2L"
                 android:textColor="@color/colorTextPrimary"
-                android:textSize="18sp"
+                android:textSize="26sp"
                 android:fontFamily="sans-serif-medium" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text=" /día"
+                android:text="Objetivo hidratacion"
                 android:textColor="@color/colorTextTertiary"
                 android:textSize="11sp" />
         </LinearLayout>
     </LinearLayout>
 
-    <!-- Separador -->
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="@color/colorSeparator"
-        android:layout_marginVertical="10dp" />
-
-    <!-- Sesión del día -->
-    <TextView
-        android:id="@+id/tvSesionHoy"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="0.9"
-        android:text="Push Day — 6 ejercicios, ~72 min"
-        android:textColor="@color/colorTextPrimary"
-        android:textSize="15sp"
-        android:fontFamily="sans-serif-medium"
-        android:gravity="center_vertical" />
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:background="@drawable/bg_card_flat"
+        android:padding="14dp"
+        android:gravity="center_vertical">
 
-    <TextView
-        android:id="@+id/tvFaseInfo"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="0.7"
-        android:text=""
-        android:textColor="@color/colorTextTertiary"
-        android:textSize="12sp"
-        android:layout_marginTop="2dp"
-        android:gravity="center_vertical" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Sesion de hoy"
+            android:textColor="@color/colorTextTertiary"
+            android:textSize="11sp"
+            android:fontFamily="sans-serif-medium" />
 
-    <!-- BOTONES al fondo -->
+        <TextView
+            android:id="@+id/tvSesionHoy"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Push Day — 6 ejercicios, ~72 min"
+            android:textColor="@color/colorTextPrimary"
+            android:textSize="20sp"
+            android:fontFamily="sans-serif-black"
+            android:layout_marginTop="4dp" />
+
+        <TextView
+            android:id="@+id/tvFaseInfo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textColor="@color/colorTextTertiary"
+            android:textSize="13sp"
+            android:layout_marginTop="6dp" />
+    </LinearLayout>
+
     <Button
         android:id="@+id/btnEmpezarEntreno"
         android:layout_width="match_parent"
-        android:layout_height="48dp"
+        android:layout_height="54dp"
         android:background="@drawable/gradient_primary_button"
         android:text="Empezar entreno"
         android:textColor="@color/colorBackground"
-        android:textSize="14sp"
+        android:textSize="16sp"
         android:fontFamily="sans-serif-medium"
         android:textAllCaps="false"
+        android:layout_marginTop="8dp"
         android:visibility="gone" />
 
     <LinearLayout
@@ -351,25 +349,25 @@
         <Button
             android:id="@+id/btnPlanAnual"
             android:layout_width="0dp"
-            android:layout_height="40dp"
+            android:layout_height="44dp"
             android:layout_weight="1"
             android:layout_marginEnd="4dp"
             android:background="@drawable/button_secondary"
             android:text="Plan"
             android:textColor="@color/colorTextSecondary"
-            android:textSize="12sp"
+            android:textSize="13sp"
             android:textAllCaps="false" />
 
         <Button
             android:id="@+id/btnProgresion"
             android:layout_width="0dp"
-            android:layout_height="40dp"
+                android:layout_height="44dp"
             android:layout_weight="1"
             android:layout_marginStart="4dp"
             android:background="@drawable/button_secondary"
             android:text="Progresión"
             android:textColor="@color/colorTextSecondary"
-            android:textSize="12sp"
+                android:textSize="13sp"
             android:textAllCaps="false" />
     </LinearLayout>
 
@@ -377,7 +375,7 @@
         android:id="@+id/btnRegistrarAusencia"
         android:layout_width="match_parent"
         android:layout_height="32dp"
-        android:layout_marginTop="2dp"
+        android:layout_marginTop="4dp"
         android:background="@android:color/transparent"
         android:text="Registrar ausencia"
         android:textColor="@color/colorTextTertiary"
@@ -391,11 +389,9 @@
         android:layout_height="32dp"
         android:layout_marginTop="2dp"
         android:background="@android:color/transparent"
-        android:text="🧪 Ejecutar Tests"
+        android:text="Ejecutar tests"
         android:textColor="@color/colorTextTertiary"
         android:textSize="11sp"
         android:textAllCaps="false"
         android:visibility="gone" />
-
-    </LinearLayout>
 </LinearLayout>

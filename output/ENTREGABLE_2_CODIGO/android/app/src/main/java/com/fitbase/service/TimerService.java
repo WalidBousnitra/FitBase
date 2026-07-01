@@ -5,12 +5,15 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.media.session.MediaSession;
+import android.media.session.PlaybackState;
 import android.media.AudioAttributes;
 import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.RingtoneManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.CountDownTimer;
 import android.os.IBinder;
 
@@ -44,6 +47,7 @@ public class TimerService extends Service {
     private CountDownTimer timer;
     private long finishTimeMs;
     private boolean finishHandled = false;
+    private MediaSession mediaSession;
 
     // Flag estatico para saber si la app esta en primer plano
     private static boolean appEnPrimerPlano = false;
@@ -78,6 +82,8 @@ public class TimerService extends Service {
         PendingIntent pendingIntent = PendingIntent.getActivity(
                 this, 0, volverIntent, PendingIntent.FLAG_IMMUTABLE);
 
+        inicializarMediaSession();
+
         // Notificacion compacta con cronometro (estilo Dynamic Island)
         Notification notificacion = crearNotificacionCronometro(ejercicioNombre, pendingIntent);
         startForeground(NOTIFICACION_ID, notificacion);
@@ -110,22 +116,54 @@ public class TimerService extends Service {
      * En otros se ve como notificacion compacta con timer en tiempo real.
      */
     private Notification crearNotificacionCronometro(String ejercicio, PendingIntent pi) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && mediaSession != null) {
+            Notification.Builder builder = new Notification.Builder(this, FitBaseApp.CANAL_TIMER)
+                    .setSmallIcon(R.drawable.ic_timer)
+                    .setContentTitle("Descanso")
+                    .setContentText(ejercicio)
+                    .setSubText("FitBase Timer")
+                    .setContentIntent(pi)
+                    .setOngoing(true)
+                    .setOnlyAlertOnce(true)
+                    .setSilent(true)
+                    .setUsesChronometer(true)
+                    .setChronometerCountDown(true)
+                    .setWhen(finishTimeMs)
+                    .setShowWhen(true)
+                    .setCategory(Notification.CATEGORY_TRANSPORT)
+                    .setVisibility(Notification.VISIBILITY_PUBLIC)
+                    .setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE)
+                    .setStyle(new Notification.MediaStyle().setMediaSession(mediaSession.getSessionToken()));
+            return builder.build();
+        }
+
         return new NotificationCompat.Builder(this, FitBaseApp.CANAL_TIMER)
                 .setSmallIcon(R.drawable.ic_timer)
                 .setContentTitle("Descanso")
                 .setContentText(ejercicio)
                 .setContentIntent(pi)
                 .setOngoing(true)
-            .setOnlyAlertOnce(true)
+                .setOnlyAlertOnce(true)
                 .setSilent(true)
                 .setUsesChronometer(true)
                 .setChronometerCountDown(true)
                 .setWhen(finishTimeMs)
                 .setShowWhen(true)
-                .setCategory(NotificationCompat.CATEGORY_STOPWATCH)
-            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setCategory(NotificationCompat.CATEGORY_TRANSPORT)
+                .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .build();
+    }
+
+    private void inicializarMediaSession() {
+        if (mediaSession != null) return;
+        mediaSession = new MediaSession(this, "FitBaseTimerSession");
+        mediaSession.setActive(true);
+        PlaybackState state = new PlaybackState.Builder()
+                .setActions(PlaybackState.ACTION_PLAY_PAUSE)
+                .setState(PlaybackState.STATE_PLAYING, 0, 1.0f)
+                .build();
+        mediaSession.setPlaybackState(state);
     }
 
     /**
@@ -255,5 +293,10 @@ public class TimerService extends Service {
     public void onDestroy() {
         super.onDestroy();
         if (timer != null) timer.cancel();
+        if (mediaSession != null) {
+            mediaSession.setActive(false);
+            mediaSession.release();
+            mediaSession = null;
+        }
     }
 }
