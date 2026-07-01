@@ -31,7 +31,6 @@
     <dimen name="button_height">48dp</dimen>
     <dimen name="icon_size">20dp</dimen>
     <dimen name="dot_size">6dp</dimen>
-</resources>
 
     <!-- Alturas -->
     <dimen name="height_button">56dp</dimen>

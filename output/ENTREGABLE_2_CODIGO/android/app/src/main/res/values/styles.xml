@@ -2,6 +2,10 @@
 <!-- Design System: Typography Styles -->
 <resources>
 
+    <!-- Base parent (required for dot-notation inheritance) -->
+    <style name="TextAppearance.FitBase" parent="android:TextAppearance" />
+    <style name="Widget.FitBase.Button" parent="" />
+
     <!-- Display: Números grandes (calorías, peso, timer) -->
     <style name="TextAppearance.FitBase.Display">
         <item name="android:textSize">48sp</item>

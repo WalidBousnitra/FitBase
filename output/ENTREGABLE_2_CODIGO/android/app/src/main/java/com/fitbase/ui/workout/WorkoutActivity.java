@@ -44,6 +44,7 @@ public class WorkoutActivity extends AppCompatActivity {
     private View layoutTimer;
     private TextView tvTimerCountdown;
     private TextView tvProximaSerie;
+    private View layoutCargando;
 
     private int estadoActual = ESTADO_EJERCICIO;
     private static final int ESTADO_EJERCICIO = 0;
@@ -80,6 +81,7 @@ public class WorkoutActivity extends AppCompatActivity {
         layoutTimer = findViewById(R.id.layoutTimer);
         tvTimerCountdown = findViewById(R.id.tvTimerCountdown);
         tvProximaSerie = findViewById(R.id.tvProximaSerie);
+        layoutCargando = findViewById(R.id.layoutCargando);
 
         // Botones RIR (0, 1, 2, 3, 4+)
         botonesRir = new Button[5];
@@ -91,6 +93,11 @@ public class WorkoutActivity extends AppCompatActivity {
     }
 
     private void observarDatos() {
+        // Loading state
+        viewModel.isCargando().observe(this, cargando -> {
+            layoutCargando.setVisibility(Boolean.TRUE.equals(cargando) ? View.VISIBLE : View.GONE);
+        });
+
         // Ejercicio actual
         viewModel.getEjercicioActual().observe(this, this::mostrarEjercicio);
 

@@ -63,6 +63,11 @@
             android:name=".ui.progression.ProgressionActivity"
             android:screenOrientation="portrait" />
 
+        <!-- Test Runner (solo demo) -->
+        <activity
+            android:name=".ui.test.TestRunnerActivity"
+            android:screenOrientation="portrait" />
+
         <!-- Servicio Timer (Foreground) -->
         <service
             android:name=".service.TimerService"

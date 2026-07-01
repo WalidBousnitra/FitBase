@@ -51,19 +51,19 @@ public class PlanAnualViewModel extends ViewModel {
         plan.totalSemanas = 48;
         plan.fases = new ArrayList<>();
 
-        plan.fases.add(crearFase("F1", "Adaptación", "VOL", "31/08", "27/09", 4, "3-4", "Full Body"));
-        plan.fases.add(crearFase("F2", "Hipertrofia I", "VOL", "28/09", "08/11", 6, "2-3", "Hombros, Espalda"));
-        plan.fases.add(crearFase("F3", "Deload 1", "DELOAD", "09/11", "15/11", 1, "5-6", "Recuperación"));
-        plan.fases.add(crearFase("F4", "Hipertrofia II", "VOL", "16/11", "27/12", 6, "2-3", "Pecho, Brazos"));
-        plan.fases.add(crearFase("F5", "Fuerza", "FZA", "28/12", "07/02", 6, "1-2", "Compuestos"));
-        plan.fases.add(crearFase("F6", "Deload 2", "DELOAD", "08/02", "14/02", 1, "5-6", "Recuperación"));
-        plan.fases.add(crearFase("F7", "Hipertrofia III", "VOL", "15/02", "28/03", 6, "2-3", "Piernas, Core"));
-        plan.fases.add(crearFase("F8", "Definición", "DEF", "29/03", "09/05", 6, "2-3", "Full Body"));
-        plan.fases.add(crearFase("F9", "Deload 3", "DELOAD", "10/05", "16/05", 1, "5-6", "Recuperación"));
-        plan.fases.add(crearFase("F10", "Peak", "FZA", "17/05", "27/06", 6, "0-1", "Compuestos"));
-        plan.fases.add(crearFase("F11", "Mantenimiento", "MNT", "28/06", "31/07", 5, "3-4", "Full Body"));
+        plan.fases.add(crearFase("F1", "Adaptación + Postura", "VOL", "2026-08-31", "2026-09-27", 4, "3-4", "Full Body · Correctivos posturales · Wall Angels"));
+        plan.fases.add(crearFase("F2", "Hipertrofia I — V-Taper", "VOL", "2026-09-28", "2026-11-08", 6, "2-3", "Hombros, Espalda (V-taper) · Postura"));
+        plan.fases.add(crearFase("F3", "Deload 1", "DELOAD", "2026-11-09", "2026-11-15", 1, "5-6", "Movilidad + Flex · Test Wall Angel"));
+        plan.fases.add(crearFase("F4", "Hipertrofia II — Brazos", "VOL", "2026-11-16", "2026-12-27", 6, "2-3", "Bíceps, Tríceps, Pecho · Mantener hombros"));
+        plan.fases.add(crearFase("F5", "Deload 2", "DELOAD", "2026-12-28", "2027-01-03", 1, "5-6", "Movilidad + Flex · Descanso activo"));
+        plan.fases.add(crearFase("F6", "Fuerza — Compuestos", "FZA", "2027-01-04", "2027-02-14", 6, "1-2", "Press militar, Dominadas, Sentadilla"));
+        plan.fases.add(crearFase("F7", "Hipertrofia III — Balance", "VOL", "2027-02-15", "2027-03-28", 6, "2-3", "Piernas, Core · Mantener V-taper"));
+        plan.fases.add(crearFase("F8", "Deload 3", "DELOAD", "2027-03-29", "2027-04-04", 1, "5-6", "Movilidad + Flex · Test postural final"));
+        plan.fases.add(crearFase("F9", "Definición", "DEF", "2027-04-05", "2027-05-16", 6, "2-3", "Mantener masa · Déficit controlado"));
+        plan.fases.add(crearFase("F10", "Peak Estético + Mant.", "MNT", "2027-05-17", "2027-07-31", 11, "2-3", "Ratio cintura/hombros · Simetría"));
 
-        plan.faseActual = plan.fases.get(0);
+        // Demo: marcar Hipertrofia I como fase actual
+        plan.faseActual = plan.fases.get(1);
         return plan;
     }
 

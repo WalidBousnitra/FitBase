@@ -1,10 +1,10 @@
 package com.fitbase.ui.plan;
 
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -13,7 +13,11 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.fitbase.R;
 import com.fitbase.data.model.Fase;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Adapter para lista de fases del plan anual.
@@ -66,24 +70,69 @@ public class FaseAdapter extends RecyclerView.Adapter<FaseAdapter.FaseViewHolder
 
         void bind(Fase fase, boolean esActual) {
             tvNombre.setText(fase.nombre != null ? fase.nombre : "—");
-            tvFechas.setText(String.format("%s → %s (%d sem)",
-                    fase.fechaInicio != null ? fase.fechaInicio : "?",
-                    fase.fechaFin != null ? fase.fechaFin : "?",
-                    fase.semanas));
-            tvRir.setText(String.format("RIR %s | %s",
+
+            // Format dates: "31 ago 2026 → 27 sep 2026 · 4 sem"
+            String inicio = formatearFecha(fase.fechaInicio);
+            String fin = formatearFecha(fase.fechaFin);
+            tvFechas.setText(String.format("%s → %s · %d sem", inicio, fin, fase.semanas));
+
+            tvRir.setText(String.format("RIR %s · %s",
                     fase.rirRango != null ? fase.rirRango : "—",
                     fase.focoMuscular != null ? fase.focoMuscular : "—"));
 
-            // Color según tipo (Sistema_Diseno_Fitness.md)
+            // Color según tipo
             int color = getColorPorTipo(fase.tipo);
             indicadorColor.setBackgroundColor(color);
 
-            // Destacar fase actual
+            // Destacar fase actual: fondo con el color de su tipo (suave) + negrita
             if (esActual) {
                 cardFase.setAlpha(1.0f);
+                // Fondo = color del tipo con 25% opacidad
+                int bgColor = Color.argb(64, Color.red(color), Color.green(color), Color.blue(color));
+                cardFase.setBackgroundColor(bgColor);
+                indicadorColor.getLayoutParams().width = 8; // Barra más gruesa
+                indicadorColor.requestLayout();
+                tvNombre.setTypeface(null, Typeface.BOLD);
+                tvNombre.setText("▶ " + (fase.nombre != null ? fase.nombre : "—"));
+                tvNombre.setTextColor(color);
             } else {
-                cardFase.setAlpha(0.6f);
+                cardFase.setAlpha(1.0f);
+                cardFase.setBackgroundColor(Color.parseColor("#FAFAFA"));
+                indicadorColor.getLayoutParams().width = 4;
+                indicadorColor.requestLayout();
+                tvNombre.setTypeface(null, Typeface.NORMAL);
+                tvNombre.setTextColor(Color.parseColor("#212121"));
             }
+        }
+
+        /** Convierte cualquier formato de fecha a "dd MMM yyyy" limpio */
+        private String formatearFecha(String fecha) {
+            if (fecha == null) return "?";
+
+            // Strip any time portion ("T..." or " HH:mm:ss")
+            if (fecha.contains("T")) {
+                fecha = fecha.substring(0, fecha.indexOf("T"));
+            } else if (fecha.length() > 10) {
+                fecha = fecha.substring(0, 10);
+            }
+
+            // Try yyyy-MM-dd
+            try {
+                SimpleDateFormat isoFmt = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+                Date d = isoFmt.parse(fecha);
+                if (d != null) {
+                    return new SimpleDateFormat("d MMM yy", new Locale("es", "ES")).format(d);
+                }
+            } catch (ParseException ignored) {}
+
+            // Try dd/MM/yyyy or dd/MM
+            try {
+                SimpleDateFormat dmFmt = new SimpleDateFormat("dd/MM", Locale.getDefault());
+                Date d = dmFmt.parse(fecha);
+                if (d != null) return fecha; // Already short
+            } catch (ParseException ignored) {}
+
+            return fecha;
         }
 
         private int getColorPorTipo(String tipo) {

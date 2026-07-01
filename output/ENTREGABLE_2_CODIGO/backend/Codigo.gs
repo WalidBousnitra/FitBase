@@ -1464,17 +1464,18 @@ function generarPlanCompleto() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
 
   // ═══ 1. DEFINIR FASES (plan_anual) ═══
+  // Refleja prioridades: P1 Estética V-taper > P2 Postura > P3 Hipertrofia > P4 Flexibilidad
   const FASES = [
-    { id: 'FAS_01', nombre: 'Adaptación', tipo: 'VOL', inicio: '2026-08-31', fin: '2026-09-27', semanas: 4, rir: '4-5', foco: 'General', nutri: 'bulk', kcal: 3280 },
-    { id: 'FAS_02', nombre: 'Hipertrofia I', tipo: 'VOL', inicio: '2026-09-28', fin: '2026-11-08', semanas: 6, rir: '2-3', foco: 'Hombros Espalda', nutri: 'bulk', kcal: 3280 },
-    { id: 'FAS_03', nombre: 'Deload 1', tipo: 'DELOAD', inicio: '2026-11-09', fin: '2026-11-15', semanas: 1, rir: '4-5', foco: 'General', nutri: 'mantener', kcal: 3100 },
-    { id: 'FAS_04', nombre: 'Hipertrofia II', tipo: 'VOL', inicio: '2026-11-16', fin: '2026-12-27', semanas: 6, rir: '1-2', foco: 'Pecho Brazos', nutri: 'bulk', kcal: 3280 },
-    { id: 'FAS_05', nombre: 'Deload 2', tipo: 'DELOAD', inicio: '2026-12-28', fin: '2027-01-03', semanas: 1, rir: '4-5', foco: 'General', nutri: 'mantener', kcal: 3100 },
-    { id: 'FAS_06', nombre: 'Fuerza', tipo: 'FZA', inicio: '2027-01-04', fin: '2027-02-14', semanas: 6, rir: '1-3', foco: 'Compuestos', nutri: 'bulk', kcal: 3280 },
-    { id: 'FAS_07', nombre: 'Hipertrofia III', tipo: 'VOL', inicio: '2027-02-15', fin: '2027-03-28', semanas: 6, rir: '2-3', foco: 'Piernas Core', nutri: 'bulk', kcal: 3280 },
-    { id: 'FAS_08', nombre: 'Deload 3', tipo: 'DELOAD', inicio: '2027-03-29', fin: '2027-04-04', semanas: 1, rir: '4-5', foco: 'General', nutri: 'mantener', kcal: 3100 },
-    { id: 'FAS_09', nombre: 'Definición', tipo: 'DEF', inicio: '2027-04-05', fin: '2027-05-16', semanas: 6, rir: '1-2', foco: 'Mantener masa', nutri: 'cut', kcal: 2460 },
-    { id: 'FAS_10', nombre: 'Peak + Mantenimiento', tipo: 'MNT', inicio: '2027-05-17', fin: '2027-07-31', semanas: 11, rir: '2-3', foco: 'General', nutri: 'mantener', kcal: 3050 }
+    { id: 'FAS_01', nombre: 'Adaptación + Postura', tipo: 'VOL', inicio: '2026-08-31', fin: '2026-09-27', semanas: 4, rir: '3-4', foco: 'Full Body · Correctivos posturales · Wall Angels', nutri: 'bulk', kcal: 3280 },
+    { id: 'FAS_02', nombre: 'Hipertrofia I — V-Taper', tipo: 'VOL', inicio: '2026-09-28', fin: '2026-11-08', semanas: 6, rir: '2-3', foco: 'Hombros, Espalda (V-taper) · Postura', nutri: 'bulk', kcal: 3280 },
+    { id: 'FAS_03', nombre: 'Deload 1', tipo: 'DELOAD', inicio: '2026-11-09', fin: '2026-11-15', semanas: 1, rir: '5-6', foco: 'Movilidad + Flex · Test Wall Angel', nutri: 'mantener', kcal: 3100 },
+    { id: 'FAS_04', nombre: 'Hipertrofia II — Brazos', tipo: 'VOL', inicio: '2026-11-16', fin: '2026-12-27', semanas: 6, rir: '2-3', foco: 'Bíceps, Tríceps, Pecho · Mantener hombros', nutri: 'bulk', kcal: 3280 },
+    { id: 'FAS_05', nombre: 'Deload 2', tipo: 'DELOAD', inicio: '2026-12-28', fin: '2027-01-03', semanas: 1, rir: '5-6', foco: 'Movilidad + Flex · Descanso activo', nutri: 'mantener', kcal: 3100 },
+    { id: 'FAS_06', nombre: 'Fuerza — Compuestos', tipo: 'FZA', inicio: '2027-01-04', fin: '2027-02-14', semanas: 6, rir: '1-2', foco: 'Press militar, Dominadas, Sentadilla', nutri: 'bulk', kcal: 3280 },
+    { id: 'FAS_07', nombre: 'Hipertrofia III — Balance', tipo: 'VOL', inicio: '2027-02-15', fin: '2027-03-28', semanas: 6, rir: '2-3', foco: 'Piernas, Core · Mantener V-taper', nutri: 'bulk', kcal: 3280 },
+    { id: 'FAS_08', nombre: 'Deload 3', tipo: 'DELOAD', inicio: '2027-03-29', fin: '2027-04-04', semanas: 1, rir: '5-6', foco: 'Movilidad + Flex · Test postural final', nutri: 'mantener', kcal: 3100 },
+    { id: 'FAS_09', nombre: 'Definición', tipo: 'DEF', inicio: '2027-04-05', fin: '2027-05-16', semanas: 6, rir: '2-3', foco: 'Mantener masa · Déficit controlado', nutri: 'cut', kcal: 2460 },
+    { id: 'FAS_10', nombre: 'Peak Estético + Mant.', tipo: 'MNT', inicio: '2027-05-17', fin: '2027-07-31', semanas: 11, rir: '2-3', foco: 'Ratio cintura/hombros · Simetría', nutri: 'mantener', kcal: 3050 }
   ];
 
   // ═══ 2. DEFINIR TEMPLATES DE EJERCICIOS POR FASE ═══

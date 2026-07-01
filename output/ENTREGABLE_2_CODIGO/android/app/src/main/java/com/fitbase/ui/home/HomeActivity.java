@@ -9,6 +9,7 @@ import android.view.animation.DecelerateInterpolator;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import androidx.activity.result.ActivityResultLauncher;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.dynamicanimation.animation.SpringAnimation;
@@ -16,8 +17,10 @@ import androidx.dynamicanimation.animation.SpringForce;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.fitbase.R;
+import com.fitbase.data.health.HealthConnectBridge;
 import com.fitbase.ui.plan.PlanAnualActivity;
 import com.fitbase.ui.progression.ProgressionActivity;
+import com.fitbase.ui.test.TestRunnerActivity;
 import com.fitbase.ui.workout.WorkoutActivity;
 import com.fitbase.util.FeedbackHelper;
 
@@ -25,6 +28,7 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
+import java.util.Set;
 
 /**
  * Pantalla principal.
@@ -36,6 +40,15 @@ public class HomeActivity extends AppCompatActivity {
 
     private HomeViewModel viewModel;
     private FeedbackHelper feedback;
+
+    // Health Connect permission launcher
+    @SuppressWarnings("unchecked")
+    private final ActivityResultLauncher<Set<String>> hcPermLauncher =
+            registerForActivityResult(HealthConnectBridge.getPermissionContract(),
+                    granted -> {
+                        // Reload data after permissions granted
+                        if (viewModel != null) viewModel.cargarDatosDelDia();
+                    });
 
     // Vistas
     private TextView tvSaludo;
@@ -51,14 +64,14 @@ public class HomeActivity extends AppCompatActivity {
     private ProgressBar progressPasos;
     private TextView tvPasosObjetivo;
     private TextView tvAgua;
-    private ProgressBar progressAgua;
-    private TextView tvAguaObjetivo;
+
     private TextView tvSesionHoy;
     private TextView tvFaseInfo;
     private View btnEmpezarEntreno;
     private View btnPlanAnual;
     private View btnProgresion;
     private View btnRegistrarAusencia;
+    private View btnTestRunner;
     private View bannerDemo;
     private View bannerAusencia;
     private TextView tvAusenciaMensaje;
@@ -88,6 +101,14 @@ public class HomeActivity extends AppCompatActivity {
         viewModel.checkAusencia();
     }
 
+    /**
+     * Called from ViewModel observer if HC returned 0 steps (likely no perms).
+     */
+    private void solicitarPermisosHC() {
+        if (!HealthConnectBridge.isAvailable(this)) return;
+        hcPermLauncher.launch(HealthConnectBridge.getRequiredPermissions());
+    }
+
     private void vincularVistas() {
         tvSaludo = findViewById(R.id.tvSaludo);
         tvFecha = findViewById(R.id.tvFecha);
@@ -102,14 +123,14 @@ public class HomeActivity extends AppCompatActivity {
         progressPasos = findViewById(R.id.progressPasos);
         tvPasosObjetivo = findViewById(R.id.tvPasosObjetivo);
         tvAgua = findViewById(R.id.tvAgua);
-        progressAgua = findViewById(R.id.progressAgua);
-        tvAguaObjetivo = findViewById(R.id.tvAguaObjetivo);
+
         tvSesionHoy = findViewById(R.id.tvSesionHoy);
         tvFaseInfo = findViewById(R.id.tvFaseInfo);
         btnEmpezarEntreno = findViewById(R.id.btnEmpezarEntreno);
         btnPlanAnual = findViewById(R.id.btnPlanAnual);
         btnProgresion = findViewById(R.id.btnProgresion);
         btnRegistrarAusencia = findViewById(R.id.btnRegistrarAusencia);
+        btnTestRunner = findViewById(R.id.btnTestRunner);
         bannerDemo = findViewById(R.id.bannerDemo);
         bannerAusencia = findViewById(R.id.bannerAusencia);
         tvAusenciaMensaje = findViewById(R.id.tvAusenciaMensaje);
@@ -142,12 +163,13 @@ public class HomeActivity extends AppCompatActivity {
                     ? (macros.pasosActuales * 100) / macros.pasosObjetivo : 0;
             animarProgreso(progressPasos, Math.min(progresoPasos, 100));
 
-            // Agua
-            tvAgua.setText(String.format(Locale.getDefault(), "%.1fL", macros.aguaConsumidaMl / 1000f));
-            tvAguaObjetivo.setText(String.format(Locale.getDefault(), "/ %.1fL", macros.aguaMl / 1000f));
-            int progresoAgua = macros.aguaMl > 0
-                    ? (macros.aguaConsumidaMl * 100) / macros.aguaMl : 0;
-            animarProgreso(progressAgua, Math.min(progresoAgua, 100));
+            // Si pasos = 0 y HC disponible, pedir permisos (primera vez)
+            if (macros.pasosActuales == 0 && HealthConnectBridge.isAvailable(HomeActivity.this)) {
+                solicitarPermisosHC();
+            }
+
+            // Agua — solo mostrar objetivo diario
+            tvAgua.setText(String.format(Locale.getDefault(), "%.1fL", macros.aguaMl / 1000f));
         });
 
         // Sesión del día
@@ -182,6 +204,7 @@ public class HomeActivity extends AppCompatActivity {
         // Modo demo
         viewModel.isModoDemo().observe(this, esDemo -> {
             bannerDemo.setVisibility(Boolean.TRUE.equals(esDemo) ? View.VISIBLE : View.GONE);
+            btnTestRunner.setVisibility(Boolean.TRUE.equals(esDemo) ? View.VISIBLE : View.GONE);
         });
     }
 
@@ -227,6 +250,11 @@ public class HomeActivity extends AppCompatActivity {
         });
 
         btnRegistrarAusencia.setOnClickListener(v -> mostrarDialogoAusencia());
+
+        btnTestRunner.setOnClickListener(v -> {
+            feedback.tap();
+            startActivity(new Intent(this, TestRunnerActivity.class));
+        });
     }
 
     /**

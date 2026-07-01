@@ -45,6 +45,7 @@ public class WorkoutViewModel extends AndroidViewModel {
     private final MutableLiveData<Integer> timerSegundos = new MutableLiveData<>(0);
     private final MutableLiveData<Boolean> sesionCompletada = new MutableLiveData<>(false);
     private final MutableLiveData<Integer> tiempoTotalSegundos = new MutableLiveData<>(0);
+    private final MutableLiveData<Boolean> cargando = new MutableLiveData<>(true);
 
     private CountDownTimer timer;
     private CountDownTimer cronometroTotal;
@@ -61,6 +62,7 @@ public class WorkoutViewModel extends AndroidViewModel {
     public LiveData<Integer> getTimerSegundos() { return timerSegundos; }
     public LiveData<Boolean> isSesionCompletada() { return sesionCompletada; }
     public LiveData<Integer> getTiempoTotalSegundos() { return tiempoTotalSegundos; }
+    public LiveData<Boolean> isCargando() { return cargando; }
     public int getIndiceEjercicio() { return indiceEjercicio; }
     public int getTotalEjercicios() { return ejercicios.size(); }
     public String getSesionId() { return sesionId; }
@@ -75,17 +77,96 @@ public class WorkoutViewModel extends AndroidViewModel {
                     ejercicios = response.body().ejercicios != null
                             ? response.body().ejercicios : new ArrayList<>();
                     iniciarSesion();
+                } else {
+                    cargarSesionDemo();
                 }
             }
 
             @Override
             public void onFailure(Call<SesionResponse> call, Throwable t) {
-                // TODO: cargar desde cache Room
+                cargarSesionDemo();
             }
         });
     }
 
+    /**
+     * Carga ejercicios de demo según día de la semana.
+     * Respeta prioridades: P1 Estética V-taper > P2 Postura > P3 Hipertrofia > P4 Flexibilidad.
+     */
+    private void cargarSesionDemo() {
+        sesionId = "DEMO_" + System.currentTimeMillis();
+        ejercicios = new ArrayList<>();
+
+        int diaSemana = java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_WEEK);
+
+        switch (diaSemana) {
+            case java.util.Calendar.MONDAY: // PUSH: Hombros > Pecho > Tríceps
+                ejercicios.add(crearEjDemo("Press Militar Mancuernas", 4, "8-10", 18f, 180));
+                ejercicios.add(crearEjDemo("Elev. Laterales Sentado", 4, "12-15", 10f, 90));
+                ejercicios.add(crearEjDemo("Elev. Laterales Polea Media", 3, "12-15", 7f, 90));
+                ejercicios.add(crearEjDemo("Press Inclinado Mancuernas", 4, "8-10", 22f, 150));
+                ejercicios.add(crearEjDemo("Cruces Polea Alta", 3, "10-12", 15f, 90));
+                ejercicios.add(crearEjDemo("Press Francés 30° Barra Z", 3, "10-12", 18f, 120));
+                ejercicios.add(crearEjDemo("Extensión Unilateral Polea", 3, "12-15", 8f, 60));
+                ejercicios.add(crearEjDemo("Face Pulls (retracción)", 3, "15-20", 12f, 60));
+                break;
+
+            case java.util.Calendar.WEDNESDAY: // PIERNA + CORE
+                ejercicios.add(crearEjDemo("Sentadilla Barra", 4, "6-8", 60f, 180));
+                ejercicios.add(crearEjDemo("RDL Barra", 4, "8-10", 50f, 150));
+                ejercicios.add(crearEjDemo("Hip Thrust", 3, "10-12", 70f, 120));
+                ejercicios.add(crearEjDemo("Extensión Cuádriceps", 3, "12-15", 40f, 90));
+                ejercicios.add(crearEjDemo("Curl Femoral Tumbado", 3, "10-12", 30f, 90));
+                ejercicios.add(crearEjDemo("Plancha + Hollow Hold", 3, "30s", 0f, 60));
+                ejercicios.add(crearEjDemo("Press Pallof", 3, "12/lado", 10f, 60));
+                break;
+
+            case java.util.Calendar.FRIDAY: // PULL: Espalda + Bíceps + Postura
+                ejercicios.add(crearEjDemo("Dominadas (agarre neutro)", 4, "6-8", 0f, 180));
+                ejercicios.add(crearEjDemo("Remo Neutro Mancuerna", 4, "8-10", 28f, 150));
+                ejercicios.add(crearEjDemo("Remo Unilateral con Rotación", 3, "10-12", 22f, 120));
+                ejercicios.add(crearEjDemo("Kelso Shrug (retracción)", 3, "12-15", 16f, 90));
+                ejercicios.add(crearEjDemo("Curl Z Barra", 3, "8-10", 25f, 90));
+                ejercicios.add(crearEjDemo("Curl Predicador Máquina", 3, "10-12", 20f, 90));
+                ejercicios.add(crearEjDemo("Band Pull-Aparts", 3, "15-20", 0f, 45));
+                ejercicios.add(crearEjDemo("Wall Angels (test postural)", 3, "8-10", 0f, 60));
+                break;
+
+            case java.util.Calendar.SATURDAY: // HOMBROS + BRAZOS (DÍA CLAVE V-TAPER)
+                ejercicios.add(crearEjDemo("Press Hombro Mancuernas", 4, "8-10", 18f, 150));
+                ejercicios.add(crearEjDemo("Elev. Laterales Sentado", 4, "12-15", 10f, 90));
+                ejercicios.add(crearEjDemo("Elev. Laterales Polea (tras nuca)", 3, "12-15", 7f, 90));
+                ejercicios.add(crearEjDemo("Pájaro inclinado (rear delt)", 3, "12-15", 8f, 90));
+                ejercicios.add(crearEjDemo("Curl Zottman", 3, "10-12", 12f, 90));
+                ejercicios.add(crearEjDemo("Curl Inclinado 45°", 3, "10-12", 10f, 90));
+                ejercicios.add(crearEjDemo("Extensión Overhead Polea", 3, "10-12", 20f, 90));
+                ejercicios.add(crearEjDemo("Rotación externa banda", 3, "15/lado", 0f, 45));
+                break;
+
+            default: // Martes/Jueves (natación) o Domingo → Push por defecto
+                ejercicios.add(crearEjDemo("Press Militar Mancuernas", 4, "8-10", 18f, 180));
+                ejercicios.add(crearEjDemo("Elev. Laterales Sentado", 4, "12-15", 10f, 90));
+                ejercicios.add(crearEjDemo("Press Inclinado Mancuernas", 4, "8-10", 22f, 150));
+                ejercicios.add(crearEjDemo("Cruces Polea Alta", 3, "10-12", 15f, 90));
+                ejercicios.add(crearEjDemo("Press Francés 30° Barra Z", 3, "10-12", 18f, 120));
+                ejercicios.add(crearEjDemo("Face Pulls (retracción)", 3, "15-20", 12f, 60));
+                break;
+        }
+        iniciarSesion();
+    }
+
+    private Ejercicio crearEjDemo(String nombre, int series, String reps, float peso, int descanso) {
+        Ejercicio ej = new Ejercicio();
+        ej.setNombre(nombre);
+        ej.setSeriesPlan(series);
+        ej.setRepsPlan(reps);
+        ej.setPesoSugerido(peso);
+        ej.setDescansoSeg(descanso);
+        return ej;
+    }
+
     private void iniciarSesion() {
+        cargando.setValue(false);
         tiempoInicioMs = System.currentTimeMillis();
         indiceEjercicio = 0;
         serieCompletadaActual = 0;
