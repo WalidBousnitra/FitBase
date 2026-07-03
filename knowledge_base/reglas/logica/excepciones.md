@@ -16,7 +16,41 @@ Reglas para manejar situaciones atípicas que alteran la programación normal.
 
 ## 2. Tipos de Excepción
 
-### Viajes
+### 2.1 Día Perdido (no abrió la app)
+```yaml
+EXCEPCION_DIA_PERDIDO:
+  trigger: "sesión planificada + bool_completada=false + sin log ese día"
+  deteccion: "Automática al abrir app al día siguiente"
+  ajustes:
+    - Marcar sesión como perdida (no reprogramar)
+    - Motor capa 5: si >7d sin hacer ejercicio → ×0.95, >14d → ×0.90
+    - NO modificar el plan anual (un día suelto no afecta)
+    - Mostrar aviso neutral: "Ayer no entrenaste — hoy retomas normal"
+  impacto_motor:
+    - Siguiente sesión: motor detecta gap y reduce peso sugerido
+    - Sin penalización extra (el gap ya está contemplado en motor §8 Capa 5)
+```
+
+### 2.2 Vacaciones / Ausencia Extendida
+```yaml
+EXCEPCION_VACACIONES:
+  trigger: "Usuario marca [fecha_inicio, fecha_fin] de ausencia"
+  input_requerido: [fecha_inicio, fecha_fin]
+  ajustes:
+    - Suspender sesiones planificadas en rango
+    - Motor capa 5: aplica reducción progresiva al volver (>14d → ×0.90)
+    - Nutrición: cambiar a mantenimiento durante ausencia
+    - Al volver: 1 semana de readaptación (RIR +1 respecto a lo planificado)
+  regla_plan_anual:
+    - Si ausencia ≤ 1 semana: absorber sin cambios (deload natural)
+    - Si ausencia 2-3 semanas: repetir la última semana del mesociclo al volver
+    - Si ausencia > 3 semanas: reiniciar mesociclo actual desde semana 1
+  movilidad_durante:
+    - Sugerir rutina matutina (programacion.md §14) incluso de vacaciones
+    - Meta pasos relajada: 6000/día
+```
+
+### 2.3 Viajes
 ```yaml
 EXCEPCION_VIAJE:
   trigger: "usuario marca viaje activo"
@@ -28,7 +62,7 @@ EXCEPCION_VIAJE:
     - Aumentar meta de pasos (+2000)
 ```
 
-### Enfermedad
+### 2.4 Enfermedad
 ```yaml
 EXCEPCION_ENFERMEDAD:
   trigger: "usuario reporta enfermedad"
@@ -42,7 +76,7 @@ EXCEPCION_ENFERMEDAD:
     - Reducir cargas 20% primera semana
 ```
 
-### Lesión
+### 2.5 Lesión
 ```yaml
 EXCEPCION_LESION:
   trigger: "usuario reporta lesión"
@@ -54,7 +88,7 @@ EXCEPCION_LESION:
     - Añadir trabajo de rehabilitación
 ```
 
-### Ramadán
+### 2.6 Ramadán
 ```yaml
 EXCEPCION_RAMADAN:
   trigger: "RAMADAN_ACTIVO == true"
@@ -109,7 +143,9 @@ EXCEPCION_ESTRES:
 2. Enfermedad
 3. Estrés extremo
 4. Ramadán
-5. Viajes
+5. Vacaciones / Ausencia extendida
+6. Viajes
+7. Día perdido (menor prioridad - auto-gestionado por motor)
 ```
 
 ## 4. Reglas de Retorno

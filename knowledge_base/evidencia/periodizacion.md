@@ -34,7 +34,8 @@ Evidencia científica sobre periodización del entrenamiento, estructura de cicl
 | Ciclo | Duración | Contenido |
 |-------|----------|-----------|
 | **Plan Anual** | 1 año | Toda la temporada |
-| **Macrociclo** | 4-6 semanas | Bloque de entrenamiento |
+| **Macrociclo** | 3-6 meses | Fase completa del plan |
+| **Mesociclo** | 4-6 semanas | Bloque de entrenamiento |
 | **Microciclo** | 1 semana | Unidad básica de planificación |
 | **Sesión** | 1 día | Entrenamiento individual |
 

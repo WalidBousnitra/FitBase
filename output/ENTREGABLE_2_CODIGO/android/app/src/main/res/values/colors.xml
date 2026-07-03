@@ -1,23 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Design System: Modern Flat UI — Micro-accents -->
+<!-- Design System: Vivid Light — Multi-color accents -->
 <resources>
-    <!-- Base: Blanco nieve / Gris piedra -->
-    <color name="colorBackground">#F8F9FA</color>
+    <!-- Base: Blanco limpio -->
+    <color name="colorBackground">#F5F7FA</color>
     <color name="colorSurface">#FFFFFF</color>
-    <color name="colorSurfaceElevated">#F1F3F4</color>
+    <color name="colorSurfaceElevated">#EEF1F5</color>
 
     <!-- Texto: Monocromático -->
-    <color name="colorTextPrimary">#202124</color>
-    <color name="colorTextSecondary">#5F6368</color>
-    <color name="colorTextTertiary">#9AA0A6</color>
+    <color name="colorTextPrimary">#1A1D21</color>
+    <color name="colorTextSecondary">#4A5568</color>
+    <color name="colorTextTertiary">#8A94A6</color>
 
     <!-- Bordes: Subtle Borders (1dp) -->
-    <color name="colorSeparator">#E0E0E0</color>
+    <color name="colorSeparator">#E2E8F0</color>
 
-    <!-- Micro-accent: Naranja (#FF5722) — <5% de superficie visual -->
+    <!-- Accent principal: Naranja vibrante -->
     <color name="colorAccentPrimary">#FF5722</color>
-    <!-- Funcionales: Tonos muted, naturales -->
-    <color name="colorAccentSecondary">#5C8A5C</color>
+    <!-- Funcionales -->
+    <color name="colorAccentSecondary">#43A047</color>
     <color name="colorSuccess">#2E7D32</color>
     <color name="colorWarning">#F57F17</color>
     <!-- Aliases for direct R.color usage -->
@@ -25,6 +25,30 @@
     <color name="warning">#F57F17</color>
     <color name="error">#C62828</color>
     <color name="colorError">#C62828</color>
-    <color name="colorChart">#546E7A</color>
-    <color name="colorChartSecondary">#78909C</color>
+    <color name="colorChart">#1E88E5</color>
+    <color name="colorChartSecondary">#5E35B1</color>
+
+    <!-- Colores por macronutriente -->
+    <color name="colorProteina">#E64A19</color>
+    <color name="colorCarbos">#0288D1</color>
+    <color name="colorGrasa">#F9A825</color>
+    <color name="colorAgua">#00ACC1</color>
+
+    <!-- Aliases for layout direct usage -->
+    <color name="background">#F5F7FA</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="text_primary">#1A1D21</color>
+    <color name="text_secondary">#4A5568</color>
+    <color name="text_tertiary">#8A94A6</color>
+    <color name="accent">#FF5722</color>
+    <color name="chart">#1E88E5</color>
+    <color name="white">#FFFFFF</color>
+
+    <!-- Colores de fase (plan anual) -->
+    <color name="colorFaseVol">#43A047</color>
+    <color name="colorFaseFza">#FF5722</color>
+    <color name="colorFaseDef">#F9A825</color>
+    <color name="colorFaseMnt">#1E88E5</color>
+    <color name="colorFaseDeload">#78909C</color>
+    <color name="colorFaseActualBg">#E3F2FD</color>
 </resources>

@@ -50,7 +50,7 @@ VOLUMEN_SEMANAL:
   incremento_por_serie: 0.37%
   
 GRUPOS_PRIORITARIOS:  # P1-P3
-  hombros: 12-16 series/semana
+  hombros: 14-18 series/semana  # Elevado vs base (10+) por prioridad P1 usuario
   biceps: 10-14 series/semana
   espalda: 14-18 series/semana
   triceps: 10-14 series/semana

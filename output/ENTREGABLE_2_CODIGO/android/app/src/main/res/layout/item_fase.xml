@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Item de fase — Linear: borde inferior fino -->
+<!-- Item de fase — Vivid: indicador lateral + fondo destacado si es actual -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/cardFase"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:background="@color/colorSurface"
-    android:paddingBottom="1dp">
+    android:layout_marginBottom="8dp"
+    android:background="@drawable/bg_card_flat">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -15,13 +15,13 @@
         android:padding="16dp"
         android:gravity="center_vertical">
 
-        <!-- Indicador de color por tipo -->
+        <!-- Indicador de color por tipo (más grueso) -->
         <View
             android:id="@+id/indicadorColor"
-            android:layout_width="4dp"
-            android:layout_height="48dp"
+            android:layout_width="5dp"
+            android:layout_height="52dp"
             android:background="@color/colorSuccess"
-            android:layout_marginEnd="12dp" />
+            android:layout_marginEnd="14dp" />
 
         <!-- Info -->
         <LinearLayout
@@ -43,25 +43,33 @@
                 android:id="@+id/tvFaseFechas"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="28/09 → 08/11 (6 sem)"
+                android:text="28 sep → 08 nov · 6 sem"
                 android:textColor="@color/colorTextSecondary"
                 android:textSize="13sp"
-                android:layout_marginTop="2dp" />
+                android:layout_marginTop="3dp" />
 
             <TextView
                 android:id="@+id/tvFaseRir"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="RIR 2-3 | Hombros, Espalda"
+                android:text="RIR 2-3 · Hombros, Espalda"
                 android:textColor="@color/colorTextTertiary"
-                android:textSize="13sp"
+                android:textSize="12sp"
                 android:layout_marginTop="2dp" />
         </LinearLayout>
-    </LinearLayout>
 
-    <!-- Separador fino -->
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="@color/colorSeparator" />
+        <!-- Badge "ACTUAL" para la fase actual -->
+        <TextView
+            android:id="@+id/badgeActual"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="ACTUAL"
+            android:textColor="@color/colorAccentPrimary"
+            android:textSize="10sp"
+            android:fontFamily="sans-serif-bold"
+            android:background="@drawable/bg_badge_actual"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="4dp"
+            android:visibility="gone" />
+    </LinearLayout>
 </LinearLayout>

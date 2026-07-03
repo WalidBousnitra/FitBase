@@ -3,518 +3,575 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FitBase — Manual de Usuario</title>
+    <title>FitBase — Manual de Usuario + Casos de Uso</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
-            --bg: #121212; --surface: #1E1E1E; --surface2: #2C2C2C;
+            --bg: #0F1419; --surface: #1B2028; --surface2: #2A3040;
             --text: #E8EAED; --text2: #9AA0A6; --text3: #5F6368;
-            --accent: #FF5722; --success: #81C784; --warning: #FFB74D;
-            --error: #EF5350; --chart: #78909C;
+            --accent: #FF6D3B; --success: #81C784; --warning: #FFB74D;
+            --error: #EF5350; --chart: #4FC3F7; --purple: #CE93D8;
             --radius: 12px;
         }
-        body { font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
-
-        .hero {
-            min-height: 40vh; display: flex; flex-direction: column;
-            justify-content: center; align-items: center; text-align: center; padding: 60px 20px;
-            border-bottom: 1px solid var(--surface2);
-        }
-        .hero h1 { font-size: clamp(2rem,5vw,3rem); font-weight: 300; }
-        .hero p { color: var(--text2); font-size: 1rem; max-width: 550px; margin-top: 12px; }
-
-        .layout { display: flex; max-width: 1000px; margin: 0 auto; }
-        .sidebar {
-            position: sticky; top: 0; height: 100vh; width: 240px; padding: 24px 12px;
-            overflow-y: auto; border-right: 1px solid var(--surface2); flex-shrink: 0;
-        }
-        .sidebar a {
-            display: block; padding: 10px 14px; border-radius: 8px; color: var(--text2);
-            text-decoration: none; font-size: 0.85rem; transition: all 0.2s; margin-bottom: 2px;
-        }
-        .sidebar a:hover { background: var(--surface); color: var(--text); }
-        .sidebar a.active { background: var(--surface); color: var(--accent); font-weight: 500; }
-
-        .main-content { flex: 1; padding: 40px 32px; min-width: 0; }
-
-        .manual-section { margin-bottom: 56px; scroll-margin-top: 20px; }
-        .manual-section h2 { font-size: 1.4rem; font-weight: 500; margin-bottom: 8px; }
-        .manual-section .sec-desc { color: var(--text2); margin-bottom: 20px; font-size: 0.9rem; }
-
-        .card { background: var(--surface); border-radius: var(--radius); padding: 20px; margin-bottom: 12px; }
-        .card h3 { font-size: 0.95rem; margin-bottom: 10px; font-weight: 500; }
-        .card p, .card li { color: var(--text2); font-size: 0.9rem; }
+        body { font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+        .hero { min-height: 35vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 50px 20px; border-bottom: 1px solid var(--surface2); }
+        .hero h1 { font-size: clamp(1.8rem,4vw,2.8rem); font-weight: 200; }
+        .hero p { color: var(--text2); margin-top: 10px; max-width: 550px; font-size: 0.95rem; }
+        section { max-width: 850px; margin: 0 auto; padding: 40px 20px; }
+        h2 { font-size: 1.4rem; font-weight: 400; margin-bottom: 6px; color: var(--accent); }
+        h3 { font-size: 1.05rem; font-weight: 500; margin-bottom: 8px; }
+        .desc { color: var(--text2); margin-bottom: 20px; font-size: 0.9rem; }
+        .card { background: var(--surface); border-radius: var(--radius); padding: 20px; margin-bottom: 14px; }
+        .card p, .card li { color: var(--text2); font-size: 0.88rem; }
         .card ol, .card ul { padding-left: 20px; }
         .card li { margin-bottom: 6px; }
         .card li strong { color: var(--text); }
-
-        .info-box { background: rgba(129,199,132,0.08); border-left: 3px solid var(--success); border-radius: 8px; padding: 14px 16px; margin: 12px 0; font-size: 0.85rem; color: var(--text2); }
-        .info-box strong { color: var(--success); }
-        .warn-box { background: rgba(255,183,77,0.08); border-left: 3px solid var(--warning); border-radius: 8px; padding: 14px 16px; margin: 12px 0; font-size: 0.85rem; color: var(--text2); }
-        .warn-box strong { color: var(--warning); }
-        .error-box { background: rgba(239,83,80,0.08); border-left: 3px solid var(--error); border-radius: 8px; padding: 14px 16px; margin: 12px 0; font-size: 0.85rem; color: var(--text2); }
-        .error-box strong { color: var(--error); }
-
-        .rir-demo { display: flex; gap: 8px; margin: 12px 0; }
-        .rir-btn {
-            width: 44px; height: 44px; border-radius: 8px; border: 1px solid var(--surface2);
-            background: var(--surface2); color: var(--text); font-weight: 600; font-size: 1rem;
-            display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s;
-        }
-        .rir-btn:hover { border-color: var(--accent); }
-        .rir-btn.selected { background: var(--text); color: var(--bg); border-color: var(--text); }
-
-        .week-table { width: 100%; border-collapse: separate; border-spacing: 0 4px; margin: 12px 0; }
-        .week-table td, .week-table th { padding: 10px 14px; text-align: left; font-size: 0.85rem; }
-        .week-table th { color: var(--text3); font-weight: 500; font-size: 0.75rem; text-transform: uppercase; }
-        .week-table tr td { background: var(--surface); }
-        .week-table tr td:first-child { border-radius: 8px 0 0 8px; }
-        .week-table tr td:last-child { border-radius: 0 8px 8px 0; }
-        .gym { color: var(--success); font-weight: 500; }
-        .swim { color: var(--chart); font-weight: 500; }
-        .rest { color: var(--text3); }
-
-        .macros-bar { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
-        .macro-pill { background: var(--surface2); border-radius: 20px; padding: 6px 14px; font-size: 0.8rem; font-weight: 500; }
-
-        .tips-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; }
-        .tip-card { background: var(--surface); border-radius: var(--radius); padding: 16px; }
-        .tip-card .tip-sit { font-weight: 500; font-size: 0.85rem; margin-bottom: 4px; }
-        .tip-card .tip-ans { color: var(--text2); font-size: 0.8rem; }
-
-        @media (max-width: 768px) {
-            .sidebar { display: none; }
-            .main-content { padding: 24px 16px; }
-            .layout { display: block; }
-        }
-        .mobile-nav {
-            display: none; position: sticky; top: 0; z-index: 100;
-            background: var(--bg); border-bottom: 1px solid var(--surface2);
-            padding: 12px; overflow-x: auto; white-space: nowrap;
-        }
-        .mobile-nav a {
-            display: inline-block; padding: 6px 12px; border-radius: 20px;
-            background: var(--surface); color: var(--text2); text-decoration: none;
-            font-size: 0.8rem; margin-right: 6px;
-        }
-        @media (max-width: 768px) { .mobile-nav { display: block; } }
+        .info { background: rgba(129,199,132,0.08); border-left: 3px solid var(--success); border-radius: 8px; padding: 14px 16px; margin: 14px 0; font-size: 0.85rem; color: var(--text2); }
+        .info strong { color: var(--success); }
+        .warn { background: rgba(255,183,77,0.08); border-left: 3px solid var(--warning); border-radius: 8px; padding: 14px 16px; margin: 14px 0; font-size: 0.85rem; color: var(--text2); }
+        .warn strong { color: var(--warning); }
+        .screen { background: var(--surface2); border-radius: var(--radius); padding: 20px; margin: 14px 0; border: 1px solid rgba(255,109,59,0.2); }
+        .screen-title { font-size: 0.75rem; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+        .exercise-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--surface); }
+        .exercise-row:last-child { border-bottom: none; }
+        .ex-name { flex: 1; font-size: 0.88rem; font-weight: 500; }
+        .ex-detail { font-size: 0.78rem; color: var(--text2); }
+        .ex-peso { font-size: 0.88rem; font-weight: 600; color: var(--accent); min-width: 55px; text-align: right; }
+        .motor-badge { font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; background: rgba(129,199,132,0.15); color: var(--success); margin-left: 4px; }
+        .rir-buttons { display: flex; gap: 6px; margin: 10px 0; }
+        .rir-btn { width: 40px; height: 40px; border-radius: 8px; border: 1px solid var(--surface2); background: var(--surface); color: var(--text); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.9rem; }
+        .rir-btn.selected { background: var(--accent); color: #fff; border-color: var(--accent); }
+        .sens-buttons { display: flex; gap: 6px; margin: 10px 0; flex-wrap: wrap; }
+        .sens-btn { padding: 6px 14px; border-radius: 20px; font-size: 0.78rem; border: 1px solid var(--surface2); background: var(--surface); color: var(--text2); }
+        .sens-btn.selected { border-color: var(--accent); color: var(--accent); }
+        .timer-demo { background: var(--surface); border-radius: var(--radius); padding: 20px; text-align: center; margin: 14px 0; }
+        .timer-display { font-size: 2.5rem; font-weight: 200; font-family: 'Roboto Mono', monospace; color: var(--chart); margin: 12px 0; }
+        .divider { border: none; border-top: 1px solid var(--surface2); margin: 36px 0; }
+        .toc { background: var(--surface); border-radius: var(--radius); padding: 20px; margin: 20px 0; }
+        .toc a { display: block; padding: 6px 0; color: var(--text2); text-decoration: none; font-size: 0.88rem; border-bottom: 1px solid var(--surface2); }
+        .toc a:last-child { border-bottom: none; }
+        .toc a:hover { color: var(--accent); }
+        .toc .num { color: var(--accent); font-weight: 600; margin-right: 8px; }
+        .week-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin: 12px 0; text-align: center; font-size: 0.7rem; }
+        .week-grid div { padding: 8px 4px; border-radius: 6px; }
+        .week-grid .gym { background: rgba(129,199,132,0.15); color: var(--success); }
+        .week-grid .swim { background: rgba(79,195,247,0.15); color: var(--chart); }
+        .week-grid .off { background: var(--surface); color: var(--text3); }
+        .endpoint { font-family: monospace; font-size: 0.8rem; background: var(--surface2); padding: 2px 8px; border-radius: 4px; color: var(--chart); }
+        .footer { text-align: center; padding: 40px; color: var(--text3); font-size: 0.75rem; border-top: 1px solid var(--surface2); }
     </style>
 </head>
 <body>
 
 <div class="hero">
     <h1>Manual de Usuario</h1>
-    <p>Todo lo que necesitas saber para usar FitBase día a día. Desde el primer día hasta las excepciones.</p>
+    <p>Guía completa de FitBase — desde abrir la app hasta entender el motor de cargas.</p>
 </div>
 
-<div class="mobile-nav">
-    <a href="#sec1">Inicio</a>
-    <a href="#sec2">Plan</a>
-    <a href="#sec3">Gym</a>
-    <a href="#sec4">Series</a>
-    <a href="#sec5">Timer</a>
-    <a href="#sec6">Progreso</a>
-    <a href="#sec7">Fallos</a>
-    <a href="#sec8">Nutrición</a>
-    <a href="#sec9">Semana</a>
-    <a href="#sec10">Offline</a>
-    <a href="#sec11">Tips</a>
+<section>
+    <div class="toc">
+        <a href="#uc0"><span class="num">0</span> Tu mañana (vista al despertar)</a>
+        <a href="#uc1"><span class="num">1</span> Tu sesión del día (caso de uso principal)</a>
+        <a href="#uc2"><span class="num">2</span> Registrar una serie</a>
+        <a href="#uc3"><span class="num">3</span> Timer de descanso</a>
+        <a href="#uc4"><span class="num">4</span> Cómo funciona el peso sugerido</a>
+        <a href="#uc5"><span class="num">5</span> Plan anual y fases</a>
+        <a href="#uc6"><span class="num">6</span> Nutrición del día</a>
+        <a href="#uc7"><span class="num">7</span> Cardio y pasos por fase</a>
+        <a href="#uc8"><span class="num">8</span> Excepciones (vacaciones, día perdido, natación)</a>
+        <a href="#uc9"><span class="num">9</span> Semana tipo</a>
+        <a href="#faq"><span class="num">?</span> Preguntas frecuentes</a>
+    </div>
+</section>
+
+<hr class="divider">
+
+<!-- ═══ UC0: VISTA MAÑANA ═══ -->
+<section id="uc0">
+    <h2>0. Tu mañana</h2>
+    <p class="desc">Te despiertas, te pesas, abres la app. Esto es lo que ves para planificar tu día.</p>
+
+    <div class="card">
+        <h3>¿Qué ves al abrir?</h3>
+        <ol>
+            <li><strong>Cómo dormiste:</strong> Sleep Score (0-100) + FC reposo. Si dormiste mal, la app avisa que tu sesión será reducida.</li>
+            <li><strong>Macros del día:</strong> Calorías, proteína, carbos, grasas — cambian automáticamente entre fases (bulk=3280 kcal, cut=2282 kcal, mantener=2855 kcal).</li>
+            <li><strong>Agua:</strong> Recordatorio visual siempre presente (peso × 35ml + 500ml si entrenas).</li>
+            <li><strong>Objetivo pasos/cardio:</strong> VOL=8000 pasos, DEF=10000+20min bici post-gym, DELOAD=7000 (todo basado en Wilson 2012).</li>
+            <li><strong>Movilidad matutina:</strong> 5 ejercicios de postura (5-8 min). Todos los días, incluidos descanso y natación.</li>
+            <li><strong>Tipo de día:</strong> Gym (y qué tipo) / Natación / Descanso.</li>
+        </ol>
+    </div>
+
+    <div class="screen">
+        <div class="screen-title">Pantalla — Vista mañana (ejemplo: Lunes, fase VOL, bulk)</div>
+        <div style="display:flex; gap:20px; flex-wrap:wrap; margin-bottom:14px;">
+            <div><span style="font-size:0.7rem; color:var(--text3);">SUEÑO</span><div style="font-size:1.2rem; color:var(--success);">83 <span style="font-size:0.7rem;">/ 100</span></div></div>
+            <div><span style="font-size:0.7rem; color:var(--text3);">FC REPOSO</span><div style="font-size:1.2rem;">53 bpm</div></div>
+            <div><span style="font-size:0.7rem; color:var(--text3);">HOY</span><div style="font-size:1.2rem; color:var(--accent);">GYM Push</div></div>
+        </div>
+        <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:14px;">
+            <div style="background:var(--surface); padding:8px 12px; border-radius:8px;"><span style="font-size:0.7rem; color:var(--text3);">KCAL</span><div style="color:var(--accent);">3280</div></div>
+            <div style="background:var(--surface); padding:8px 12px; border-radius:8px;"><span style="font-size:0.7rem; color:var(--text3);">PROT</span><div>156g</div></div>
+            <div style="background:var(--surface); padding:8px 12px; border-radius:8px;"><span style="font-size:0.7rem; color:var(--text3);">CARBOS</span><div>440g</div></div>
+            <div style="background:var(--surface); padding:8px 12px; border-radius:8px;"><span style="font-size:0.7rem; color:var(--text3);">GRASA</span><div>78g</div></div>
+            <div style="background:var(--surface); padding:8px 12px; border-radius:8px;"><span style="font-size:0.7rem; color:var(--text3);">AGUA</span><div style="color:var(--chart);">3.2L</div></div>
+        </div>
+        <div style="background:var(--surface); padding:10px; border-radius:8px; margin-bottom:10px;">
+            <span style="font-size:0.75rem; color:var(--success);">🧘 MOVILIDAD MATUTINA (6 min)</span>
+            <div style="font-size:0.8rem; color:var(--text2); margin-top:4px;">Chin tucks · Ext. torácica · Cat-cow · Rot. externa · Dead bugs</div>
+        </div>
+        <div style="font-size:0.8rem; color:var(--text2);">🚶 Pasos: 8000 objetivo · ⏱️ Cardio: no hoy (fase VOL)</div>
+    </div>
+
+    <div class="info">
+        <strong>¿Por qué importa la mañana?</strong> Planificas el desayuno sabiendo tus macros exactos. Los 5-8 min de movilidad mejoran postura progresivamente (Ruivo 2017: resultados en 16 semanas). Y sabes de antemano si hoy toca cardio extra.
+    </div>
+</section>
+
+<hr class="divider">
+
+<!-- ═══ UC1: SESIÓN DEL DÍA ═══ -->
+<section id="uc1">
+    <h2>1. Tu sesión del día</h2>
+    <p class="desc">Llegas al gym, abres FitBase. La app te guía de principio a fin: calentamiento → ejercicios → estiramientos → cardio si toca.</p>
+
+    <div class="card">
+        <h3>Flujo completo de la sesión</h3>
+        <ol>
+            <li><strong>Calentamiento (10-15 min):</strong> Movilidad dinámica (5 min: círculos cadera, gato-vaca, dislocaciones) + Activación específica según sesión (Push: face pulls; Pull: dead hangs; Pierna: glute bridges) + Series de aproximación del primer compuesto (40%→60%→75%→85%).</li>
+            <li><strong>Ejercicios principales:</strong> Lista con peso sugerido (motor), series × reps, RIR objetivo, descanso.</li>
+            <li><strong>Registras cada serie:</strong> Reps + sensación → timer se activa automáticamente.</li>
+            <li><strong>Timer flotante (Hyper Island):</strong> Sales de la app → overlay visible → al terminar vibra.</li>
+            <li><strong>Estiramientos (5 min):</strong> Estáticos 30-60s por grupo trabajado (solo post-entreno, nunca pre).</li>
+            <li><strong>Cardio (si fase DEF/MNT):</strong> 15-20 min bici estática a 60-70% FC máx.</li>
+            <li><strong>Resumen:</strong> Series totales, volumen (kg), RIR medio, impacto en tu plan.</li>
+        </ol>
+    </div>
+
+    <div class="card">
+        <h3>¿Qué ves en la pantalla de ejercicios?</h3>
+        <ol>
+            <li><strong>Tipo de sesión:</strong> Push / Pull / Pierna / Hombros+Brazos</li>
+            <li><strong>Fase actual:</strong> Ej. "Hipertrofia I — V-Taper" con color</li>
+            <li><strong>Ajuste del día:</strong> Si dormiste mal o tu FC está alta, verás un aviso: "Sesión reducida (fatiga detectada)"</li>
+            <li><strong>Lista de ejercicios:</strong> Cada uno con peso sugerido, series, reps y RIR objetivo</li>
+        </ol>
+    </div>
+
+    <div class="screen">
+        <div class="screen-title">Pantalla — Sesión de hoy (ejemplo: Lunes Push, fase VOL)</div>
+        <div class="exercise-row">
+            <div><div class="ex-name">Press hombro mancuernas</div><div class="ex-detail">4×8-10 · RIR 2 · 150s desc</div></div>
+            <div class="ex-peso">32.5 kg <span class="motor-badge">↑</span></div>
+        </div>
+        <div class="exercise-row">
+            <div><div class="ex-name">Elev. laterales sentado</div><div class="ex-detail">4×12-15 · RIR 2 · 90s desc</div></div>
+            <div class="ex-peso">14 kg <span class="motor-badge">=</span></div>
+        </div>
+        <div class="exercise-row">
+            <div><div class="ex-name">Elev. laterales polea</div><div class="ex-detail">3×12-15 · RIR 2 · 90s desc</div></div>
+            <div class="ex-peso">7.5 kg <span class="motor-badge">=</span></div>
+        </div>
+        <div class="exercise-row">
+            <div><div class="ex-name">Press inclinado mancuernas</div><div class="ex-detail">4×8-10 · RIR 2 · 150s desc</div></div>
+            <div class="ex-peso">30 kg <span class="motor-badge">↑</span></div>
+        </div>
+        <div class="exercise-row">
+            <div><div class="ex-name">Cruces polea alta</div><div class="ex-detail">3×10-12 · RIR 2 · 90s desc</div></div>
+            <div class="ex-peso">15 kg <span class="motor-badge">=</span></div>
+        </div>
+        <div class="exercise-row">
+            <div><div class="ex-name">Press francés 30°</div><div class="ex-detail">3×10-12 · RIR 2 · 120s desc</div></div>
+            <div class="ex-peso">22.5 kg <span class="motor-badge">↓</span></div>
+        </div>
+        <div class="exercise-row">
+            <div><div class="ex-name">Extensión unilateral polea</div><div class="ex-detail">3×12-15 · RIR 2 · 60s desc</div></div>
+            <div class="ex-peso">10 kg <span class="motor-badge">=</span></div>
+        </div>
+        <div class="exercise-row">
+            <div><div class="ex-name">Face pulls</div><div class="ex-detail">3×15-20 · RIR 3 · 60s desc</div></div>
+            <div class="ex-peso">12.5 kg <span class="motor-badge">=</span></div>
+        </div>
+    </div>
+
+    <div class="info">
+        <strong>↑ ↓ = significan:</strong> El motor comparó tu rendimiento de la última sesión con lo esperado y ajustó el peso. ↑ subió (fuiste mejor de lo esperado), ↓ bajó (fue demasiado pesado), = mantuvo (perfecto).
+    </div>
+</section>
+
+<hr class="divider">
+
+<!-- ═══ UC2: REGISTRAR SERIE ═══ -->
+<section id="uc2">
+    <h2>2. Registrar una serie</h2>
+    <p class="desc">Después de cada set, introduces 4 datos. Esto alimenta al motor para la próxima sesión.</p>
+
+    <div class="card">
+        <h3>Datos que introduces</h3>
+        <ol>
+            <li><strong>Peso usado (kg):</strong> El peso real que pusiste. Puede ser diferente al sugerido.</li>
+            <li><strong>Reps completadas:</strong> Cuántas repeticiones hiciste.</li>
+            <li><strong>RIR percibido:</strong> Cuántas repeticiones MÁS podrías haber hecho (0 = fallo total).</li>
+            <li><strong>Sensación:</strong> fácil / bien / duro / fallo.</li>
+        </ol>
+    </div>
+
+    <div class="screen">
+        <div class="screen-title">Pantalla — Registro de serie</div>
+        <p style="color:var(--text2); font-size:0.85rem; margin-bottom:12px;">Press hombro mancuernas — Serie 2/4</p>
+        <div style="display:flex; gap:16px; margin-bottom:12px;">
+            <div><span style="font-size:0.75rem; color:var(--text3);">PESO</span><div style="font-size:1.4rem; font-weight:300;">32.5 kg</div></div>
+            <div><span style="font-size:0.75rem; color:var(--text3);">REPS</span><div style="font-size:1.4rem; font-weight:300;">9</div></div>
+        </div>
+        <p style="font-size:0.75rem; color:var(--text3); margin-bottom:6px;">RIR — ¿Cuántas más podrías?</p>
+        <div class="rir-buttons">
+            <div class="rir-btn">0</div>
+            <div class="rir-btn">1</div>
+            <div class="rir-btn selected">2</div>
+            <div class="rir-btn">3</div>
+            <div class="rir-btn">4</div>
+        </div>
+        <p style="font-size:0.75rem; color:var(--text3); margin-bottom:6px;">¿Cómo se sintió?</p>
+        <div class="sens-buttons">
+            <div class="sens-btn">fácil</div>
+            <div class="sens-btn selected">bien</div>
+            <div class="sens-btn">duro</div>
+            <div class="sens-btn">fallo</div>
+        </div>
+    </div>
+
+    <div class="info">
+        <strong>¿Qué es RIR?</strong> "Repetitions In Reserve" — cuántas repeticiones te quedaban en el tanque.<br>
+        RIR 0 = fallaste (no podías hacer ni una más). RIR 2 = podrías haber hecho 2 más. RIR 4+ = demasiado fácil.<br><br>
+        <strong>Tip:</strong> Si pones RIR 3 pero marcas "fallo", el motor te cree el "fallo" (es más fiable que estimar un número cuando empiezas).
+    </div>
+
+    <div class="card">
+        <h3>¿Qué pasa con estos datos?</h3>
+        <p>Se guardan en <code>ejercicios_log</code> (retención: 30 días). La próxima vez que tengas este ejercicio, el motor lee tu ÚLTIMO set y calcula: "¿le subimos, le bajamos, o mantenemos?"</p>
+    </div>
+</section>
+
+<hr class="divider">
+
+<!-- ═══ UC3: TIMER ═══ -->
+<section id="uc3">
+    <h2>3. Timer de descanso</h2>
+    <p class="desc">Entre sets, el timer cuenta tu descanso con una notificación visible.</p>
+
+    <div class="timer-demo">
+        <div style="font-size:0.8rem; color:var(--text3);">DESCANSO — Press hombro (serie 2/4)</div>
+        <div class="timer-display">1:47</div>
+        <div style="font-size:0.8rem; color:var(--text2);">de 2:30 (150s)</div>
+    </div>
+
+    <div class="card">
+        <h3>Cómo funciona</h3>
+        <ol>
+            <li>Al guardar una serie, se activa automáticamente el timer con el descanso del ejercicio (60s–270s según tipo).</li>
+            <li><strong>Notificación compacta:</strong> Chronometer nativo visible en barra de notificaciones — puedes mirar Twitter/Instagram mientras.</li>
+            <li><strong>Al terminar:</strong> Vibración [0,200,100,200] + la notificación se expande con texto grande "¡VAMOS!" para que lo veas de reojo.</li>
+            <li>Se usa fullScreenIntent para que aparezca como heads-up incluso con pantalla bloqueada.</li>
+        </ol>
+    </div>
+
+    <div class="warn">
+        <strong>Tiempos de descanso por tipo (Schoenfeld 2016 + ACSM 2009):</strong><br>
+        Compuestos pesados (squat, press, domin): 3-4.5 min<br>
+        Compuestos secundarios (remo, RDL): 2-2.5 min<br>
+        Aislamiento (laterales, curls): 1-1.5 min<br>
+        Postura/correctivos (face pull, band pull): 45-60s
+    </div>
+</section>
+
+<hr class="divider">
+
+<!-- ═══ UC4: MOTOR ═══ -->
+<section id="uc4">
+    <h2>4. Cómo funciona el peso sugerido</h2>
+    <p class="desc">El motor aplica 6 capas multiplicativas para decidir tu peso. Todas basadas en evidencia científica.</p>
+
+    <div class="card">
+        <h3>La fórmula central: delta_capacidad</h3>
+        <p>
+            <code style="color:var(--chart);">delta = (reps_hechas + RIR_real) − (reps_objetivo + RIR_objetivo)</code><br><br>
+            Esto te dice: "¿podías haber hecho más o menos de lo que el plan pedía?"<br><br>
+            <strong>Ejemplo:</strong> Plan pide 10 reps @ RIR 2 (capacidad esperada: 12).<br>
+            Tú hiciste 10 reps @ RIR 3 → capacidad real = 13 → delta = +1 → MANTENER (estás en zona correcta).<br>
+            Tú hiciste 12 reps @ RIR 3 → capacidad real = 15 → delta = +3 → SUBIR +5% (ACSM: +2-10% cuando superas 1-2 reps).<br>
+            Tú hiciste 7 reps @ RIR 0 → capacidad real = 7 → delta = −5 → BAJAR −10% (demasiado pesado).
+        </p>
+    </div>
+
+    <div class="card">
+        <h3>Tabla APRE — 5 niveles (Mann 2010)</h3>
+        <table style="width:100%; font-size:0.82rem; border-collapse: collapse;">
+            <tr style="border-bottom:1px solid var(--surface2);">
+                <th style="text-align:left; padding:8px; color:var(--text3);">Delta</th>
+                <th style="text-align:left; padding:8px; color:var(--text3);">Nivel</th>
+                <th style="text-align:left; padding:8px; color:var(--text3);">Ajuste</th>
+                <th style="text-align:left; padding:8px; color:var(--text3);">Significado</th>
+            </tr>
+            <tr style="border-bottom:1px solid var(--surface2);">
+                <td style="padding:8px; color:var(--error);">≤ −4</td>
+                <td style="padding:8px;">muy_pesado</td>
+                <td style="padding:8px; color:var(--error);">−10%</td>
+                <td style="padding:8px; color:var(--text2);">Ni llegaste a las reps, al fallo</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--surface2);">
+                <td style="padding:8px; color:var(--warning);">−3 a −2</td>
+                <td style="padding:8px;">pesado</td>
+                <td style="padding:8px; color:var(--warning);">−5%</td>
+                <td style="padding:8px; color:var(--text2);">Casi llegas pero costó mucho</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--surface2);">
+                <td style="padding:8px; color:var(--success);">−1 a +1</td>
+                <td style="padding:8px;">correcto</td>
+                <td style="padding:8px; color:var(--success);">0%</td>
+                <td style="padding:8px; color:var(--text2);">Perfecto — el peso está bien</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--surface2);">
+                <td style="padding:8px; color:var(--chart);">+2 a +3</td>
+                <td style="padding:8px;">fácil</td>
+                <td style="padding:8px; color:var(--chart);">+5%</td>
+                <td style="padding:8px; color:var(--text2);">Te sobraron reps → subir</td>
+            </tr>
+            <tr>
+                <td style="padding:8px; color:var(--accent);">≥ +4</td>
+                <td style="padding:8px;">muy_fácil</td>
+                <td style="padding:8px; color:var(--accent);">+10%</td>
+                <td style="padding:8px; color:var(--text2);">Ridiculamente ligero</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="card">
+        <h3>Modulación por fase (Bompa 2019)</h3>
+        <p>No todas las fases progresan igual:</p>
+        <table style="width:100%; font-size:0.82rem; border-collapse: collapse; margin-top:8px;">
+            <tr style="border-bottom:1px solid var(--surface2);">
+                <th style="text-align:left; padding:6px; color:var(--text3);">Fase</th>
+                <th style="text-align:left; padding:6px; color:var(--text3);">Max subida/sesión</th>
+                <th style="text-align:left; padding:6px; color:var(--text3);">Por qué</th>
+            </tr>
+            <tr style="border-bottom:1px solid var(--surface2);"><td style="padding:6px;">VOL (hipertrofia)</td><td style="padding:6px;">+5% / −10%</td><td style="padding:6px; color:var(--text2);">Driver es volumen, no peso</td></tr>
+            <tr style="border-bottom:1px solid var(--surface2);"><td style="padding:6px;">FZA (fuerza)</td><td style="padding:6px;">±10%</td><td style="padding:6px; color:var(--text2);">Intensidad es el driver</td></tr>
+            <tr style="border-bottom:1px solid var(--surface2);"><td style="padding:6px;">DEF (cutting)</td><td style="padding:6px;">+3% / −10%</td><td style="padding:6px; color:var(--text2);">Déficit limita adaptaciones</td></tr>
+            <tr style="border-bottom:1px solid var(--surface2);"><td style="padding:6px;">MNT (mantener)</td><td style="padding:6px;">+2.5% / −5%</td><td style="padding:6px; color:var(--text2);">Objetivo: no perder</td></tr>
+            <tr><td style="padding:6px;">DELOAD</td><td style="padding:6px;">−12.5% fijo</td><td style="padding:6px; color:var(--text2);">Recuperar fatiga (Bompa: 10-15%)</td></tr>
+        </table>
+    </div>
+
+    <div class="card">
+        <h3>Capas adicionales</h3>
+        <p>
+            <strong>Nutrición (Helms 2014):</strong> En fase de cutting, la subida se reduce al 50%. Porque es fisiológicamente difícil ganar fuerza en déficit calórico.<br><br>
+            <strong>Descanso inter-sesión:</strong> Si no hiciste este ejercicio en &gt;7 días → ×0.95 (conservador). &gt;14 días → ×0.90 (desentrenamiento parcial).<br><br>
+            <strong>Ajuste diario (Kiviniemi 2007):</strong> FC reposo alta (+10 vs media) → ×0.80. FC en tendencia ascendente 2+ días → ×0.70 (recuperación activa). Sleep score &lt;60 → ×0.90. Estrés &gt;7/10 → ×0.85.
+        </p>
+    </div>
+
+    <div class="warn">
+        <strong>Auto-ajuste semanal sin lógica extra:</strong> El RIR objetivo cambia cada semana dentro del mesociclo (Helms 2016: sem1=RIR 3-4, sem2=RIR 2-3, sem3=RIR 1-2). Como la fórmula delta usa el RIR del plan, la progresión se modula automáticamente — en semana 1 eres conservador, en semana 3 empujas más.
+    </div>
+</section>
+
+<hr class="divider">
+
+<!-- ═══ UC5: PLAN ANUAL ═══ -->
+<section id="uc5">
+    <h2>5. Plan anual y fases</h2>
+    <p class="desc">10 fases en 11 meses. El plan define QUÉ hacer (estructura). Los PESOS son siempre dinámicos.</p>
+
+    <div class="card">
+        <h3>Lo que el plan almacena (fijo, pre-generado)</h3>
+        <ul>
+            <li>Qué ejercicios hacer cada día</li>
+            <li>Cuántas series y reps</li>
+            <li>RIR objetivo (cambia por semana)</li>
+            <li>Tiempo de descanso</li>
+            <li>Fase actual (VOL/FZA/DEF/MNT/DELOAD)</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h3>Lo que el plan NO almacena (dinámico, calculado cada vez)</h3>
+        <ul>
+            <li><strong>PESOS</strong> — nunca están escritos en el plan. Se calculan al abrir la app.</li>
+            <li>Ajustes del día — dependen de métricas del momento</li>
+            <li>Macros — cambian por fase automáticamente</li>
+        </ul>
+    </div>
+
+    <div class="info">
+        <strong>¿Por qué no guardar pesos?</strong> Porque cada día es diferente. Si dormiste mal, el peso debería ser menor. Si llevas 3 sesiones progresando bien, debería subir. El motor lo calcula EN EL MOMENTO, usando tu último rendimiento real + tu estado actual.
+    </div>
+</section>
+
+<hr class="divider">
+
+<!-- ═══ UC6: NUTRICIÓN ═══ -->
+<section id="uc6">
+    <h2>6. Nutrición del día</h2>
+    <p class="desc">Objetivos de macros calculados según tu fase actual.</p>
+
+    <div class="card">
+        <h3>Cómo se calcula</h3>
+        <p>
+            BMR (Mifflin-St Jeor) × Factor actividad 1.55 = TDEE (~2855 kcal)<br>
+            Luego según fase:<br>
+            • <strong>Bulk (VOL/FZA):</strong> TDEE × 1.15 = ~3280 kcal (superávit +15%)<br>
+            • <strong>Cut (DEF):</strong> TDEE × 0.80 = ~2282 kcal (déficit −20%)<br>
+            • <strong>Mantener (MNT/DELOAD):</strong> TDEE × 1.0 = ~2855 kcal (isocalórico)
+        </p>
+    </div>
+
+    <div class="card">
+        <h3>Macros</h3>
+        <p>
+            <strong>Proteína:</strong> 2.0 g/kg (bulk/mantener) o 2.4 g/kg (cut — preservar músculo, Helms 2014)<br>
+            <strong>Grasa:</strong> 1.0 g/kg (salud hormonal)<br>
+            <strong>Carbos:</strong> Resto de calorías ÷ 4<br>
+            <strong>Agua:</strong> peso × 35ml + 500ml si entrenas
+        </p>
+    </div>
+</section>
+
+<hr class="divider">
+
+<!-- ═══ UC7: CARDIO Y PASOS ═══ -->
+<section id="uc7">
+    <h2>7. Cardio y pasos por fase</h2>
+    <p class="desc">El objetivo de actividad cambia según la fase — para no interferir con hipertrofia (Wilson 2012).</p>
+
+    <div class="card">
+        <h3>Objetivos por fase</h3>
+        <table style="width:100%; font-size:0.82rem; border-collapse: collapse;">
+            <tr style="border-bottom:1px solid var(--surface2);">
+                <th style="text-align:left; padding:8px; color:var(--text3);">Fase</th>
+                <th style="text-align:left; padding:8px; color:var(--text3);">Pasos/día</th>
+                <th style="text-align:left; padding:8px; color:var(--text3);">Cardio post-gym</th>
+                <th style="text-align:left; padding:8px; color:var(--text3);">Por qué</th>
+            </tr>
+            <tr style="border-bottom:1px solid var(--surface2);"><td style="padding:8px;">VOL (bulk)</td><td style="padding:8px;">8.000</td><td style="padding:8px;">0 min</td><td style="padding:8px; color:var(--text2);">No interferir (Wilson 2012)</td></tr>
+            <tr style="border-bottom:1px solid var(--surface2);"><td style="padding:8px;">FZA (bulk)</td><td style="padding:8px;">8.000</td><td style="padding:8px;">0 min</td><td style="padding:8px; color:var(--text2);">Recuperación neural</td></tr>
+            <tr style="border-bottom:1px solid var(--surface2);"><td style="padding:8px; color:var(--warning);">DEF (cut)</td><td style="padding:8px; color:var(--warning);">10.000</td><td style="padding:8px; color:var(--warning);">15-20 min bici</td><td style="padding:8px; color:var(--text2);">Aumentar déficit</td></tr>
+            <tr style="border-bottom:1px solid var(--surface2);"><td style="padding:8px;">MNT</td><td style="padding:8px;">9.000</td><td style="padding:8px;">10 min (opt.)</td><td style="padding:8px; color:var(--text2);">Balance</td></tr>
+            <tr><td style="padding:8px;">DELOAD</td><td style="padding:8px;">7.000</td><td style="padding:8px;">0 min</td><td style="padding:8px; color:var(--text2);">Recuperación total</td></tr>
+        </table>
+    </div>
+
+    <div class="info">
+        <strong>Modalidad:</strong> Siempre bici estática o elíptica (Wilson 2012: NO interfiere con hipertrofia). NUNCA correr (interfiere -31%). La natación 2x/sem ya cuenta como cardio bajo impacto.
+    </div>
+
+    <div class="warn">
+        <strong>Requisito Health Connect:</strong> Zepp/Mi Fitness → Perfil → Apps terceros → Health Connect → ACTIVAR. Sin esto, la app no tiene datos de sueño/FC/pasos.
+    </div>
+</section>
+
+<hr class="divider">
+
+<!-- ═══ UC8: EXCEPCIONES ═══ -->
+<section id="uc8">
+    <h2>8. Excepciones</h2>
+    <p class="desc">4 situaciones que la app maneja automáticamente.</p>
+
+    <div class="card">
+        <h3>❌ Día perdido (no abriste la app)</h3>
+        <p>
+            La app lo detecta al día siguiente: "Ayer no entrenaste — hoy retomas normal."<br>
+            Sin penalización extra. El motor ajusta automáticamente (Capa 5: si el ejercicio no se hizo en >7d → reduce peso por seguridad).
+        </p>
+    </div>
+    <div class="card">
+        <h3>🏖️ Vacaciones / Ausencia extendida</h3>
+        <p>
+            Introduces fechas de inicio y fin → sesiones se suspenden.<br>
+            • ≤1 semana: como un deload natural. Motor reduce peso al volver.<br>
+            • 2-3 semanas: readaptación (primera semana con RIR+1). Motor: ×0.90.<br>
+            • >3 semanas: reiniciar mesociclo actual desde semana 1.<br>
+            La movilidad matutina se sugiere incluso de vacaciones.
+        </p>
+    </div>
+    <div class="card">
+        <h3>🏊 Día de natación (Martes/Jueves)</h3>
+        <p>
+            No hay sesión de gym. Solo movilidad matutina si corresponde + clase de natación (1h, dirigida).<br>
+            La app no trackea la natación — solo la muestra como "tipo de día" en la vista mañana.
+        </p>
+    </div>
+    <div class="card">
+        <h3>😴 Día de descanso (Domingo)</h3>
+        <p>
+            Sin entrenar. Opciones: movilidad matutina completa + cardio suave (caminar/bici 30 min) si pasos están por debajo del objetivo.<br>
+            Objetivo = recuperación activa, sin intensidad.
+        </p>
+    </div>
+</section>
+
+<hr class="divider">
+
+<!-- ═══ UC9: SEMANA TIPO ═══ -->
+<section id="uc9">
+    <h2>9. Semana tipo</h2>
+    <p class="desc">Estructura fija todo el año. Lo que cambia por fase son ejercicios específicos, series, reps y RIR.</p>
+
+    <div class="week-grid">
+        <div class="gym"><strong>LUN</strong><br>Push</div>
+        <div class="swim"><strong>MAR</strong><br>Nadar</div>
+        <div class="gym"><strong>MIÉ</strong><br>Pierna</div>
+        <div class="swim"><strong>JUE</strong><br>Nadar</div>
+        <div class="gym"><strong>VIE</strong><br>Pull</div>
+        <div class="gym"><strong>SÁB</strong><br>H+B</div>
+        <div class="off"><strong>DOM</strong><br>Off</div>
+    </div>
+
+    <div class="card">
+        <h3>Por qué este split</h3>
+        <p>
+            P1 (V-taper) requiere 14-18+ ser/sem de hombros+espalda. Imposible con solo 2 upper days.<br>
+            Con Push + Pull + Hombros+Brazos = 3 upper days → suficiente volumen para prioridades.
+        </p>
+    </div>
+</section>
+
+<hr class="divider">
+
+<!-- ═══ FAQ ═══ -->
+<section id="faq">
+    <h2>Preguntas frecuentes</h2>
+
+    <div class="card">
+        <h3>¿Qué pasa si pongo un peso diferente al sugerido?</h3>
+        <p>Perfecto — el motor usa el peso que TÚ pusiste (no el sugerido) como base para la próxima sesión. El sugerido es solo una guía.</p>
+    </div>
+    <div class="card">
+        <h3>¿Y si es mi primera vez con un ejercicio?</h3>
+        <p>El motor no tiene historial → muestra "Elige tu peso". Tú introduces manualmente, se registra en el log, y desde ahí el motor ya tiene referencia.</p>
+    </div>
+    <div class="card">
+        <h3>¿Se puede usar sin internet?</h3>
+        <p>Sí — la app cachea en Room (local). Usas el último peso conocido. Cuando vuelvas a tener red, sincroniza.</p>
+    </div>
+    <div class="card">
+        <h3>¿Cada cuánto sube el peso?</h3>
+        <p>Depende de tu rendimiento. Si superas las reps objetivo con RIR alto (fácil), sube la próxima vez. Puede ser cada sesión o cada varias semanas. En fase de cutting, sube más lento o no sube.</p>
+    </div>
+    <div class="card">
+        <h3>¿Qué es un deload?</h3>
+        <p>1 semana cada 4-6 donde reduces volumen (-40%) e intensidad (-12.5%). El plan tiene 3 deloads programados. El motor aplica automáticamente la reducción sin que hagas nada.</p>
+    </div>
+    <div class="card">
+        <h3>¿Qué datos necesita el reloj (Amazfit)?</h3>
+        <p>Sleep score, FC reposo, pasos, VO2max. Fluyen: Amazfit → Zepp app → Health Connect → FitBase. Debes activar la conexión en Zepp → Perfil → Apps terceros.</p>
+    </div>
+</section>
+
+<div class="footer">
+    FitBase Manual v2 · 02/07/2026 · Motor de 6 capas · 31 papers · 10 fases · ~192 sesiones
 </div>
 
-<div class="layout">
-    <nav class="sidebar">
-        <a href="#sec1" class="active">Primer día</a>
-        <a href="#sec2">Plan anual</a>
-        <a href="#sec3">En el gym</a>
-        <a href="#sec4">Registrar series</a>
-        <a href="#sec5">Timer y notificaciones</a>
-        <a href="#sec6">Ver progreso</a>
-        <a href="#sec7">Si fallo un día</a>
-        <a href="#sec8">Nutrición</a>
-        <a href="#sec9">Semana tipo</a>
-        <a href="#sec10">Offline y BBDD</a>
-        <a href="#sec11">Tips rápidos</a>
-    </nav>
-
-    <main class="main-content">
-
-        <!-- SECCIÓN 1 -->
-        <div class="manual-section" id="sec1">
-            <h2>Primer Día (31/08/2026)</h2>
-            <p class="sec-desc">Lo que necesitas hacer antes y durante tu primera sesión real.</p>
-
-            <div class="card">
-                <h3>Antes de ir al gym</h3>
-                <ol>
-                    <li><strong>Abre FitBase</strong> → Pantalla Home con macros del día</li>
-                    <li><strong>Revisa el plan</strong>: Toca "Ver Plan Anual" para ver tus 11 meses</li>
-                    <li><strong>Peso</strong>: El Amazfit sincroniza automático vía Zepp → Health Connect</li>
-                </ol>
-            </div>
-
-            <div class="card">
-                <h3>Primera sesión (Adaptación)</h3>
-                <ol>
-                    <li>Las primeras 4 semanas son <strong>Adaptación</strong>: pesos ligeros, RIR 4-5</li>
-                    <li>Objetivo: preparar tendones y aprender movimientos</li>
-                    <li><strong>NO</strong> busques pesos altos — ajusta al peso que te permita RIR 4-5</li>
-                    <li>El motor aprenderá de tus registros para sugerir mejor la próxima vez</li>
-                </ol>
-                <div class="info-box"><strong>RIR 4-5</strong> = al terminar la serie, te quedaban 4-5 repeticiones. Se tiene que sentir fácil las primeras semanas.</div>
-            </div>
-
-            <div class="card">
-                <h3>Demo antes del inicio</h3>
-                <p>Hasta el 31/08/2026 la app está en "modo preinicio" y puede <strong>escribir datos reales en la BBDD</strong> para que verifiques que funciona. Antes del inicio real:</p>
-                <ol>
-                    <li>Ve a Apps Script</li>
-                    <li>Ejecuta <strong>limpiarDatosTest()</strong></li>
-                    <li>Esto limpia los logs de prueba pero <strong>mantiene las 192 sesiones y 1300 ejercicios pre-generados</strong></li>
-                </ol>
-            </div>
-        </div>
-
-        <!-- SECCIÓN 2 -->
-        <div class="manual-section" id="sec2">
-            <h2>Ver tu Plan Anual</h2>
-            <p class="sec-desc">11 meses de entrenamiento periodizado.</p>
-
-            <div class="card">
-                <h3>Acceder</h3>
-                <p>Pantalla Home → <strong>"Ver Plan Anual"</strong></p>
-                <p>Cada fase tiene un indicador de color. La fase actual está destacada.</p>
-            </div>
-
-            <div class="card">
-                <h3>Resumen de fases</h3>
-                <table style="width:100%; font-size:0.85rem; color:var(--text2);">
-                    <tr><td style="padding:6px 0;"><strong style="color:var(--text)">Sep</strong></td><td>Adaptación (4 sem) — Preparar el cuerpo</td></tr>
-                    <tr><td style="padding:6px 0;"><strong style="color:var(--text)">Oct-Nov</strong></td><td>Hipertrofia I (6 sem) — Ganar músculo</td></tr>
-                    <tr><td style="padding:6px 0;"><strong style="color:var(--text)">Nov</strong></td><td>Deload 1 (1 sem) — Recuperación</td></tr>
-                    <tr><td style="padding:6px 0;"><strong style="color:var(--text)">Dic-Ene</strong></td><td>Hipertrofia II (6 sem) — Pecho, Brazos</td></tr>
-                    <tr><td style="padding:6px 0;"><strong style="color:var(--text)">Feb</strong></td><td>Fuerza (6 sem) — Más peso, menos reps</td></tr>
-                    <tr><td style="padding:6px 0;"><strong style="color:var(--text)">Mar-Abr</strong></td><td>Hipertrofia III (6 sem) — Piernas, Core</td></tr>
-                    <tr><td style="padding:6px 0;"><strong style="color:var(--text)">Abr-May</strong></td><td>Definición (6 sem) — Corte</td></tr>
-                    <tr><td style="padding:6px 0;"><strong style="color:var(--text)">Jun-Jul</strong></td><td>Peak + Mantenimiento</td></tr>
-                </table>
-            </div>
-        </div>
-
-        <!-- SECCIÓN 3 -->
-        <div class="manual-section" id="sec3">
-            <h2>En el Gym</h2>
-            <p class="sec-desc">El flujo completo de una sesión.</p>
-
-            <div class="card">
-                <h3>Iniciar</h3>
-                <ol>
-                    <li>Abre la app → Toca <strong>"Empezar entreno"</strong></li>
-                    <li>Ves el primer ejercicio: nombre, peso sugerido, reps objetivo</li>
-                    <li>Haz tu serie</li>
-                    <li><strong>Desliza izquierda</strong> → pantalla de registro (reps + RIR)</li>
-                    <li>Timer arranca automáticamente</li>
-                    <li>Repite hasta completar todos los ejercicios</li>
-                </ol>
-            </div>
-
-            <div class="card">
-                <h3>Pantalla de ejercicio</h3>
-                <div style="background:var(--surface2); border-radius:12px; padding:20px; max-width:260px; margin:12px auto; text-align:center; font-size:0.85rem;">
-                    <div style="color:var(--text3); font-size:0.75rem;">1/6 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0:00</div>
-                    <div style="color:var(--text); font-weight:500; margin-top:12px;">PRESS INCLINADO</div>
-                    <div style="font-size:2rem; font-weight:300; margin:12px 0;">22.0 kg</div>
-                    <div style="border:1px solid var(--surface2); border-radius:8px; padding:8px; display:inline-block;">8-10 reps</div>
-                    <div style="color:var(--text3); margin-top:12px;">Serie 1 / 4</div>
-                    <div style="color:var(--text3); margin-top:16px; font-size:0.75rem;">← desliza para completar →</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- SECCIÓN 4 -->
-        <div class="manual-section" id="sec4">
-            <h2>Registrar Series</h2>
-            <p class="sec-desc">Peso, reps y RIR en una sola pantalla.</p>
-
-            <div class="card">
-                <h3>Escala RIR</h3>
-                <div class="rir-demo">
-                    <div class="rir-btn" onclick="selectRIR(this)">0</div>
-                    <div class="rir-btn" onclick="selectRIR(this)">1</div>
-                    <div class="rir-btn selected" onclick="selectRIR(this)">2</div>
-                    <div class="rir-btn" onclick="selectRIR(this)">3</div>
-                    <div class="rir-btn" onclick="selectRIR(this)">4+</div>
-                </div>
-                <div style="font-size:0.8rem; color:var(--text3); line-height:1.8;">
-                    <strong>0</strong> = Fallo muscular<br>
-                    <strong>1</strong> = Te quedaba 1 rep<br>
-                    <strong style="color:var(--success)">2</strong> = Ideal para hipertrofia<br>
-                    <strong>3</strong> = Cómodo<br>
-                    <strong>4+</strong> = Demasiado fácil
-                </div>
-            </div>
-
-            <div class="card">
-                <h3>Progresión automática</h3>
-                <p>Si haces +1-2 reps sobre el objetivo con RIR ≥ 2, la app sube +2.5% el peso sugerido para la próxima sesión (ACSM 2009).</p>
-            </div>
-        </div>
-
-        <!-- SECCIÓN 5: TIMER -->
-        <div class="manual-section" id="sec5">
-            <h2>Timer y Notificaciones</h2>
-            <p class="sec-desc">Comportamiento inteligente según contexto.</p>
-
-            <div class="card">
-                <h3>Durante el descanso</h3>
-                <ul>
-                    <li>Se muestra un <strong>cronómetro nativo</strong> en la notificación (Chronometer de Android)</li>
-                    <li>Si sales de la app, el timer sigue visible en la barra de notificaciones</li>
-                    <li>No necesitas estar dentro de la app</li>
-                </ul>
-            </div>
-
-            <div class="card">
-                <h3>Cuando termina el timer</h3>
-                <table style="width:100%; font-size:0.85rem; margin-top:8px;">
-                    <tr style="color:var(--text3);"><td style="padding:6px 0;">Situación</td><td>Comportamiento</td></tr>
-                    <tr><td style="padding:6px 0;"><strong>Dentro de la app</strong></td><td style="color:var(--success)">NADA. Silencio total. La UI transiciona sola.</td></tr>
-                    <tr><td style="padding:6px 0;"><strong>Fuera + auriculares</strong></td><td>Notificación expandida + sonido sutil (30% vol)</td></tr>
-                    <tr><td style="padding:6px 0;"><strong>Fuera + sin auriculares</strong></td><td>Notificación expandida + vibración en reloj. Móvil en silencio.</td></tr>
-                    <tr><td style="padding:6px 0;"><strong>Pantalla bloqueada</strong></td><td>Vibración en reloj Amazfit (vía Zepp)</td></tr>
-                </table>
-            </div>
-
-            <div class="info-box"><strong>El móvil NUNCA vibra ni suena por el altavoz.</strong> El sonido solo va por auriculares (canal multimedia). La vibración solo va al reloj.</div>
-        </div>
-
-        <!-- SECCIÓN 6: PROGRESO -->
-        <div class="manual-section" id="sec6">
-            <h2>Ver Progreso</h2>
-            <p class="sec-desc">Pantalla de progresión con métricas clave.</p>
-
-            <div class="card">
-                <h3>Acceder</h3>
-                <p>Home → <strong>"Ver Progresión"</strong> (o pestaña "Progreso" en la barra inferior)</p>
-            </div>
-
-            <div class="card">
-                <h3>Métricas que ves</h3>
-                <ul>
-                    <li><strong>Peso corporal</strong> — evolución diaria con cambio respecto al inicio</li>
-                    <li><strong>% Grasa</strong> — desde la báscula Zepp</li>
-                    <li><strong>Sleep Score</strong> — media del período (Zepp)</li>
-                    <li><strong>FC reposo</strong> — indicador de sobreentrenamiento</li>
-                    <li><strong>HRV</strong> — variabilidad cardíaca (readiness)</li>
-                    <li><strong>Pasos/día</strong> — media del período</li>
-                    <li><strong>Volumen de entrenamiento</strong> — kg×reps por sesión</li>
-                </ul>
-            </div>
-
-            <div class="card">
-                <h3>Filtros de tiempo</h3>
-                <p>Puedes ver los últimos <strong>7 días</strong>, <strong>30 días</strong> o <strong>90 días</strong>.</p>
-            </div>
-
-            <div class="card">
-                <h3>Mediciones (inicio + fin de fase)</h3>
-                <ul>
-                    <li>Circunferencias con cinta: solo día 1 y final de cada fase</li>
-                    <li>Composición corporal semanal: datos del último pesaje Zepp</li>
-                </ul>
-            </div>
-        </div>
-
-        <!-- SECCIÓN 7 -->
-        <div class="manual-section" id="sec7">
-            <h2>Si Fallo un Día</h2>
-            <p class="sec-desc">La app gestiona excepciones automáticamente.</p>
-
-            <div class="card">
-                <h3>No puedo ir al gym</h3>
-                <p>El volumen SEMANAL total es lo que importa (Schoenfeld 2019). La app redistribuye series en los días restantes.</p>
-            </div>
-            <div class="card">
-                <h3>Estoy fatigado</h3>
-                <p>Si tu FC reposo está elevada o tu Sleep Score es bajo, el motor reduce volumen (-10% a -20%) automáticamente.</p>
-            </div>
-            <div class="card">
-                <h3>Viaje o vacaciones</h3>
-                <p>Home → "Registrar ausencia" → indica fechas. Al volver: semana de readaptación.</p>
-            </div>
-            <div class="card">
-                <h3>Dolor o lesión</h3>
-                <p>Durante el registro de serie, marca "dolor" + zona. La app evita ejercicios que estresen esa zona.</p>
-                <div class="error-box"><strong>Dolor de codo:</strong> Ya configurado. La app evita extensión de tríceps bajo carga. Si duele → PARA.</div>
-            </div>
-        </div>
-
-        <!-- SECCIÓN 8 -->
-        <div class="manual-section" id="sec8">
-            <h2>Nutrición</h2>
-            <p class="sec-desc">Macros objetivo y cómo registrar comidas.</p>
-
-            <div class="card">
-                <h3>Objetivos diarios (fase Bulk — inicio)</h3>
-                <div class="macros-bar">
-                    <span class="macro-pill" style="border-left:3px solid var(--accent)">~3280 kcal</span>
-                    <span class="macro-pill" style="border-left:3px solid var(--warning)">~156g Prot</span>
-                    <span class="macro-pill" style="border-left:3px solid var(--chart)">~488g Carbs</span>
-                    <span class="macro-pill" style="border-left:3px solid var(--text3)">~78g Grasa</span>
-                    <span class="macro-pill" style="border-left:3px solid #64B5F6">3.2L Agua</span>
-                </div>
-                <div style="font-size:0.8rem; color:var(--text3); margin-top:8px;">
-                    Estos son los valores iniciales. La app los <strong style="color:var(--text)">ajusta automáticamente</strong> cada día según:
-                </div>
-            </div>
-
-            <div class="card">
-                <h3>Ajuste automático de calorías</h3>
-                <p style="margin-bottom:10px;">El motor de dieta recalcula tus macros basándose en datos reales:</p>
-                <ul>
-                    <li><strong>Peso real</strong> — Usa tu último pesaje (Zepp) para recalcular BMR, no el peso de cuando empezaste</li>
-                    <li><strong>Tendencia de peso</strong> — Compara tu media de los últimos 7 días vs los 7 anteriores:
-                        <ul style="margin-top:4px; font-size:0.8rem;">
-                            <li>En <strong>bulk</strong>: si ganas &gt;0.5% BW/sem → baja surplus a +10%. Si ganas &lt;0.25% → sube a +20%</li>
-                            <li>En <strong>cut</strong>: si pierdes &gt;1% BW/sem → sube calorías (-15%). Si pierdes &lt;0.5% → baja más (-25%)</li>
-                        </ul>
-                    </li>
-                    <li><strong>Pasos del día</strong> — Si haces &gt;12.000 pasos, te suma 150 kcal extra (NEAT)</li>
-                    <li><strong>Composición corporal</strong> — Si Zepp tiene tu % grasa, calcula proteína por masa magra en cut (más preciso)</li>
-                    <li><strong>Día de entreno</strong> — +500ml agua los días de gym</li>
-                </ul>
-                <div class="info-box"><strong>Las primeras 2 semanas</strong> no hay suficientes datos de peso para ajustar. La app usa los valores iniciales hasta que tenga ≥3 pesajes en cada ventana de 7 días.</div>
-            </div>
-
-            <div class="card">
-                <h3>Cómo registrar comidas</h3>
-                <ol>
-                    <li>Registra en <strong>FatSecret</strong> (tu app del móvil)</li>
-                    <li>FatSecret escribe en Health Connect automáticamente</li>
-                    <li>FitBase lee de Health Connect al abrir</li>
-                    <li>No necesitas hacer nada más — es automático</li>
-                </ol>
-            </div>
-
-            <div class="info-box"><strong>No necesitas ser 100% exacto.</strong> La tendencia semanal importa más que el día concreto.</div>
-        </div>
-
-        <!-- SECCIÓN 9 -->
-        <div class="manual-section" id="sec9">
-            <h2>Semana Tipo</h2>
-            <p class="sec-desc">4 pesas + 2 natación + 1 descanso.</p>
-
-            <table class="week-table">
-                <tr><th>Día</th><th>Actividad</th><th>~Duración</th></tr>
-                <tr><td class="gym">Lunes</td><td>PUSH (Pecho + Hombros + Tríceps)</td><td>75 min</td></tr>
-                <tr><td class="swim">Martes</td><td>Natación (clase)</td><td>60 min</td></tr>
-                <tr><td class="gym">Miércoles</td><td>PIERNA + Core</td><td>75 min</td></tr>
-                <tr><td class="swim">Jueves</td><td>Natación (clase)</td><td>60 min</td></tr>
-                <tr><td class="gym">Viernes</td><td>PULL (Espalda + Bíceps + Postura)</td><td>80 min</td></tr>
-                <tr><td class="gym">Sábado</td><td>HOMBROS + BRAZOS + Postura</td><td>70 min</td></tr>
-                <tr><td class="rest">Domingo</td><td>Descanso</td><td>—</td></tr>
-            </table>
-        </div>
-
-        <!-- SECCIÓN 10: OFFLINE + BBDD -->
-        <div class="manual-section" id="sec10">
-            <h2>Offline y Base de Datos</h2>
-            <p class="sec-desc">Tus datos nunca se pierden.</p>
-
-            <div class="card">
-                <h3>Cola offline (Room)</h3>
-                <ul>
-                    <li>Cada serie que registras se envía al backend (Google Sheets)</li>
-                    <li>Si <strong>no hay red</strong> → se guarda localmente en SQLite (Room)</li>
-                    <li>Cuando vuelve la conexión → se sincroniza automáticamente (FIFO)</li>
-                    <li>Hasta 50 reintentos por operación</li>
-                </ul>
-                <div class="info-box"><strong>Tu miedo de "BBDD vacía al final del plan" no puede pasar.</strong> Cada serie queda guardada localmente si falla la red, y se sincroniza cuando vuelve.</div>
-            </div>
-
-            <div class="card">
-                <h3>Cuándo se sincroniza</h3>
-                <ul>
-                    <li>Al abrir la app</li>
-                    <li>Al recuperar WiFi/datos (NetworkCallback automático)</li>
-                    <li>Al iniciar cada sesión de entrenamiento</li>
-                </ul>
-            </div>
-
-            <div class="card">
-                <h3>Vaciar BBDD (reset)</h3>
-                <p>Si necesitas limpiar datos de prueba:</p>
-                <ol>
-                    <li>Apps Script → ejecuta <strong>limpiarDatosTest()</strong></li>
-                    <li>Mantiene: catálogo, plan anual, plan semanal, sesiones_plan, ejercicios_plan</li>
-                    <li>Borra: ejercicios_log, metricas_zepp, metricas_subjetivas, peso_log</li>
-                </ol>
-                <div class="warn-box"><strong>Irreversible.</strong> Solo usar antes del inicio real del programa.</div>
-            </div>
-        </div>
-
-        <!-- SECCIÓN 11 -->
-        <div class="manual-section" id="sec11">
-            <h2>Tips Rápidos</h2>
-            <p class="sec-desc">Respuestas a situaciones comunes.</p>
-
-            <div class="tips-grid">
-                <div class="tip-card">
-                    <div class="tip-sit">El peso sugerido es muy alto</div>
-                    <div class="tip-ans">Bájalo. El motor aprende de tus registros reales.</div>
-                </div>
-                <div class="tip-card">
-                    <div class="tip-sit">No me vibra el reloj</div>
-                    <div class="tip-ans">Zepp → Ajustes → Notificaciones → activa FitBase.</div>
-                </div>
-                <div class="tip-card">
-                    <div class="tip-sit">No dormí bien</div>
-                    <div class="tip-ans">El motor reduce volumen auto si Sleep Score < 60.</div>
-                </div>
-                <div class="tip-card">
-                    <div class="tip-sit">Es Ramadán</div>
-                    <div class="tip-ans">La app ajusta: -30% volumen, entreno pre-Iftar.</div>
-                </div>
-                <div class="tip-card">
-                    <div class="tip-sit">No abrí la app ayer</div>
-                    <div class="tip-ans">La app asume que no entrenaste y redistribuye al abrir hoy.</div>
-                </div>
-                <div class="tip-card">
-                    <div class="tip-sit">No tengo conexión en el gym</div>
-                    <div class="tip-ans">Registra normal. Se guarda local y sincroniza después.</div>
-                </div>
-                <div class="tip-card">
-                    <div class="tip-sit">Quiero ver si la BBDD funciona</div>
-                    <div class="tip-ans">Haz una serie → abre Google Sheets → hoja ejercicios_log.</div>
-                </div>
-                <div class="tip-card">
-                    <div class="tip-sit">Dolor de codo</div>
-                    <div class="tip-ans">PARA. La app ya evita extensión bajo carga.</div>
-                </div>
-            </div>
-        </div>
-
-    </main>
-</div>
-
-<script>
-    const sections = document.querySelectorAll('.manual-section');
-    const navLinks = document.querySelectorAll('.sidebar a');
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                navLinks.forEach(l => l.classList.remove('active'));
-                const id = entry.target.id;
-                const link = document.querySelector('.sidebar a[href="#' + id + '"]');
-                if (link) link.classList.add('active');
-            }
-        });
-    }, { rootMargin: '-20% 0px -70% 0px' });
-    sections.forEach(s => observer.observe(s));
-
-    function selectRIR(btn) {
-        btn.parentElement.querySelectorAll('.rir-btn').forEach(b => b.classList.remove('selected'));
-        btn.classList.add('selected');
-    }
-</script>
 </body>
 </html>

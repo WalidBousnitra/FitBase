@@ -1,397 +1,370 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/colorBackground"
-    android:orientation="vertical"
-    android:paddingHorizontal="18dp"
-    android:paddingTop="10dp"
-    android:paddingBottom="8dp">
-
-    <TextView
-        android:id="@+id/bannerDemo"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="● Preinicio · Programa inicia 31/08/2026"
-        android:textColor="@color/colorTextTertiary"
-        android:textSize="10sp"
-        android:paddingBottom="4dp"
-        android:visibility="gone" />
-
-    <!-- Banner Ausencia -->
-    <LinearLayout
-        android:id="@+id/bannerAusencia"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:visibility="gone"
-        android:paddingBottom="4dp">
-        <TextView
-            android:id="@+id/tvAusenciaMensaje"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textColor="@color/colorWarning"
-            android:textSize="11sp" />
-    </LinearLayout>
-
-    <TextView
-        android:id="@+id/tvSaludo"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Buenos días"
-        android:textColor="@color/colorTextPrimary"
-        android:textSize="28sp"
-        android:fontFamily="sans-serif-black" />
-
-    <TextView
-        android:id="@+id/tvFecha"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textColor="@color/colorTextTertiary"
-        android:textSize="13sp"
-        android:layout_marginTop="2dp"
-        android:layout_marginBottom="10dp" />
+    android:background="@color/background"
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="14dp"
-        android:background="@drawable/bg_card_flat">
+        android:padding="20dp">
 
+        <!-- ═══ HEADER ═══ -->
         <TextView
+            android:id="@+id/tvSaludo"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Energia del dia"
-            android:textColor="@color/colorTextTertiary"
-            android:textSize="11sp"
+            android:text="Buenos días"
+            android:textSize="24sp"
+            android:textColor="@color/text_primary"
             android:fontFamily="sans-serif-medium" />
+
+        <TextView
+            android:id="@+id/tvFecha"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="miércoles 2 de julio"
+            android:textSize="14sp"
+            android:textColor="@color/text_secondary"
+            android:layout_marginTop="2dp" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
+            android:layout_marginTop="8dp"
             android:gravity="center_vertical">
 
             <TextView
-                android:id="@+id/tvCaloriasRestantes"
-                android:layout_width="wrap_content"
+                android:id="@+id/tvTipoDia"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="1830"
-                android:textColor="@color/colorTextPrimary"
-                android:textSize="38sp"
-                android:fontFamily="sans-serif-black" />
+                android:layout_weight="1"
+                android:text="🏋️ DÍA DE GYM"
+                android:textSize="16sp"
+                android:textColor="@color/accent" />
 
             <TextView
+                android:id="@+id/tvFaseNombre"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text=" kcal restantes"
-                android:textColor="@color/colorTextTertiary"
+                android:text="Hipertrofia I"
                 android:textSize="12sp"
-                android:layout_marginStart="6dp" />
+                android:textColor="@color/text_tertiary"
+                android:background="@drawable/bg_badge_actual"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="2dp"
+                android:visibility="gone" />
         </LinearLayout>
+
+        <!-- ═══ BANNER AUSENCIA ═══ -->
+        <LinearLayout
+            android:id="@+id/bannerAusencia"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:background="@drawable/bg_card_flat"
+            android:padding="12dp"
+            android:layout_marginTop="12dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/tvAusenciaMensaje"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="13sp"
+                android:textColor="@color/text_secondary" />
+        </LinearLayout>
+
+        <!-- ═══ SUEÑO ═══ -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="20dp"
+            android:gravity="center_vertical">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="SUEÑO"
+                    android:textSize="11sp"
+                    android:textColor="@color/text_tertiary" />
+                <TextView
+                    android:id="@+id/tvSleepScore"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="83/100"
+                    android:textSize="22sp"
+                    android:textColor="@color/success" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="FC REPOSO"
+                    android:textSize="11sp"
+                    android:textColor="@color/text_tertiary" />
+                <TextView
+                    android:id="@+id/tvFcReposo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="53 bpm"
+                    android:textSize="22sp"
+                    android:textColor="@color/text_primary" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvAvisoFatiga"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="⚠️ Sueño pobre — sesión reducida"
+            android:textSize="13sp"
+            android:textColor="@color/warning"
+            android:layout_marginTop="4dp"
+            android:visibility="gone" />
+
+        <!-- ═══ MACROS RESTANTES ═══ -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="MACROS RESTANTES"
+            android:textSize="11sp"
+            android:textColor="@color/text_tertiary"
+            android:layout_marginTop="24dp" />
+
+        <TextView
+            android:id="@+id/tvCaloriasRestantes"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="3280"
+            android:textSize="36sp"
+            android:textColor="@color/accent"
+            android:fontFamily="sans-serif-medium" />
 
         <ProgressBar
             android:id="@+id/progressCalorias"
             style="@android:style/Widget.ProgressBar.Horizontal"
             android:layout_width="match_parent"
-            android:layout_height="3dp"
-            android:layout_marginTop="6dp"
-            android:max="100"
-            android:progress="44"
-            android:progressDrawable="@drawable/progress_calorias" />
+            android:layout_height="8dp"
+            android:layout_marginTop="4dp"
+            android:progressDrawable="@drawable/progress_calorias"
+            android:max="3280" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginTop="4dp">
+            android:layout_marginTop="12dp">
 
-            <TextView
-                android:id="@+id/tvCaloriasConsumidas"
+            <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="1450 consumidas"
-                android:textColor="@color/colorTextTertiary"
-                android:textSize="12sp" />
-
-            <TextView
-                android:id="@+id/tvCaloriasObjetivo"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="de 3280 kcal"
-                android:textColor="@color/colorTextTertiary"
-                android:textSize="12sp" />
-        </LinearLayout>
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-        android:orientation="horizontal"
-            android:paddingTop="8dp"
-            android:paddingBottom="8dp"
-        android:gravity="center">
-
-        <!-- Proteína -->
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:gravity="center">
-            <TextView
-                android:id="@+id/tvProteinaRestante"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="96g"
-                android:textColor="@color/colorTextPrimary"
-                android:textSize="19sp"
-                android:fontFamily="sans-serif-medium" />
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Prot rest."
-                android:textColor="@color/colorTextTertiary"
-                android:textSize="10sp" />
-        </LinearLayout>
-
-        <!-- Carbos -->
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:gravity="center">
-            <TextView
-                android:id="@+id/tvCarbosRestantes"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="288g"
-                android:textColor="@color/colorTextPrimary"
-                android:textSize="19sp"
-                android:fontFamily="sans-serif-medium" />
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Carbs rest."
-                android:textColor="@color/colorTextTertiary"
-                android:textSize="10sp" />
-        </LinearLayout>
-
-        <!-- Grasas -->
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:gravity="center">
-            <TextView
-                android:id="@+id/tvGrasasRestantes"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="48g"
-                android:textColor="@color/colorTextPrimary"
-                android:textSize="19sp"
-                android:fontFamily="sans-serif-medium" />
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Grasa rest."
-                android:textColor="@color/colorTextTertiary"
-                android:textSize="10sp" />
-        </LinearLayout>
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="14dp"
-        android:background="@drawable/bg_card_flat"
-        android:layout_marginBottom="8dp">
-
-        <!-- Pasos -->
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical">
+                android:orientation="vertical"
+                android:gravity="center"
+                android:background="@drawable/bg_macro_card"
+                android:padding="10dp">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="PROT" android:textSize="10sp" android:textColor="@color/text_tertiary" />
+                <TextView android:id="@+id/tvProtRestante" android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:text="156g"
+                    android:textSize="18sp" android:textColor="@color/text_primary" />
+            </LinearLayout>
 
             <LinearLayout
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:background="@drawable/bg_macro_card"
+                android:padding="10dp"
+                android:layout_marginStart="8dp">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="CARBOS" android:textSize="10sp" android:textColor="@color/text_tertiary" />
+                <TextView android:id="@+id/tvCarbosRestantes" android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:text="488g"
+                    android:textSize="18sp" android:textColor="@color/text_primary" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:background="@drawable/bg_macro_card"
+                android:padding="10dp"
+                android:layout_marginStart="8dp">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="GRASA" android:textSize="10sp" android:textColor="@color/text_tertiary" />
+                <TextView android:id="@+id/tvGrasasRestantes" android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:text="78g"
+                    android:textSize="18sp" android:textColor="@color/text_primary" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:background="@drawable/bg_macro_card"
+                android:padding="10dp"
+                android:layout_marginStart="8dp">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="AGUA" android:textSize="10sp" android:textColor="@color/text_tertiary" />
+                <TextView android:id="@+id/tvAgua" android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:text="💧 3.2L"
+                    android:textSize="14sp" android:textColor="@color/chart" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- ═══ PASOS Y CARDIO ═══ -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="20dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:baselineAligned="true"
-                android:gravity="bottom">
+                android:gravity="center_vertical">
 
                 <TextView
                     android:id="@+id/tvPasos"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="4,523"
-                    android:textColor="@color/colorTextPrimary"
-                    android:textSize="26sp"
-                    android:fontFamily="sans-serif-medium" />
+                    android:text="0"
+                    android:textSize="20sp"
+                    android:textColor="@color/text_primary" />
 
                 <TextView
-                    android:id="@+id/tvPasosObjetivo"
+                    android:id="@+id/tvPasosObj"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text=" / 8,000"
-                    android:textColor="@color/colorTextTertiary"
-                        android:textSize="12sp" />
+                    android:text="/ 8000 pasos"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_tertiary"
+                    android:layout_marginStart="4dp" />
             </LinearLayout>
 
             <ProgressBar
                 android:id="@+id/progressPasos"
                 style="@android:style/Widget.ProgressBar.Horizontal"
                 android:layout_width="match_parent"
-                android:layout_height="3dp"
+                android:layout_height="6dp"
+                android:layout_marginTop="4dp"
+                android:progressDrawable="@drawable/progress_pasos"
+                android:max="8000" />
+
+            <TextView
+                android:id="@+id/tvCardioInfo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="⏱️ 20 min bici post-gym"
+                android:textSize="13sp"
+                android:textColor="@color/text_secondary"
                 android:layout_marginTop="6dp"
-                android:layout_marginEnd="12dp"
-                android:max="100"
-                android:progress="56"
-                android:progressDrawable="@drawable/progress_pasos" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Pasos hoy"
-                android:textColor="@color/colorTextTertiary"
-                android:textSize="11sp"
-                android:layout_marginTop="4dp" />
+                android:visibility="gone" />
         </LinearLayout>
 
+        <!-- ═══ MOVILIDAD MATUTINA ═══ -->
         <LinearLayout
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
             android:orientation="vertical"
-            android:paddingStart="12dp"
-            android:gravity="center_vertical">
+            android:layout_marginTop="20dp"
+            android:background="@drawable/bg_card_flat"
+            android:padding="14dp">
 
             <TextView
-                android:id="@+id/tvAgua"
+                android:id="@+id/tvMovilidadTitulo"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="3.2L"
-                android:textColor="@color/colorTextPrimary"
-                android:textSize="26sp"
-                android:fontFamily="sans-serif-medium" />
+                android:text="🧘 Movilidad matutina (6 min)"
+                android:textSize="14sp"
+                android:textColor="@color/success" />
 
-            <TextView
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:id="@+id/layoutMovilidad"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Objetivo hidratacion"
-                android:textColor="@color/colorTextTertiary"
-                android:textSize="11sp" />
+                android:orientation="vertical"
+                android:layout_marginTop="6dp"
+                android:visibility="gone" />
         </LinearLayout>
-    </LinearLayout>
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:orientation="vertical"
-        android:background="@drawable/bg_card_flat"
-        android:padding="14dp"
-        android:gravity="center_vertical">
+        <!-- ═══ BOTÓN EMPEZAR ENTRENO ═══ -->
+        <Button
+            android:id="@+id/btnEmpezarEntreno"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="24dp"
+            android:text="EMPEZAR ENTRENO"
+            android:textSize="16sp"
+            android:textColor="@color/white"
+            android:background="@drawable/gradient_primary_button"
+            android:visibility="visible" />
 
         <TextView
+            android:id="@+id/tvSesionTipo"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Sesion de hoy"
-            android:textColor="@color/colorTextTertiary"
-            android:textSize="11sp"
-            android:fontFamily="sans-serif-medium" />
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="6dp"
+            android:textSize="13sp"
+            android:textColor="@color/text_tertiary"
+            android:visibility="gone" />
 
         <TextView
-            android:id="@+id/tvSesionHoy"
+            android:id="@+id/tvSesionFase"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="gone" />
+
+        <!-- ═══ NAVEGACIÓN ═══ -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Push Day — 6 ejercicios, ~72 min"
-            android:textColor="@color/colorTextPrimary"
-            android:textSize="20sp"
-            android:fontFamily="sans-serif-black"
-            android:layout_marginTop="4dp" />
+            android:orientation="horizontal"
+            android:layout_marginTop="20dp">
 
-        <TextView
-            android:id="@+id/tvFaseInfo"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text=""
-            android:textColor="@color/colorTextTertiary"
-            android:textSize="13sp"
-            android:layout_marginTop="6dp" />
-    </LinearLayout>
-
-    <Button
-        android:id="@+id/btnEmpezarEntreno"
-        android:layout_width="match_parent"
-        android:layout_height="54dp"
-        android:background="@drawable/gradient_primary_button"
-        android:text="Empezar entreno"
-        android:textColor="@color/colorBackground"
-        android:textSize="16sp"
-        android:fontFamily="sans-serif-medium"
-        android:textAllCaps="false"
-        android:layout_marginTop="8dp"
-        android:visibility="gone" />
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="8dp">
-
-        <Button
-            android:id="@+id/btnPlanAnual"
-            android:layout_width="0dp"
-            android:layout_height="44dp"
-            android:layout_weight="1"
-            android:layout_marginEnd="4dp"
-            android:background="@drawable/button_secondary"
-            android:text="Plan"
-            android:textColor="@color/colorTextSecondary"
-            android:textSize="13sp"
-            android:textAllCaps="false" />
-
-        <Button
-            android:id="@+id/btnProgresion"
-            android:layout_width="0dp"
+            <Button
+                android:id="@+id/btnPlanAnual"
+                android:layout_width="0dp"
                 android:layout_height="44dp"
-            android:layout_weight="1"
-            android:layout_marginStart="4dp"
-            android:background="@drawable/button_secondary"
-            android:text="Progresión"
-            android:textColor="@color/colorTextSecondary"
+                android:layout_weight="1"
+                android:text="Plan Anual"
                 android:textSize="13sp"
-            android:textAllCaps="false" />
+                android:background="@drawable/button_secondary" />
+
+            <Button
+                android:id="@+id/btnProgresion"
+                android:layout_width="0dp"
+                android:layout_height="44dp"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:text="Progresión"
+                android:textSize="13sp"
+                android:background="@drawable/button_secondary" />
+        </LinearLayout>
+
     </LinearLayout>
-
-    <Button
-        android:id="@+id/btnRegistrarAusencia"
-        android:layout_width="match_parent"
-        android:layout_height="32dp"
-        android:layout_marginTop="4dp"
-        android:background="@android:color/transparent"
-        android:text="Registrar ausencia"
-        android:textColor="@color/colorTextTertiary"
-        android:textSize="11sp"
-        android:textAllCaps="false" />
-
-    <!-- Test Runner — Solo visible en DEMO -->
-    <Button
-        android:id="@+id/btnTestRunner"
-        android:layout_width="match_parent"
-        android:layout_height="32dp"
-        android:layout_marginTop="2dp"
-        android:background="@android:color/transparent"
-        android:text="Ejecutar tests"
-        android:textColor="@color/colorTextTertiary"
-        android:textSize="11sp"
-        android:textAllCaps="false"
-        android:visibility="gone" />
-</LinearLayout>
+</ScrollView>

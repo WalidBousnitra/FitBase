@@ -1,296 +1,417 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Workout Screen — Modern Flat UI: monocromático, 8pt grid, micro-accents -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/contenedorPrincipal"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/colorBackground">
+    android:background="@color/background">
 
-    <!-- Estado de carga -->
+    <!-- ═══ CARGANDO ═══ -->
     <LinearLayout
         android:id="@+id/layoutCargando"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical"
         android:gravity="center"
-        android:background="@color/colorBackground"
-        android:clickable="true"
-        android:focusable="true">
-
-        <ProgressBar
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:indeterminate="true" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Cargando sesión..."
-            android:textColor="@color/colorTextSecondary"
-            android:textSize="14sp"
-            android:fontFamily="sans-serif"
-            android:layout_marginTop="16dp" />
+        android:orientation="vertical"
+        android:visibility="visible">
+        <ProgressBar android:layout_width="48dp" android:layout_height="48dp" />
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Cargando sesión..." android:textColor="@color/text_secondary"
+            android:layout_marginTop="12dp" />
     </LinearLayout>
 
-    <!-- Barra superior: progreso + tiempo -->
+    <!-- ═══ CALENTAMIENTO ═══ -->
+    <ScrollView
+        android:id="@+id/layoutCalentamiento"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone"
+        android:padding="20dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvCalentamientoTitulo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🔥 Calentamiento"
+                android:textSize="20sp"
+                android:textColor="@color/text_primary" />
+
+            <LinearLayout
+                android:id="@+id/listCalentamiento"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="16dp" />
+
+            <Button
+                android:id="@+id/btnIniciarEjercicios"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginTop="24dp"
+                android:text="EMPEZAR EJERCICIOS"
+                android:background="@drawable/gradient_primary_button"
+                android:textColor="@color/white" />
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- ═══ EJERCICIO ACTIVO ═══ -->
     <LinearLayout
+        android:id="@+id/layoutEjercicio"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:paddingHorizontal="24dp"
-        android:paddingTop="16dp"
-        android:gravity="center_vertical">
+        android:orientation="vertical"
+        android:padding="20dp"
+        android:visibility="gone">
 
         <TextView
             android:id="@+id/tvProgreso"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="1/6"
-            android:textColor="@color/colorTextTertiary"
-            android:textSize="16sp"
-            android:fontFamily="sans-serif-medium" />
-
-        <TextView
-            android:id="@+id/tvTiempoTotal"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="0:00"
-            android:textColor="@color/colorTextTertiary"
-            android:textSize="16sp"
-            android:fontFamily="sans-serif" />
-    </LinearLayout>
+            android:text="Ejercicio 1 / 8"
+            android:textSize="12sp"
+            android:textColor="@color/text_tertiary" />
 
-    <!-- Estado principal: Ejercicio activo -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:gravity="center"
-        android:paddingHorizontal="24dp">
-
-        <!-- Nombre ejercicio -->
         <TextView
             android:id="@+id/tvNombreEjercicio"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Press Inclinado"
-            android:textColor="@color/colorTextPrimary"
-            android:textSize="26sp"
+            android:text="Press hombro mancuernas"
+            android:textSize="22sp"
+            android:textColor="@color/text_primary"
             android:fontFamily="sans-serif-medium"
-            android:textAlignment="center"
-            android:layout_marginBottom="40dp" />
+            android:layout_marginTop="8dp" />
 
-        <!-- Peso sugerido -->
         <TextView
             android:id="@+id/tvPesoSugerido"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="18 kg"
-            android:textColor="@color/colorTextPrimary"
-            android:textSize="64sp"
-            android:fontFamily="sans-serif-light"
-            android:layout_marginBottom="28dp" />
-
-        <!-- Reps objetivo — borde sutil en vez de card -->
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingHorizontal="40dp"
-            android:paddingVertical="20dp"
-            android:gravity="center"
-            android:background="@drawable/button_secondary">
-
-            <TextView
-                android:id="@+id/tvRepsObjetivo"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="10 reps"
-                android:textColor="@color/colorTextPrimary"
-                android:textSize="24sp"
-                android:fontFamily="sans-serif-medium" />
-        </LinearLayout>
-
-        <!-- Serie actual -->
-        <TextView
-            android:id="@+id/tvSerieActual"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Serie 1 / 4"
-            android:textColor="@color/colorTextSecondary"
-            android:textSize="18sp"
-            android:fontFamily="sans-serif"
-            android:layout_marginTop="28dp" />
-
-        <!-- Instrucción swipe -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="desliza para completar →"
-            android:textColor="@color/colorTextTertiary"
-            android:textSize="14sp"
-            android:fontFamily="sans-serif"
-            android:layout_marginTop="48dp" />
-    </LinearLayout>
-
-    <!-- Overlay: Registro RIR -->
-    <LinearLayout
-        android:id="@+id/layoutRegistro"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:gravity="center"
-        android:background="@color/colorBackground"
-        android:padding="24dp"
-        android:visibility="gone">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Repeticiones realizadas"
-            android:textColor="@color/colorTextSecondary"
-            android:textSize="16sp"
+            android:text="82.5 kg"
+            android:textSize="36sp"
+            android:textColor="@color/accent"
             android:fontFamily="sans-serif-medium"
-            android:layout_marginBottom="16dp" />
-
-        <!-- Input reps -->
-        <EditText
-            android:id="@+id/tvRepsInput"
-            android:layout_width="100dp"
-            android:layout_height="wrap_content"
-            android:inputType="number"
-            android:text="10"
-            android:textColor="@color/colorTextPrimary"
-            android:textSize="52sp"
-            android:textAlignment="center"
-            android:fontFamily="sans-serif-light"
-            android:background="@android:color/transparent"
-            android:padding="8dp"
-            android:layout_marginBottom="32dp" />
-
-        <!-- Separador fino -->
-        <View
-            android:layout_width="100dp"
-            android:layout_height="2dp"
-            android:background="@color/colorAccentPrimary"
-            android:layout_marginTop="-32dp"
-            android:layout_marginBottom="40dp" />
+            android:layout_marginTop="12dp" />
 
         <TextView
+            android:id="@+id/tvMotorDetalle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="RIR (repeticiones en reserva)"
-            android:textColor="@color/colorTextSecondary"
-            android:textSize="16sp"
-            android:fontFamily="sans-serif-medium"
-            android:layout_marginBottom="20dp" />
+            android:text="80kg | ↑ fácil | Hipertrofia | → 82.5kg"
+            android:textSize="11sp"
+            android:textColor="@color/text_tertiary"
+            android:layout_marginTop="4dp" />
 
-        <!-- Botones RIR -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:gravity="center">
+            android:layout_marginTop="16dp">
 
-            <Button
-                android:id="@+id/btnRir0"
-                android:layout_width="60dp"
-                android:layout_height="60dp"
-                android:text="0"
-                android:textSize="22sp"
-                android:textColor="@color/colorTextPrimary"
-                android:backgroundTint="@color/colorSurfaceElevated"
-                android:layout_margin="4dp"
-                android:fontFamily="sans-serif-medium" />
+            <TextView
+                android:id="@+id/tvRepsObjetivo"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Reps: 8-10"
+                android:textSize="16sp"
+                android:textColor="@color/text_primary" />
 
-            <Button
-                android:id="@+id/btnRir1"
-                android:layout_width="60dp"
-                android:layout_height="60dp"
-                android:text="1"
-                android:textSize="22sp"
-                android:textColor="@color/colorTextPrimary"
-                android:backgroundTint="@color/colorSurfaceElevated"
-                android:layout_margin="4dp"
-                android:fontFamily="sans-serif-medium" />
+            <TextView
+                android:id="@+id/tvRirObjetivo"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="RIR objetivo: 3"
+                android:textSize="16sp"
+                android:textColor="@color/text_primary" />
+        </LinearLayout>
 
-            <Button
-                android:id="@+id/btnRir2"
-                android:layout_width="60dp"
-                android:layout_height="60dp"
-                android:text="2"
-                android:textSize="22sp"
-                android:textColor="@color/colorTextPrimary"
-                android:backgroundTint="@color/colorSurfaceElevated"
-                android:layout_margin="4dp"
-                android:fontFamily="sans-serif-medium" />
+        <TextView
+            android:id="@+id/tvSerieInfo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Serie 1 / 4"
+            android:textSize="18sp"
+            android:textColor="@color/accent"
+            android:layout_marginTop="16dp" />
+    </LinearLayout>
 
-            <Button
-                android:id="@+id/btnRir3"
-                android:layout_width="60dp"
-                android:layout_height="60dp"
-                android:text="3"
-                android:textSize="22sp"
-                android:textColor="@color/colorTextPrimary"
-                android:backgroundTint="@color/colorSurfaceElevated"
-                android:layout_margin="4dp"
-                android:fontFamily="sans-serif-medium" />
+    <!-- ═══ REGISTRO RIR ═══ -->
+    <LinearLayout
+        android:id="@+id/layoutRegistro"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:orientation="vertical"
+        android:background="@color/surface"
+        android:padding="20dp"
+        android:elevation="8dp"
+        android:visibility="gone">
 
-            <Button
-                android:id="@+id/btnRir4"
-                android:layout_width="60dp"
-                android:layout_height="60dp"
-                android:text="4+"
-                android:textSize="22sp"
-                android:textColor="@color/colorTextPrimary"
-                android:backgroundTint="@color/colorSurfaceElevated"
-                android:layout_margin="4dp"
-                android:fontFamily="sans-serif-medium" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="¿Cuántas reps hiciste?"
+            android:textSize="14sp"
+            android:textColor="@color/text_secondary" />
+
+        <NumberPicker
+            android:id="@+id/pickerReps"
+            android:layout_width="80dp"
+            android:layout_height="100dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="8dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="¿Cómo fue la sensación?"
+            android:textSize="14sp"
+            android:textColor="@color/text_secondary"
+            android:layout_marginTop="12dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp">
+
+            <Button android:id="@+id/btnSensacionFacil"
+                android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1"
+                android:text="FÁCIL\nRIR 3+" android:textSize="11sp"
+                android:background="@drawable/button_secondary" />
+
+            <Button android:id="@+id/btnSensacionBien"
+                android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                android:text="BIEN\nRIR 2" android:textSize="11sp"
+                android:background="@drawable/gradient_primary_button" android:textColor="@color/white" />
+
+            <Button android:id="@+id/btnSensacionDuro"
+                android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                android:text="DURO\nRIR 1" android:textSize="11sp"
+                android:background="@drawable/button_secondary" />
+
+            <Button android:id="@+id/btnSensacionFallo"
+                android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                android:text="FALLO\nRIR 0" android:textSize="11sp"
+                android:background="@drawable/button_secondary" />
         </LinearLayout>
     </LinearLayout>
 
-    <!-- Overlay: Timer de descanso -->
+    <!-- ═══ TIMER ═══ -->
     <LinearLayout
         android:id="@+id/layoutTimer"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical"
         android:gravity="center"
-        android:background="@color/colorBackground"
-        android:padding="24dp"
+        android:orientation="vertical"
+        android:background="@color/surface"
         android:visibility="gone">
 
-        <!-- Timer -->
+        <TextView
+            android:id="@+id/tvProximaSerie"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Descanso — próxima serie en:"
+            android:textSize="14sp"
+            android:textColor="@color/text_secondary" />
+
         <TextView
             android:id="@+id/tvTimerCountdown"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="2:00"
-            android:textColor="@color/colorTextPrimary"
-            android:textSize="80sp"
-            android:fontFamily="sans-serif-light" />
-
-        <!-- Info próxima serie -->
-        <TextView
-            android:id="@+id/tvProximaSerie"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Próximo: Serie 2/4"
-            android:textColor="@color/colorTextSecondary"
-            android:textSize="16sp"
-            android:fontFamily="sans-serif"
-            android:textAlignment="center"
-            android:layout_marginTop="32dp" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="desliza para saltar"
-            android:textColor="@color/colorTextTertiary"
-            android:textSize="12sp"
-            android:fontFamily="sans-serif"
-            android:layout_marginTop="48dp" />
+            android:textSize="64sp"
+            android:textColor="@color/accent"
+            android:fontFamily="sans-serif-medium"
+            android:layout_marginTop="12dp" />
     </LinearLayout>
+
+    <!-- ═══ ESTIRAMIENTOS ═══ -->
+    <ScrollView
+        android:id="@+id/layoutEstiramientos"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone"
+        android:padding="20dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🧘 Estiramientos post-entreno"
+                android:textSize="20sp"
+                android:textColor="@color/text_primary" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Estáticos 30-60s por grupo trabajado (Page 2012)"
+                android:textSize="13sp"
+                android:textColor="@color/text_tertiary"
+                android:layout_marginTop="4dp" />
+
+            <LinearLayout
+                android:id="@+id/listEstiramientos"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="16dp" />
+
+            <Button
+                android:id="@+id/btnFinEstiramientos"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="24dp"
+                android:text="HECHO — CONTINUAR"
+                android:background="@drawable/gradient_primary_button"
+                android:textColor="@color/white" />
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- ═══ CARDIO ═══ -->
+    <LinearLayout
+        android:id="@+id/layoutCardio"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="20dp"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🚴 Cardio Post-Gym"
+            android:textSize="22sp"
+            android:textColor="@color/text_primary" />
+
+        <TextView
+            android:id="@+id/tvCardioInfo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="15-20 min bici estática\n60-70% FC máx"
+            android:textSize="16sp"
+            android:textColor="@color/text_secondary"
+            android:gravity="center"
+            android:layout_marginTop="16dp" />
+
+        <Button
+            android:id="@+id/btnFinCardio"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="32dp"
+            android:text="CARDIO COMPLETADO"
+            android:background="@drawable/gradient_primary_button"
+            android:textColor="@color/white" />
+
+        <Button
+            android:id="@+id/btnSkipCardio"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:layout_marginTop="8dp"
+            android:text="Saltar cardio hoy"
+            android:textSize="13sp"
+            android:background="@drawable/button_secondary" />
+    </LinearLayout>
+
+    <!-- ═══ RESUMEN ═══ -->
+    <ScrollView
+        android:id="@+id/layoutResumen"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone"
+        android:padding="20dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center_horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="✅ Sesión completada"
+                android:textSize="22sp"
+                android:textColor="@color/success" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="24dp">
+
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:orientation="vertical" android:gravity="center"
+                    android:background="@drawable/bg_card_flat" android:padding="14dp">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="SERIES" android:textSize="11sp" android:textColor="@color/text_tertiary" />
+                    <TextView android:id="@+id/tvResumenSeries" android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" android:text="—"
+                        android:textSize="24sp" android:textColor="@color/accent" />
+                </LinearLayout>
+
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:orientation="vertical" android:gravity="center"
+                    android:background="@drawable/bg_card_flat" android:padding="14dp"
+                    android:layout_marginStart="8dp">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="VOLUMEN" android:textSize="11sp" android:textColor="@color/text_tertiary" />
+                    <TextView android:id="@+id/tvResumenVolumen" android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" android:text="—"
+                        android:textSize="24sp" android:textColor="@color/text_primary" />
+                </LinearLayout>
+
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:orientation="vertical" android:gravity="center"
+                    android:background="@drawable/bg_card_flat" android:padding="14dp"
+                    android:layout_marginStart="8dp">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="RIR MEDIO" android:textSize="11sp" android:textColor="@color/text_tertiary" />
+                    <TextView android:id="@+id/tvResumenRir" android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" android:text="—"
+                        android:textSize="24sp" android:textColor="@color/text_primary" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvResumenIntensidad"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Alta — zona óptima hipertrofia"
+                android:textSize="15sp"
+                android:textColor="@color/success"
+                android:layout_marginTop="16dp" />
+
+            <TextView
+                android:id="@+id/tvResumenImpacto"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="El motor usará estos datos para ajustar tu próxima sesión."
+                android:textSize="13sp"
+                android:textColor="@color/text_secondary"
+                android:gravity="center"
+                android:layout_marginTop="12dp" />
+
+            <Button
+                android:id="@+id/btnCerrarSesion"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginTop="32dp"
+                android:text="CERRAR"
+                android:background="@drawable/gradient_primary_button"
+                android:textColor="@color/white" />
+        </LinearLayout>
+    </ScrollView>
 
 </FrameLayout>

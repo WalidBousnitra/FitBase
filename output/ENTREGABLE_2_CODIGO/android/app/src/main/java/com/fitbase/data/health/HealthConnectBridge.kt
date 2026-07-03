@@ -209,7 +209,8 @@ object HealthConnectBridge {
                 Log.d(TAG, "HR: ${hrResult.records.size} records, ${data.fcReposo.size} days with resting HR")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error reading recovery data", e)
+            Log.e(TAG, "Error reading recovery data: ${e.javaClass.simpleName}: ${e.message}", e)
+            // Si es SecurityException = no hay permisos. Los datos quedan vacíos.
         }
         return data
     }

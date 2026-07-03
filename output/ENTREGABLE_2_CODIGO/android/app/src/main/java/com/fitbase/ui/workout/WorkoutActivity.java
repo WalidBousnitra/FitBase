@@ -2,57 +2,79 @@ package com.fitbase.ui.workout;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.NumberPicker;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.ContextCompat;
-import androidx.dynamicanimation.animation.SpringAnimation;
-import androidx.dynamicanimation.animation.SpringForce;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.fitbase.R;
 import com.fitbase.data.model.Ejercicio;
+import com.fitbase.data.model.ResumenSesionResponse;
 import com.fitbase.service.TimerService;
 import com.fitbase.ui.summary.SummaryActivity;
 import com.fitbase.util.FeedbackHelper;
 
+import java.util.Locale;
+
 /**
- * Pantalla de entrenamiento en el gym.
- * Flujo: Ejercicio → Registro RIR → Timer → Siguiente serie/ejercicio
- * Referencia: REG-DEV-01 (ui.md) § 4
+ * Pantalla de entrenamiento — flujo completo en fases:
+ *
+ *   1. CALENTAMIENTO: Muestra movilidad dinámica + activación según tipo sesión
+ *   2. EJERCICIOS: Uno a uno, serie a serie, con registro RIR + timer flotante
+ *   3. ESTIRAMIENTOS: Lista de estiramientos estáticos post-entreno
+ *   4. CARDIO: Si fase DEF/MNT → bici 15-20 min
+ *   5. RESUMEN: Volumen, RIR medio, impacto → cierre
+ *
+ * Timer usa TimerService (Foreground Service + Overlay) para funcionar
+ * fuera de la app con Hyper Island personalizable.
  */
 public class WorkoutActivity extends AppCompatActivity {
 
     private WorkoutViewModel viewModel;
-
-    // Vistas ejercicio activo
-    private TextView tvNombreEjercicio;
-    private TextView tvPesoSugerido;
-    private TextView tvRepsObjetivo;
-    private TextView tvSerieActual;
-    private TextView tvProgreso;
-    private TextView tvTiempoTotal;
-
-    // Vistas registro RIR
-    private View layoutRegistro;
-    private TextView tvRepsInput;
-    private Button[] botonesRir;
-
-    // Vistas timer
-    private View layoutTimer;
-    private TextView tvTimerCountdown;
-    private TextView tvProximaSerie;
-    private View layoutCargando;
-
-    private int estadoActual = ESTADO_EJERCICIO;
-    private static final int ESTADO_EJERCICIO = 0;
-    private static final int ESTADO_REGISTRO = 1;
-    private static final int ESTADO_TIMER = 2;
-
     private FeedbackHelper feedback;
+
+    // ─── Layouts por fase ───
+    private View layoutCargando;
+    private View layoutCalentamiento;
+    private View layoutEjercicio;
+    private View layoutRegistro;
+    private View layoutTimer;
+    private View layoutEstiramientos;
+    private View layoutCardio;
+    private View layoutResumen;
+
+    // ─── Calentamiento ───
+    private TextView tvCalentamientoTitulo;
+    private LinearLayout listCalentamiento;
+    private Button btnIniciarEjercicios;
+
+    // ─── Ejercicio activo ───
+    private TextView tvNombreEjercicio, tvPesoSugerido, tvMotorDetalle;
+    private TextView tvRepsObjetivo, tvRirObjetivo, tvSerieInfo, tvProgreso;
+
+    // ─── Registro RIR ───
+    private NumberPicker pickerReps;
+    private Button[] botonesRir; // fácil, bien, duro, fallo
+    private Button btnSensacionFacil, btnSensacionBien, btnSensacionDuro, btnSensacionFallo;
+
+    // ─── Timer ───
+    private TextView tvTimerCountdown, tvProximaSerie;
+
+    // ─── Estiramientos ───
+    private LinearLayout listEstiramientos;
+    private Button btnFinEstiramientos;
+
+    // ─── Cardio ───
+    private TextView tvCardioInfo;
+    private Button btnFinCardio, btnSkipCardio;
+
+    // ─── Resumen ───
+    private TextView tvResumenSeries, tvResumenVolumen, tvResumenRir, tvResumenIntensidad, tvResumenImpacto;
+    private Button btnCerrarSesion;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,265 +85,8 @@ public class WorkoutActivity extends AppCompatActivity {
         vincularVistas();
         viewModel = new ViewModelProvider(this).get(WorkoutViewModel.class);
         observarDatos();
-        configurarGestos();
 
         viewModel.cargarSesion();
-    }
-
-    private void vincularVistas() {
-        tvNombreEjercicio = findViewById(R.id.tvNombreEjercicio);
-        tvPesoSugerido = findViewById(R.id.tvPesoSugerido);
-        tvRepsObjetivo = findViewById(R.id.tvRepsObjetivo);
-        tvSerieActual = findViewById(R.id.tvSerieActual);
-        tvProgreso = findViewById(R.id.tvProgreso);
-        tvTiempoTotal = findViewById(R.id.tvTiempoTotal);
-
-        layoutRegistro = findViewById(R.id.layoutRegistro);
-        tvRepsInput = findViewById(R.id.tvRepsInput);
-
-        layoutTimer = findViewById(R.id.layoutTimer);
-        tvTimerCountdown = findViewById(R.id.tvTimerCountdown);
-        tvProximaSerie = findViewById(R.id.tvProximaSerie);
-        layoutCargando = findViewById(R.id.layoutCargando);
-
-        // Botones RIR (0, 1, 2, 3, 4+)
-        botonesRir = new Button[5];
-        botonesRir[0] = findViewById(R.id.btnRir0);
-        botonesRir[1] = findViewById(R.id.btnRir1);
-        botonesRir[2] = findViewById(R.id.btnRir2);
-        botonesRir[3] = findViewById(R.id.btnRir3);
-        botonesRir[4] = findViewById(R.id.btnRir4);
-    }
-
-    private void observarDatos() {
-        // Loading state
-        viewModel.isCargando().observe(this, cargando -> {
-            boolean enCarga = Boolean.TRUE.equals(cargando);
-            layoutCargando.setVisibility(enCarga ? View.VISIBLE : View.GONE);
-            if (enCarga) {
-                layoutCargando.bringToFront();
-            }
-        });
-
-        // Ejercicio actual
-        viewModel.getEjercicioActual().observe(this, this::mostrarEjercicio);
-
-        // Serie actual
-        viewModel.getSerieActual().observe(this, serie -> {
-            if (serie != null) {
-                Ejercicio ej = viewModel.getEjercicioActual().getValue();
-                if (ej != null) {
-                    tvSerieActual.setText(String.format("Serie %d / %d", serie, ej.getSeriesPlan()));
-                }
-            }
-        });
-
-        // Timer de descanso
-        viewModel.getTimerSegundos().observe(this, segundos -> {
-            if (segundos != null && segundos > 0) {
-                int min = segundos / 60;
-                int seg = segundos % 60;
-                tvTimerCountdown.setText(String.format("%d:%02d", min, seg));
-                // Tick háptico en últimos 5 segundos
-                if (segundos <= 5) {
-                    feedback.tick();
-                }
-            } else if (segundos != null && segundos == 0 && estadoActual == ESTADO_TIMER) {
-                // Timer terminó → volver a estado ejercicio
-                layoutTimer.setVisibility(View.GONE);
-                estadoActual = ESTADO_EJERCICIO;
-                stopService(new Intent(this, TimerService.class));
-            }
-        });
-
-        // Sesión completada
-        viewModel.isSesionCompletada().observe(this, completada -> {
-            if (Boolean.TRUE.equals(completada)) {
-                irAResumen();
-            }
-        });
-
-        // Tiempo total
-        viewModel.getTiempoTotalSegundos().observe(this, totalSeg -> {
-            if (totalSeg != null) {
-                int min = totalSeg / 60;
-                int seg = totalSeg % 60;
-                tvTiempoTotal.setText(String.format("%d:%02d", min, seg));
-            }
-        });
-    }
-
-    private void mostrarEjercicio(Ejercicio ejercicio) {
-        if (ejercicio == null) return;
-
-        estadoActual = ESTADO_EJERCICIO;
-        layoutRegistro.setVisibility(View.GONE);
-        layoutTimer.setVisibility(View.GONE);
-
-        tvNombreEjercicio.setText(ejercicio.getNombre());
-
-        if (ejercicio.getPesoSugerido() > 0) {
-            tvPesoSugerido.setText(String.format("%.1f kg", ejercicio.getPesoSugerido()));
-            tvPesoSugerido.setVisibility(View.VISIBLE);
-        } else {
-            tvPesoSugerido.setVisibility(View.GONE);
-        }
-
-        tvRepsObjetivo.setText(ejercicio.getRepsPlan() + " reps");
-
-        int indice = viewModel.getIndiceEjercicio();
-        int total = viewModel.getTotalEjercicios();
-        tvProgreso.setText(String.format("%d/%d", indice + 1, total));
-    }
-
-    private void configurarGestos() {
-        // Swipe izquierda → completar serie
-        View contenedor = findViewById(R.id.contenedorPrincipal);
-        contenedor.setOnTouchListener(new SwipeListener(this) {
-            @Override
-            public void onSwipeLeft() {
-                feedback.tap();
-                if (estadoActual == ESTADO_EJERCICIO) {
-                    mostrarRegistroRIR();
-                } else if (estadoActual == ESTADO_TIMER) {
-                    saltarTimer();
-                }
-            }
-
-            @Override
-            public void onSwipeRight() {
-                // Volver o cancelar
-            }
-        });
-
-        // Botones RIR
-        for (int i = 0; i < botonesRir.length; i++) {
-            final int rir = i;
-            aplicarScaleOnPress(botonesRir[i]);
-            botonesRir[i].setOnClickListener(v -> confirmarSerie(rir));
-        }
-    }
-
-    /**
-     * Scale-on-press: efecto de presión sutil (0.95) con spring bounce.
-     */
-    private void aplicarScaleOnPress(View view) {
-        view.setOnTouchListener((v, event) -> {
-            switch (event.getAction()) {
-                case MotionEvent.ACTION_DOWN:
-                    v.animate().scaleX(0.95f).scaleY(0.95f).setDuration(80).start();
-                    break;
-                case MotionEvent.ACTION_UP:
-                case MotionEvent.ACTION_CANCEL:
-                    SpringAnimation springX = new SpringAnimation(v, SpringAnimation.SCALE_X, 1f);
-                    springX.getSpring().setStiffness(SpringForce.STIFFNESS_MEDIUM);
-                    springX.getSpring().setDampingRatio(SpringForce.DAMPING_RATIO_MEDIUM_BOUNCY);
-                    springX.start();
-                    SpringAnimation springY = new SpringAnimation(v, SpringAnimation.SCALE_Y, 1f);
-                    springY.getSpring().setStiffness(SpringForce.STIFFNESS_MEDIUM);
-                    springY.getSpring().setDampingRatio(SpringForce.DAMPING_RATIO_MEDIUM_BOUNCY);
-                    springY.start();
-                    break;
-            }
-            return false;
-        });
-    }
-
-    private void mostrarRegistroRIR() {
-        // Reps + RIR se muestran en la MISMA pantalla (layout unificado)
-        estadoActual = ESTADO_REGISTRO;
-        layoutRegistro.setVisibility(View.VISIBLE);
-
-        Ejercicio ej = viewModel.getEjercicioActual().getValue();
-        if (ej != null) {
-            // Reps por defecto = objetivo (editable en la misma pantalla)
-            String reps = ej.getRepsPlan();
-            if (reps.contains("-")) {
-                tvRepsInput.setText(reps.split("-")[1]); // Tomar max del rango
-            } else {
-                tvRepsInput.setText(reps);
-            }
-            // Los botones RIR se muestran debajo del input de reps en el mismo layout
-        }
-    }
-
-    /**
-     * Confirma serie con RIR seleccionado.
-     * Regla ACSM: Si completó +1-2 reps con RIR >= objetivo → motor sugiere subir peso.
-     */
-    private void confirmarSerie(int rirPercibido) {
-        feedback.confirm();
-        int repsReales;
-        try {
-            repsReales = Integer.parseInt(tvRepsInput.getText().toString());
-        } catch (NumberFormatException e) {
-            repsReales = 10; // fallback
-        }
-
-        Ejercicio ej = viewModel.getEjercicioActual().getValue();
-        float pesoUsado = ej != null ? ej.getPesoSugerido() : 0;
-
-        viewModel.registrarSerie(repsReales, rirPercibido, pesoUsado);
-
-        // Si quedan más series → Timer
-        if (viewModel.quedanSeriesPorHacer()) {
-            iniciarTimer();
-        } else {
-            // Siguiente ejercicio
-            viewModel.siguienteEjercicio();
-        }
-    }
-
-    private void iniciarTimer() {
-        estadoActual = ESTADO_TIMER;
-        layoutRegistro.setVisibility(View.GONE);
-        layoutTimer.setVisibility(View.VISIBLE);
-
-        Ejercicio ej = viewModel.getEjercicioActual().getValue();
-        int descansoSeg = ej != null ? ej.getDescansoSeg() : 120;
-        int minInit = descansoSeg / 60;
-        int segInit = descansoSeg % 60;
-        tvTimerCountdown.setText(String.format("%d:%02d", minInit, segInit));
-
-        // Info próxima serie
-        Integer serieActual = viewModel.getSerieActual().getValue();
-        if (serieActual != null && ej != null) {
-            tvProximaSerie.setText(String.format("Próximo: Serie %d/%d\n%.1f kg x %s",
-                    serieActual + 1, ej.getSeriesPlan(),
-                    ej.getPesoSugerido(), ej.getRepsPlan()));
-        }
-
-        // Iniciar timer con servicio foreground
-        viewModel.iniciarTimer(descansoSeg);
-        Intent timerIntent = new Intent(this, TimerService.class);
-        timerIntent.putExtra("segundos", descansoSeg);
-        timerIntent.putExtra("ejercicio_nombre", ej != null ? ej.getNombre() : "");
-        try {
-            ContextCompat.startForegroundService(this, timerIntent);
-        } catch (Exception e) {
-            // Fallback defensivo para evitar cierre de la pantalla si el SO bloquea FGS.
-            startService(timerIntent);
-        }
-    }
-
-    private void saltarTimer() {
-        viewModel.saltarTimer();
-        layoutTimer.setVisibility(View.GONE);
-        estadoActual = ESTADO_EJERCICIO;
-        // Timer service se para
-        stopService(new Intent(this, TimerService.class));
-    }
-
-    private void irAResumen() {
-        feedback.success();
-        Intent intent = new Intent(this, SummaryActivity.class);
-        intent.putExtra("sesion_id", viewModel.getSesionId());
-        Integer tiempoSeg = viewModel.getTiempoTotalSegundos().getValue();
-        intent.putExtra("tiempo_total", tiempoSeg != null ? tiempoSeg : 0);
-        intent.putExtra("volumen_total", viewModel.getVolumenTotal());
-        startActivity(intent);
-        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
-        finish();
     }
 
     @Override
@@ -336,9 +101,371 @@ public class WorkoutActivity extends AppCompatActivity {
         TimerService.setAppEnPrimerPlano(false);
     }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        stopService(new Intent(this, TimerService.class));
+    private void vincularVistas() {
+        layoutCargando = findViewById(R.id.layoutCargando);
+        layoutCalentamiento = findViewById(R.id.layoutCalentamiento);
+        layoutEjercicio = findViewById(R.id.layoutEjercicio);
+        layoutRegistro = findViewById(R.id.layoutRegistro);
+        layoutTimer = findViewById(R.id.layoutTimer);
+        layoutEstiramientos = findViewById(R.id.layoutEstiramientos);
+        layoutCardio = findViewById(R.id.layoutCardio);
+        layoutResumen = findViewById(R.id.layoutResumen);
+
+        // Calentamiento
+        tvCalentamientoTitulo = findViewById(R.id.tvCalentamientoTitulo);
+        listCalentamiento = findViewById(R.id.listCalentamiento);
+        btnIniciarEjercicios = findViewById(R.id.btnIniciarEjercicios);
+        btnIniciarEjercicios.setOnClickListener(v -> {
+            feedback.vibrateLight();
+            viewModel.iniciarEjercicios();
+        });
+
+        // Ejercicio
+        tvNombreEjercicio = findViewById(R.id.tvNombreEjercicio);
+        tvPesoSugerido = findViewById(R.id.tvPesoSugerido);
+        tvMotorDetalle = findViewById(R.id.tvMotorDetalle);
+        tvRepsObjetivo = findViewById(R.id.tvRepsObjetivo);
+        tvRirObjetivo = findViewById(R.id.tvRirObjetivo);
+        tvSerieInfo = findViewById(R.id.tvSerieInfo);
+        tvProgreso = findViewById(R.id.tvProgreso);
+
+        // Registro
+        pickerReps = findViewById(R.id.pickerReps);
+        pickerReps.setMinValue(0);
+        pickerReps.setMaxValue(30);
+        pickerReps.setWrapSelectorWheel(false);
+
+        btnSensacionFacil = findViewById(R.id.btnSensacionFacil);
+        btnSensacionBien = findViewById(R.id.btnSensacionBien);
+        btnSensacionDuro = findViewById(R.id.btnSensacionDuro);
+        btnSensacionFallo = findViewById(R.id.btnSensacionFallo);
+
+        btnSensacionFacil.setOnClickListener(v -> registrarConSensacion("facil", 3));
+        btnSensacionBien.setOnClickListener(v -> registrarConSensacion("bien", 2));
+        btnSensacionDuro.setOnClickListener(v -> registrarConSensacion("duro", 1));
+        btnSensacionFallo.setOnClickListener(v -> registrarConSensacion("fallo", 0));
+
+        // Timer
+        tvTimerCountdown = findViewById(R.id.tvTimerCountdown);
+        tvProximaSerie = findViewById(R.id.tvProximaSerie);
+
+        // Estiramientos
+        listEstiramientos = findViewById(R.id.listEstiramientos);
+        btnFinEstiramientos = findViewById(R.id.btnFinEstiramientos);
+        btnFinEstiramientos.setOnClickListener(v -> viewModel.iniciarCardioOResumen());
+
+        // Cardio
+        tvCardioInfo = findViewById(R.id.tvCardioInfo);
+        btnFinCardio = findViewById(R.id.btnFinCardio);
+        btnSkipCardio = findViewById(R.id.btnSkipCardio);
+        btnFinCardio.setOnClickListener(v -> viewModel.finalizarSesion());
+        btnSkipCardio.setOnClickListener(v -> viewModel.finalizarSesion());
+
+        // Resumen
+        tvResumenSeries = findViewById(R.id.tvResumenSeries);
+        tvResumenVolumen = findViewById(R.id.tvResumenVolumen);
+        tvResumenRir = findViewById(R.id.tvResumenRir);
+        tvResumenIntensidad = findViewById(R.id.tvResumenIntensidad);
+        tvResumenImpacto = findViewById(R.id.tvResumenImpacto);
+        btnCerrarSesion = findViewById(R.id.btnCerrarSesion);
+        btnCerrarSesion.setOnClickListener(v -> finish());
     }
+
+    private void observarDatos() {
+        viewModel.getFaseWorkout().observe(this, this::cambiarFase);
+
+        viewModel.getEjercicioActualIdx().observe(this, idx -> mostrarEjercicio());
+        viewModel.getSerieActual().observe(this, serie -> mostrarEjercicio());
+
+        viewModel.getTimerActivo().observe(this, activo -> {
+            if (Boolean.TRUE.equals(activo)) {
+                mostrarTimer();
+            } else {
+                ocultarTimer();
+            }
+        });
+
+        viewModel.getResumen().observe(this, this::mostrarResumen);
+    }
+
+    // ─── Cambio de fase ───────────────────────────────────
+
+    private void cambiarFase(WorkoutViewModel.FaseWorkout fase) {
+        ocultarTodos();
+        switch (fase) {
+            case CARGANDO:
+                layoutCargando.setVisibility(View.VISIBLE);
+                break;
+            case CALENTAMIENTO:
+                layoutCalentamiento.setVisibility(View.VISIBLE);
+                mostrarCalentamiento();
+                break;
+            case EJERCICIOS:
+                layoutEjercicio.setVisibility(View.VISIBLE);
+                layoutRegistro.setVisibility(View.VISIBLE);
+                mostrarEjercicio();
+                break;
+            case ESTIRAMIENTOS:
+                layoutEstiramientos.setVisibility(View.VISIBLE);
+                mostrarEstiramientos();
+                break;
+            case CARDIO:
+                layoutCardio.setVisibility(View.VISIBLE);
+                mostrarCardio();
+                break;
+            case RESUMEN:
+                layoutResumen.setVisibility(View.VISIBLE);
+                break;
+            case ERROR:
+                finish();
+                break;
+        }
+    }
+
+    private void ocultarTodos() {
+        layoutCargando.setVisibility(View.GONE);
+        layoutCalentamiento.setVisibility(View.GONE);
+        layoutEjercicio.setVisibility(View.GONE);
+        layoutRegistro.setVisibility(View.GONE);
+        layoutTimer.setVisibility(View.GONE);
+        layoutEstiramientos.setVisibility(View.GONE);
+        layoutCardio.setVisibility(View.GONE);
+        layoutResumen.setVisibility(View.GONE);
+    }
+
+    // ─── Calentamiento ────────────────────────────────────
+
+    /**
+     * Calentamiento basado en evidencia:
+     *   - Rodrigues 2020: prevención lesiones (no mejora fuerza aguda)
+     *   - Page 2012: NO estático pre-entreno (reduce fuerza)
+     *   - calentamiento.md §3: Movilidad dinámica + Activación específica + Series aproximación
+     */
+    private void mostrarCalentamiento() {
+        tvCalentamientoTitulo.setText("🔥 Calentamiento (10-15 min)");
+        listCalentamiento.removeAllViews();
+
+        // Fase 2: Movilidad dinámica (calentamiento.md §3, 5 min)
+        addCalentamientoItem("Círculos de cadera", "10/lado");
+        addCalentamientoItem("Gato-vaca", "10 reps");
+        addCalentamientoItem("Dislocaciones con banda", "10 reps");
+
+        // Fase 3: Activación específica según tipo sesión (calentamiento.md §3)
+        if (viewModel.getSesionData().getValue() != null &&
+            viewModel.getSesionData().getValue().getSesion() != null) {
+            String tipo = viewModel.getSesionData().getValue().getSesion().getTipo();
+            if (tipo != null) {
+                switch (tipo.toLowerCase()) {
+                    case "push":
+                        addCalentamientoItem("Face pulls ligeros", "15 reps");
+                        addCalentamientoItem("Rotación externa banda", "10/lado");
+                        break;
+                    case "pull":
+                        addCalentamientoItem("Dead hangs", "20s");
+                        addCalentamientoItem("Retracción escapular", "15 reps");
+                        break;
+                    case "pierna":
+                        addCalentamientoItem("Glute bridges", "15 reps");
+                        addCalentamientoItem("Sentadillas sin peso", "10 reps");
+                        break;
+                    default: // Hombros+Brazos
+                        addCalentamientoItem("Rotación externa banda", "10/lado");
+                        addCalentamientoItem("Face pulls ligeros", "15 reps");
+                        break;
+                }
+            }
+        }
+
+        // Fase 4: Series de aproximación (calentamiento.md §3)
+        // 40% x10 → 60% x6 → 75% x3 → 85% x1-2 para compuesto pesado
+        addCalentamientoItem("Series aproximación 1er compuesto", "40% → 60% → 75% → 85%");
+    }
+
+    private void addCalentamientoItem(String nombre, String reps) {
+        TextView tv = new TextView(this);
+        tv.setText("• " + nombre + " — " + reps);
+        tv.setTextSize(15);
+        tv.setPadding(0, 8, 0, 8);
+        listCalentamiento.addView(tv);
+    }
+
+    // ─── Ejercicio actual ─────────────────────────────────
+
+    private void mostrarEjercicio() {
+        Ejercicio ej = viewModel.getEjercicioActual();
+        if (ej == null) return;
+
+        Integer idx = viewModel.getEjercicioActualIdx().getValue();
+        Integer serie = viewModel.getSerieActual().getValue();
+        int total = viewModel.getTotalEjercicios();
+
+        tvNombreEjercicio.setText(ej.getNombreCorto());
+        tvPesoSugerido.setText(ej.getPesoTexto());
+        tvMotorDetalle.setText(ej.getMotorDetalle() != null ? ej.getMotorDetalle() : "");
+        tvRepsObjetivo.setText("Reps: " + ej.getRepsPlan());
+        tvRirObjetivo.setText("RIR objetivo: " + ej.getRirObjetivo());
+        tvSerieInfo.setText(String.format(Locale.getDefault(),
+                "Serie %d / %d", serie != null ? serie : 1, ej.getSeriesPlan()));
+        tvProgreso.setText(String.format(Locale.getDefault(),
+                "Ejercicio %d / %d", (idx != null ? idx : 0) + 1, total));
+
+        // Pre-set reps picker al valor objetivo
+        try {
+            String repsStr = ej.getRepsPlan().split("-")[0].replaceAll("[^0-9]", "");
+            int repsDefault = Integer.parseInt(repsStr);
+            pickerReps.setValue(repsDefault);
+        } catch (NumberFormatException e) {
+            pickerReps.setValue(10);
+        }
+    }
+
+    // ─── Registro de serie ────────────────────────────────
+
+    private void registrarConSensacion(String sensacion, int rir) {
+        feedback.vibrateLight();
+        int reps = pickerReps.getValue();
+        viewModel.registrarSerie(reps, rir, sensacion);
+    }
+
+    // ─── Timer ────────────────────────────────────────────
+
+    private void mostrarTimer() {
+        layoutRegistro.setVisibility(View.GONE);
+        layoutTimer.setVisibility(View.VISIBLE);
+
+        Ejercicio ej = viewModel.getEjercicioActual();
+        int segundos = ej != null ? ej.getDescansoSeg() : 120;
+
+        tvProximaSerie.setText("Descanso — próxima serie en:");
+
+        // Iniciar TimerService (foreground + overlay flotante)
+        Intent timerIntent = new Intent(this, TimerService.class);
+        timerIntent.putExtra("segundos", segundos);
+        timerIntent.putExtra("ejercicio", ej != null ? ej.getNombreCorto() : "");
+        startForegroundService(timerIntent);
+    }
+
+    private void ocultarTimer() {
+        layoutTimer.setVisibility(View.GONE);
+        layoutRegistro.setVisibility(View.VISIBLE);
+    }
+
+    // ─── Estiramientos ────────────────────────────────────
+
+    /**
+     * Estiramientos post-entreno BASADOS EN SESIÓN ACTUAL.
+     * Evidencia: Page 2012 — estático 30s por grupo TRABAJADO.
+     * Bandy 1997 — 30s = 60s (no hay beneficio adicional al estirar más).
+     * Los ejercicios se seleccionan según el tipo de sesión (Push/Pull/Pierna/Hombros).
+     */
+    private void mostrarEstiramientos() {
+        listEstiramientos.removeAllViews();
+
+        SesionResponse data = viewModel.getSesionData().getValue();
+        String tipo = (data != null && data.getSesion() != null) ?
+                data.getSesion().getTipo().toUpperCase() : "PUSH";
+
+        // Page 2012: "músculos principales trabajados" → depende del split
+        switch (tipo) {
+            case "PUSH":
+                addEstiramientoItem("Pectoral en marco de puerta", "30s/lado");
+                addEstiramientoItem("Estiramiento deltoides (brazo cruzado)", "30s/lado");
+                addEstiramientoItem("Extensión tríceps overhead", "30s/brazo");
+                break;
+            case "PULL":
+            case "ESPALDA":
+                addEstiramientoItem("Estiramiento dorsal en barra", "30s");
+                addEstiramientoItem("Estiramiento bíceps en pared", "30s/brazo");
+                addEstiramientoItem("Rotación torácica tumbado", "30s/lado");
+                break;
+            case "PIERNA":
+                addEstiramientoItem("Cuádriceps de pie", "30s/pierna");
+                addEstiramientoItem("Isquios de pie (pierna en banco)", "30s/pierna");
+                addEstiramientoItem("Estiramiento psoas/flexor cadera", "30s/lado");
+                addEstiramientoItem("Aductores en mariposa", "30s");
+                break;
+            case "HOMBROS":
+            case "HOMBROS+BRAZOS":
+                addEstiramientoItem("Deltoides posterior (brazo cruzado)", "30s/lado");
+                addEstiramientoItem("Extensión tríceps overhead", "30s/brazo");
+                addEstiramientoItem("Estiramiento bíceps en pared", "30s/brazo");
+                addEstiramientoItem("Rotación externa pasiva", "30s/lado");
+                break;
+            default:
+                addEstiramientoItem("Pectoral en marco de puerta", "30s/lado");
+                addEstiramientoItem("Estiramiento dorsal", "30s");
+                addEstiramientoItem("Cuádriceps de pie", "30s/pierna");
+                break;
+        }
+    }
+
+    private void addEstiramientoItem(String nombre, String duracion) {
+        TextView tv = new TextView(this);
+        tv.setText("• " + nombre + " — " + duracion);
+        tv.setTextSize(15);
+        tv.setPadding(0, 8, 0, 8);
+        listEstiramientos.addView(tv);
+    }
+
+    // ─── Cardio ───────────────────────────────────────────
+
+    /**
+     * Muestra info de cardio con justificación científica.
+     * Esta pantalla SOLO aparece si la fase lo exige (DEF/MNT).
+     * Wilson 2012: bici no interfiere con hipertrofia. Viana 2019: LISS = HIIT para grasa.
+     */
+    private void mostrarCardio() {
+        SesionResponse data = viewModel.getSesionData().getValue();
+        String fase = (data != null && data.getSesion() != null) ? data.getSesion().getFase() : "DEF";
+
+        String texto;
+        if ("DEF".equals(fase)) {
+            texto = "🚴 15-20 min bici estática\n60-70% FC máx (LISS)\n\n" +
+                    "¿Por qué? Fase DEFINICIÓN → Viana 2019: LISS post-gym\n" +
+                    "aumenta déficit calórico sin interferir (Wilson 2012)";
+        } else {
+            texto = "🚴 10 min bici estática\n60-70% FC máx (LISS)\n\n" +
+                    "¿Por qué? Fase MANTENIMIENTO → mantener\n" +
+                    "capacidad aeróbica (Wilson 2012: bici no interfiere)";
+        }
+        tvCardioInfo.setText(texto);
+    }
+
+    // ─── Resumen ──────────────────────────────────────────
+
+    private void mostrarResumen(ResumenSesionResponse.Resumen res) {
+        if (res == null) return;
+        tvResumenSeries.setText(String.valueOf(res.seriesTotales));
+        tvResumenVolumen.setText(res.volumenTotalKg + " kg");
+        tvResumenRir.setText(String.valueOf(res.rirMedio));
+        tvResumenIntensidad.setText(res.intensidadPercibida);
+        tvResumenImpacto.setText(res.impacto);
+    }
+
+    // ─── Timer broadcast receiver ─────────────────────────
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        // Register for timer finished broadcasts
+        androidx.localbroadcastmanager.content.LocalBroadcastManager.getInstance(this)
+                .registerReceiver(timerFinishedReceiver,
+                        new android.content.IntentFilter(TimerService.ACTION_TIMER_FINISHED));
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        androidx.localbroadcastmanager.content.LocalBroadcastManager.getInstance(this)
+                .unregisterReceiver(timerFinishedReceiver);
+    }
+
+    private final android.content.BroadcastReceiver timerFinishedReceiver =
+            new android.content.BroadcastReceiver() {
+                @Override
+                public void onReceive(android.content.Context context, Intent intent) {
+                    feedback.vibrateStrong();
+                    viewModel.timerCompletado();
+                }
+            };
 }

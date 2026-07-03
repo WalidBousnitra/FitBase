@@ -14,7 +14,7 @@ Modelo de persistencia simplificado para FitBase con estas reglas:
 - Usuario unico: no se persiste user_id en tablas operativas.
 - Solo se guarda lo necesario para ajustar entrenamiento y fases.
 - Comida: no se guarda en BBDD; solo visual diaria en app.
-- Ejercicios log: retencion maxima de 7 dias.
+- Ejercicios log: retencion maxima de 30 dias.
 
 ## 2. Flujos Activos
 
@@ -24,7 +24,7 @@ Zepp/Bascula -> metricas_zepp + peso_log
 
 FLUJO GYM
 sesiones_plan + ejercicios_plan -> app
-app -> ejercicios_log (ultimos 7 dias)
+app -> ejercicios_log (ultimos 30 dias)
 
 FLUJO PLAN
 plan_anual + plan_semanal pre-generados por prioridades
@@ -114,7 +114,7 @@ Sesiones ya calendarizadas para cada fecha.
 | date_creado | DATETIME | Creacion |
 
 ### 3.6 EJERCICIOS_PLAN
-Ejercicios de cada sesion.
+Ejercicios de cada sesion. NO almacena pesos (son dinamicos via motor).
 
 | Columna | Tipo | Descripcion |
 |---|---|---|
@@ -123,15 +123,14 @@ Ejercicios de cada sesion.
 | ejercicio_id | STRING | FK catalogo |
 | num_orden | NUMBER | Orden |
 | num_series_plan | NUMBER | Series |
-| num_reps_plan | STRING | Reps objetivo |
-| num_peso_sugerido_kg | NUMBER | Peso sugerido |
+| str_reps_plan | STRING | Reps objetivo (ej: "8-10") |
 | num_rir_objetivo | NUMBER | RIR |
 | num_descanso_seg | NUMBER | Descanso |
 | str_notas | STRING | Notas |
 | bool_es_warmup | BOOLEAN | Serie calentamiento |
 
-### 3.7 EJERCICIOS_LOG (RETENCION 7 DIAS)
-Registro de series realizadas; solo se conserva la ultima semana.
+### 3.7 EJERCICIOS_LOG (RETENCION 30 DIAS)
+Registro de series realizadas; se conservan los ultimos 30 dias (necesario porque ejercicios se hacen 1x/sem).
 
 | Columna | Tipo | Descripcion |
 |---|---|---|
@@ -147,7 +146,8 @@ Registro de series realizadas; solo se conserva la ultima semana.
 | date_timestamp | DATETIME | Timestamp |
 
 Regla de retencion:
-- Al insertar un log nuevo, se eliminan registros con fecha anterior a hoy-7 dias.
+- Al insertar un log nuevo, se eliminan registros con fecha anterior a hoy-30 dias.
+- 30 dias porque: ejercicios se hacen 1x/sem, si el usuario falta 2 semanas necesita datos de 14+ dias.
 
 ### 3.8 EJERCICIOS_CATALOGO
 Catalogo de referencia de ejercicios.
@@ -162,7 +162,7 @@ Catalogo de referencia de ejercicios.
 - P5-P10 como moduladores secundarios
 
 2. Motor de cargas usa:
-- Ejercicios de la ultima semana (ejercicios_log)
+- Último registro por ejercicio dentro de ventana 30 días (ejercicios_log)
 - Metricas Zepp del dia (sleep score, pasos, FC reposo, VO2max)
 - Composicion corporal reciente (peso_log)
 

@@ -81,8 +81,9 @@ public class ProgressionViewModel extends AndroidViewModel {
     private void cargarDesdeHealthConnect(int dias) {
         if (!HealthConnectReader.isAvailable(getApplication())) {
             cargando.postValue(false);
-            error.postValue("Sin conexión al backend y Health Connect no disponible");
-            Log.e(TAG, "Ni backend ni HC disponibles");
+            error.postValue("Health Connect no está instalado en este dispositivo.\n" +
+                    "Instálalo desde Google Play para ver datos de Zepp y FatSecret.");
+            Log.e(TAG, "HC SDK not available");
             return;
         }
 
@@ -147,8 +148,14 @@ public class ProgressionViewModel extends AndroidViewModel {
                 error.postValue(null);
                 datos.postValue(resp);
             } else {
-                Log.w(TAG, "HC también vacío");
-                error.postValue("No hay datos de progresión. Usa Zepp/FatSecret para registrar datos.");
+                Log.w(TAG, "HC devolvió 0 registros de recuperación");
+                StringBuilder msg = new StringBuilder();
+                msg.append("Health Connect no tiene datos de peso/sueño/FC.\n\n");
+                msg.append("Verifica:\n");
+                msg.append("• Zepp/Mi Fitness → Perfil → Apps terceros → Health Connect → ACTIVAR\n");
+                msg.append("• Ajustes → Health Connect → Permisos de apps → FitBase → Peso ✓ Sueño ✓ FC ✓\n");
+                msg.append("• Tras activar, pésate una vez para que Zepp sincronice el historial");
+                error.postValue(msg.toString());
                 datos.postValue(null);
             }
             cargando.postValue(false);

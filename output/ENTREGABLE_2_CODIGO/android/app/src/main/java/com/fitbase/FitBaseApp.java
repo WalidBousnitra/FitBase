@@ -80,16 +80,16 @@ public class FitBaseApp extends Application {
         canalTimer.setSound(null, null);
         nm.createNotificationChannel(canalTimer);
 
-        // Canal para notificación al reloj (Zepp replica al Amazfit GTS 4)
-        // Alta prioridad para que Zepp la capture → vibra en muñeca
-        // Sin vibración ni sonido LOCAL (solo el reloj vibra)
+        // Canal para notificación FIN del timer (expandida tipo Live Activity)
+        // Alta prioridad = heads-up garantizado. Vibra brevemente el móvil.
         NotificationChannel canalReloj = new NotificationChannel(
                 CANAL_TIMER_RELOJ,
-                "Alerta Reloj (Vibración Amazfit)",
+                "Alerta Timer (Fin de Descanso)",
                 NotificationManager.IMPORTANCE_HIGH
         );
-        canalReloj.setDescription("Vibra tu reloj cuando termina el descanso");
-        canalReloj.enableVibration(false); // NO vibrar móvil
+        canalReloj.setDescription("Notificación expandida cuando termina el descanso + vibración reloj");
+        canalReloj.enableVibration(true);
+        canalReloj.setVibrationPattern(new long[]{0, 200, 100, 200});
         canalReloj.setSound(null, null);   // NO sonar en móvil
         nm.createNotificationChannel(canalReloj);
 

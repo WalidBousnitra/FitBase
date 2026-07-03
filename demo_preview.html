@@ -1,831 +1,926 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>FitBase — Demo Preview</title>
-<style>
-* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitBase — Preview UI (v3.0 Vivid)</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #0F1419;
+            --surface: #1B2028;
+            --surface2: #252D38;
+            --text: #F0F2F5;
+            --text2: #A8B3C0;
+            --text3: #6B7785;
+            --sep: #2A3442;
+            --accent: #FF6D3B;
+            --accent2: #FF3D00;
+            --success: #4CAF50;
+            --warning: #FFB300;
+            --error: #FF5252;
+            --chart: #42A5F5;
+            --chart2: #7E57C2;
+            --prot: #FF8A65;
+            --carbs: #4FC3F7;
+            --fat: #FFD54F;
+            --agua: #4DD0E1;
+            --fase-vol: #4CAF50;
+            --fase-fza: #FF5722;
+            --fase-def: #FFB300;
+            --fase-mnt: #42A5F5;
+            --fase-deload: #78909C;
+            --fase-actual-bg: #1A3D5C;
+            --radius: 12px;
+        }
+        body {
+            font-family: -apple-system, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e;
+            color: var(--text);
+            min-height: 100vh;
+            padding: 20px;
+        }
 
-:root {
-  --bg: #121212;
-  --surface: #1E1E1E;
-  --surface-elevated: #2C2C2C;
-  --text-primary: #E8EAED;
-  --text-secondary: #9AA0A6;
-  --text-tertiary: #5F6368;
-  --separator: #333333;
-  --accent: #FF5722;
-  --success: #81C784;
-  --warning: #FFB74D;
-  --error: #EF5350;
-  --chart: #78909C;
-  --radius-card: 12px;
-  --radius-button: 8px;
-}
+        .preview-header {
+            text-align: center;
+            padding: 40px 20px;
+            margin-bottom: 30px;
+        }
+        .preview-header h1 {
+            font-size: 2rem;
+            font-weight: 200;
+            letter-spacing: -0.5px;
+        }
+        .preview-header p {
+            color: var(--text2);
+            margin-top: 8px;
+            font-size: 0.9rem;
+        }
+        .preview-header .version {
+            display: inline-block;
+            background: var(--accent);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            margin-top: 12px;
+            font-weight: 600;
+        }
 
-body {
-  font-family: -apple-system, 'Segoe UI', Roboto, sans-serif;
-  background: var(--bg);
-  color: var(--text-primary);
-  max-width: 430px;
-  margin: 0 auto;
-  min-height: 100vh;
-  overflow-x: hidden;
-  position: relative;
-}
+        .screens {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
 
-/* ─── SCREENS ─── */
-.screen { display: none; min-height: 100vh; padding: 24px; padding-top: 48px; animation: fadeIn 0.3s ease; }
-.screen.active { display: block; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        .phone-frame {
+            background: var(--bg);
+            border-radius: 32px;
+            border: 3px solid var(--sep);
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+        .phone-status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 20px;
+            font-size: 0.7rem;
+            color: var(--text3);
+        }
+        .phone-status-bar .notch {
+            width: 80px;
+            height: 22px;
+            background: #000;
+            border-radius: 12px;
+            margin: 0 auto;
+        }
+        .phone-content {
+            padding: 18px;
+            min-height: 600px;
+        }
 
-/* ─── TYPOGRAPHY ─── */
-.display { font-size: 48px; font-weight: 300; color: var(--text-primary); }
-.headline { font-size: 20px; font-weight: 500; color: var(--text-primary); }
-.title { font-size: 16px; font-weight: 500; color: var(--text-primary); }
-.body { font-size: 14px; font-weight: 400; color: var(--text-secondary); }
-.caption { font-size: 12px; font-weight: 500; color: var(--text-tertiary); letter-spacing: 0.04em; text-transform: uppercase; }
+        .screen-label {
+            text-align: center;
+            color: var(--text3);
+            font-size: 0.8rem;
+            margin-top: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
 
-/* ─── COMPONENTS ─── */
-.btn-primary {
-  width: 100%; height: 48px; border: none; border-radius: var(--radius-button);
-  background: var(--text-primary); color: var(--bg);
-  font-size: 14px; font-weight: 500; cursor: pointer;
-  transition: transform 0.1s ease;
-}
-.btn-primary:active { transform: scale(0.97); }
+        /* ═══ HOME SCREEN ═══ */
+        .home-saludo {
+            font-size: 26px;
+            font-weight: 900;
+            color: var(--text);
+        }
+        .home-fecha {
+            color: var(--text3);
+            font-size: 12px;
+            margin-top: 2px;
+            margin-bottom: 14px;
+        }
 
-.btn-secondary {
-  width: 100%; height: 48px; border: 1px solid var(--separator); border-radius: var(--radius-button);
-  background: transparent; color: var(--text-primary);
-  font-size: 14px; font-weight: 500; cursor: pointer;
-  transition: transform 0.1s ease;
-}
-.btn-secondary:active { transform: scale(0.97); }
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--sep);
+            border-radius: var(--radius);
+            padding: 14px;
+            margin-bottom: 10px;
+        }
+        .card-label {
+            font-size: 10px;
+            color: var(--text3);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 500;
+        }
+        .card-big-number {
+            font-size: 36px;
+            font-weight: 900;
+            color: var(--text);
+            line-height: 1.1;
+        }
+        .card-big-number span {
+            font-size: 12px;
+            color: var(--text3);
+            font-weight: 400;
+            margin-left: 6px;
+        }
+        .progress-bar {
+            height: 4px;
+            background: var(--sep);
+            border-radius: 3px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+        .progress-fill.cal {
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            width: 44%;
+        }
+        .progress-fill.pasos {
+            background: var(--success);
+            width: 56%;
+        }
+        .progress-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: var(--text3);
+            margin-top: 4px;
+        }
 
-.separator { width: 100%; height: 1px; background: var(--separator); }
+        /* Macro cards */
+        .macros-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .macro-card {
+            flex: 1;
+            background: var(--surface);
+            border: 1.5px solid var(--sep);
+            border-radius: var(--radius);
+            padding: 12px;
+            text-align: center;
+        }
+        .macro-card .macro-val {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .macro-card .macro-label {
+            font-size: 9px;
+            color: var(--text3);
+            margin-top: 2px;
+        }
+        .macro-card.prot .macro-val { color: var(--prot); }
+        .macro-card.carbs .macro-val { color: var(--carbs); }
+        .macro-card.fat .macro-val { color: var(--fat); }
 
-.progress-bar {
-  width: 100%; height: 2px; background: var(--separator); border-radius: 2px; overflow: hidden;
-}
-.progress-bar .fill { height: 100%; border-radius: 2px; transition: width 1s ease; }
+        /* Stats row */
+        .stats-row {
+            display: flex;
+            gap: 10px;
+        }
+        .stats-row .card { flex: 1; }
+        .stats-row .stat-val {
+            font-size: 24px;
+            font-weight: 500;
+            color: var(--text);
+            margin-top: 4px;
+        }
+        .stats-row .stat-sub {
+            font-size: 11px;
+            color: var(--text3);
+        }
 
-.banner {
-  padding: 12px 16px; border: 1px solid var(--separator); border-radius: var(--radius-button);
-  display: flex; align-items: center; gap: 10px; margin-bottom: 24px;
-}
-.banner-success { border-color: var(--success); }
-.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
-.dot-green { background: var(--success); }
+        /* Session card */
+        .session-card {
+            background: var(--surface);
+            border: 1px solid var(--sep);
+            border-radius: var(--radius);
+            padding: 14px;
+            margin: 10px 0;
+        }
+        .session-title {
+            font-size: 18px;
+            font-weight: 900;
+            margin-top: 4px;
+        }
+        .session-info {
+            font-size: 12px;
+            color: var(--text3);
+            margin-top: 4px;
+        }
 
-.card-flat {
-  border: 1px solid var(--separator); border-radius: var(--radius-card);
-  padding: 16px; margin-bottom: 12px;
-}
+        /* Buttons */
+        .btn-primary {
+            display: block;
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 15px;
+            font-weight: 600;
+            text-align: center;
+            margin: 8px 0;
+            cursor: pointer;
+        }
+        .btn-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .btn-secondary {
+            flex: 1;
+            padding: 12px;
+            background: var(--surface2);
+            border: 1px solid var(--sep);
+            border-radius: 10px;
+            color: var(--text2);
+            font-size: 12px;
+            text-align: center;
+            font-weight: 500;
+            cursor: pointer;
+        }
 
-/* ─── HOME SCREEN ─── */
-#home .greeting { font-size: 24px; font-weight: 500; }
-#home .date { font-size: 14px; color: var(--text-tertiary); margin-top: 4px; margin-bottom: 32px; }
+        /* ═══ PLAN ANUAL ═══ */
+        .plan-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .plan-header .back { font-size: 20px; margin-right: 12px; cursor: pointer; }
+        .plan-header h2 { font-size: 18px; font-weight: 500; flex: 1; text-align: center; }
 
-.calories-section { padding: 20px 0; }
-.calories-number { font-size: 40px; font-weight: 300; margin-top: 4px; }
-.calories-meta { display: flex; justify-content: space-between; margin-top: 8px; }
-.calories-meta span { font-size: 12px; color: var(--text-tertiary); }
+        .fase-actual-card {
+            background: var(--surface);
+            border: 1px solid var(--sep);
+            border-radius: var(--radius);
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+        .fase-actual-card .titulo {
+            color: var(--accent);
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .fase-actual-card .sub {
+            color: var(--text2);
+            font-size: 12px;
+            margin-top: 4px;
+        }
 
-.macros-row {
-  display: flex; padding: 16px 0; justify-content: center;
-}
-.macro-item { flex: 1; text-align: center; }
-.macro-value { font-size: 18px; font-weight: 500; }
-.macro-label { font-size: 11px; color: var(--text-tertiary); margin-top: 2px; }
-.macro-divider { width: 1px; height: 28px; background: var(--separator); align-self: center; }
+        .fase-item {
+            background: var(--surface);
+            border: 1px solid var(--sep);
+            border-radius: var(--radius);
+            padding: 14px 14px 14px 18px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            position: relative;
+        }
+        .fase-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 10px;
+            bottom: 10px;
+            width: 5px;
+            border-radius: 0 3px 3px 0;
+        }
+        .fase-item.vol::before { background: var(--fase-vol); }
+        .fase-item.fza::before { background: var(--fase-fza); }
+        .fase-item.def::before { background: var(--fase-def); }
+        .fase-item.mnt::before { background: var(--fase-mnt); }
+        .fase-item.deload::before { background: var(--fase-deload); }
 
-.metrics-row { display: flex; gap: 0; margin-bottom: 24px; }
-.metric-col { flex: 1; }
-.metric-col:first-child { padding-right: 12px; }
-.metric-col:last-child { padding-left: 12px; }
-.metric-divider { width: 1px; background: var(--separator); align-self: stretch; }
-.metric-value { font-size: 22px; font-weight: 500; margin-top: 2px; }
-.metric-target { font-size: 11px; color: var(--text-tertiary); margin-top: 4px; }
+        .fase-item.actual {
+            background: var(--fase-actual-bg);
+            border: 2px solid var(--accent);
+        }
+        .fase-item.actual::before { width: 6px; background: var(--accent); }
+        .fase-item .fase-info { flex: 1; }
+        .fase-item .fase-nombre {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text);
+        }
+        .fase-item.actual .fase-nombre {
+            font-weight: 700;
+            color: var(--accent);
+        }
+        .fase-item .fase-fechas {
+            font-size: 12px;
+            color: var(--text2);
+            margin-top: 2px;
+        }
+        .fase-item .fase-rir {
+            font-size: 11px;
+            color: var(--text3);
+            margin-top: 1px;
+        }
+        .badge-actual {
+            border: 1.5px solid var(--accent);
+            color: var(--accent);
+            font-size: 9px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 20px;
+        }
 
-.session-section { padding: 20px 0; }
-.session-title { font-size: 16px; font-weight: 500; margin-top: 6px; }
-.session-phase { font-size: 13px; color: var(--text-tertiary); margin-top: 4px; }
+        /* ═══ TIMER NOTIFICATION ═══ */
+        .notif-section {
+            margin-top: 20px;
+        }
+        .notif-compact {
+            background: #2D2D3A;
+            border-radius: 16px;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+            border: 1px solid #3a3a4a;
+        }
+        .notif-compact .icon {
+            width: 28px;
+            height: 28px;
+            background: var(--accent);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+        .notif-compact .info { flex: 1; }
+        .notif-compact .info .title {
+            font-size: 12px;
+            color: var(--text);
+            font-weight: 500;
+        }
+        .notif-compact .info .subtitle {
+            font-size: 10px;
+            color: var(--text3);
+        }
+        .notif-compact .chrono {
+            font-size: 22px;
+            font-weight: 600;
+            color: var(--accent);
+            font-variant-numeric: tabular-nums;
+        }
 
-/* ─── WORKOUT SCREEN ─── */
-#workout {
-  display: none; flex-direction: column; align-items: center; justify-content: center;
-  text-align: center; min-height: 100vh;
-}
-#workout.active { display: flex; }
-#workout .top-bar {
-  position: absolute; top: 48px; left: 24px; right: 24px;
-  display: flex; justify-content: space-between;
-}
-#workout .exercise-name { font-size: 20px; font-weight: 500; margin-bottom: 32px; }
-#workout .weight { font-size: 48px; font-weight: 300; margin-bottom: 24px; }
-#workout .reps-box {
-  padding: 16px 32px; border: 1px solid var(--separator); border-radius: var(--radius-button);
-  font-size: 18px; font-weight: 500; margin-bottom: 24px;
-}
-#workout .serie-info { font-size: 14px; color: var(--text-secondary); }
-#workout .swipe-hint { font-size: 12px; color: var(--text-tertiary); margin-top: 48px; }
+        .notif-expanded {
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            border: 2px solid var(--accent);
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        .notif-expanded .title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--accent);
+        }
+        .notif-expanded .exercise {
+            font-size: 14px;
+            color: var(--text);
+            margin-top: 6px;
+        }
+        .notif-expanded .cta {
+            font-size: 11px;
+            color: var(--text2);
+            margin-top: 6px;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255,109,59,0.4); }
+            50% { box-shadow: 0 0 20px 4px rgba(255,109,59,0.2); }
+        }
 
-/* ─── RIR SCREEN ─── */
-#rir { display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; min-height: 100vh; }
-#rir.active { display: flex; }
-#rir .reps-input {
-  font-size: 40px; font-weight: 300; width: 80px; text-align: center; border: none;
-  border-bottom: 2px solid var(--accent); background: transparent; padding: 8px;
-  color: var(--text-primary); outline: none;
-}
-.rir-buttons { display: flex; gap: 8px; margin-top: 24px; }
-.rir-btn {
-  width: 52px; height: 52px; border-radius: var(--radius-button);
-  background: var(--surface-elevated); border: none;
-  font-size: 18px; font-weight: 500; color: var(--text-primary);
-  cursor: pointer; transition: transform 0.08s ease;
-}
-.rir-btn:active { transform: scale(0.93); }
-.rir-btn.selected { background: var(--text-primary); color: var(--bg); }
+        /* ═══ PROGRESSION ═══ */
+        .prog-filters {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .prog-filters .pill {
+            flex: 1;
+            padding: 8px;
+            background: var(--surface2);
+            border: 1px solid var(--sep);
+            border-radius: 8px;
+            text-align: center;
+            font-size: 12px;
+            color: var(--text2);
+            cursor: pointer;
+        }
+        .prog-filters .pill.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+            font-weight: 600;
+        }
+        .prog-cards {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .prog-card {
+            flex: 1;
+            background: var(--surface);
+            border: 1px solid var(--sep);
+            border-radius: var(--radius);
+            padding: 14px;
+        }
+        .prog-card .label { font-size: 10px; color: var(--text3); text-transform: uppercase; }
+        .prog-card .value { font-size: 20px; font-weight: 600; margin-top: 2px; }
+        .prog-card .change { font-size: 11px; margin-top: 2px; }
+        .prog-card .change.up { color: var(--success); }
+        .prog-card .change.down { color: var(--warning); }
 
-/* ─── TIMER SCREEN ─── */
-#timer { display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; min-height: 100vh; }
-#timer.active { display: flex; }
-#timer .countdown { font-size: 64px; font-weight: 300; }
-#timer .next-info { font-size: 14px; color: var(--text-secondary); margin-top: 32px; }
+        .prog-chart {
+            background: var(--surface);
+            border: 1px solid var(--sep);
+            border-radius: var(--radius);
+            padding: 16px;
+            margin-bottom: 10px;
+        }
+        .prog-chart .chart-title {
+            font-size: 12px;
+            color: var(--text2);
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+        .mini-chart {
+            display: flex;
+            align-items: flex-end;
+            gap: 4px;
+            height: 60px;
+        }
+        .mini-chart .bar {
+            flex: 1;
+            border-radius: 3px 3px 0 0;
+            min-height: 4px;
+            transition: height 0.3s;
+        }
 
-/* Dynamic Island notification mockup */
-.dynamic-island {
-  position: fixed; top: 8px; left: 50%; transform: translateX(-50%);
-  background: #000; border-radius: 24px; padding: 10px 20px;
-  display: flex; align-items: center; gap: 12px;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.5);
-  z-index: 200; animation: islandExpand 0.4s cubic-bezier(0.25,1,0.5,1);
-  max-width: 320px; width: auto;
-}
-.dynamic-island.hidden { display: none; }
-.dynamic-island.expanded {
-  padding: 16px 24px;
-  animation: islandPulse 0.5s ease;
-}
-@keyframes islandExpand { from { transform: translateX(-50%) scaleX(0.5) scaleY(0.5); opacity: 0; } to { transform: translateX(-50%) scaleX(1) scaleY(1); opacity: 1; } }
-@keyframes islandPulse { 0% { transform: translateX(-50%) scale(1); } 50% { transform: translateX(-50%) scale(1.05); } 100% { transform: translateX(-50%) scale(1); } }
-.island-icon { font-size: 16px; }
-.island-text { font-size: 13px; color: #fff; font-weight: 500; }
-.island-timer { font-size: 13px; color: var(--accent); font-weight: 600; font-variant-numeric: tabular-nums; }
+        /* ═══ SECTION DIVIDERS ═══ */
+        .section-title {
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--accent);
+            font-weight: 600;
+            margin: 40px 0 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
 
-/* ─── SUMMARY SCREEN ─── */
-#summary { display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; min-height: 100vh; }
-#summary.active { display: flex; }
-#summary .score { font-size: 64px; font-weight: 300; margin-top: 16px; }
-#summary .score-sub { font-size: 18px; color: var(--text-tertiary); }
-.summary-metrics { display: flex; width: 100%; margin-top: 32px; padding: 16px 0; }
-.summary-metric { flex: 1; text-align: center; }
-.summary-metric .value { font-size: 18px; font-weight: 500; }
-.summary-metric .label { font-size: 12px; color: var(--text-tertiary); }
-.summary-divider { width: 1px; background: var(--separator); align-self: stretch; }
-#summary .tips { text-align: left; width: 100%; margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--separator); font-size: 14px; color: var(--text-secondary); line-height: 1.8; }
-.db-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; background: rgba(129,199,132,0.15); border: 1px solid var(--success); font-size: 12px; color: var(--success); margin-top: 16px; }
-
-/* ─── PLAN ANUAL SCREEN ─── */
-#plan { padding-top: 16px; }
-#plan .plan-header { display: flex; align-items: center; margin-bottom: 24px; }
-#plan .back-btn { font-size: 20px; padding: 8px; cursor: pointer; color: var(--text-primary); }
-#plan .plan-title { flex: 1; text-align: center; font-size: 20px; font-weight: 500; }
-.fase-item {
-  display: flex; align-items: center; padding: 16px;
-  border-bottom: 1px solid var(--separator);
-}
-.fase-item.dimmed { opacity: 0.5; }
-.fase-indicator { width: 4px; height: 48px; border-radius: 2px; margin-right: 12px; flex-shrink: 0; }
-.fase-info { flex: 1; }
-.fase-name { font-size: 15px; font-weight: 500; }
-.fase-dates { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
-.fase-rir { font-size: 13px; color: var(--text-tertiary); margin-top: 2px; }
-
-/* ─── PROGRESSION SCREEN ─── */
-#progression { padding-top: 16px; }
-.prog-header { display: flex; align-items: center; margin-bottom: 24px; }
-.prog-header .back-btn { font-size: 20px; padding: 8px; cursor: pointer; color: var(--text-primary); }
-.prog-title { font-size: 28px; font-weight: 300; margin-bottom: 4px; }
-.prog-subtitle { font-size: 14px; color: var(--text-secondary); margin-bottom: 16px; }
-
-.filter-row { display: flex; gap: 8px; margin-bottom: 24px; }
-.filter-btn {
-  flex: 1; height: 36px; border: 1px solid var(--separator); border-radius: var(--radius-button);
-  background: transparent; color: var(--text-secondary); font-size: 13px; font-weight: 500; cursor: pointer;
-  transition: all 0.15s ease;
-}
-.filter-btn.active { background: var(--text-primary); color: var(--bg); border-color: var(--text-primary); }
-
-.stat-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 32px; }
-.stat-card {
-  border: 1px solid var(--separator); border-radius: var(--radius-card); padding: 16px;
-}
-.stat-label { font-size: 11px; color: var(--text-tertiary); letter-spacing: 0.05em; text-transform: uppercase; }
-.stat-value { font-size: 22px; font-weight: 500; margin-top: 4px; }
-.stat-change { font-size: 12px; margin-top: 4px; }
-.stat-change.positive { color: var(--success); }
-.stat-change.negative { color: var(--warning); }
-
-.data-section { margin-bottom: 28px; }
-.data-section-title { font-size: 16px; font-weight: 500; margin-bottom: 12px; }
-.data-row {
-  display: flex; align-items: center; padding: 10px 4px;
-  border-bottom: 1px solid rgba(51,51,51,0.5);
-}
-.data-date { width: 80px; font-size: 12px; color: var(--text-tertiary); }
-.data-value { flex: 1; font-size: 14px; font-weight: 500; }
-.data-secondary { font-size: 12px; color: var(--text-secondary); }
-
-/* Mini sparkline */
-.sparkline { display: flex; align-items: flex-end; gap: 2px; height: 32px; margin-bottom: 12px; }
-.spark-bar { width: 100%; border-radius: 2px 2px 0 0; background: var(--accent); opacity: 0.7; transition: height 0.5s ease; }
-
-/* ─── STATUS BAR MOCK ─── */
-.status-bar {
-  position: fixed; top: 0; left: 50%; transform: translateX(-50%);
-  width: 100%; max-width: 430px; height: 24px;
-  background: var(--bg); display: flex; align-items: center;
-  justify-content: space-between; padding: 0 16px; font-size: 11px;
-  color: var(--text-secondary); z-index: 100;
-}
-
-/* ─── NAV BAR (bottom) ─── */
-.nav-bar {
-  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
-  width: 100%; max-width: 430px; height: 56px;
-  background: var(--surface); border-top: 1px solid var(--separator);
-  display: flex; align-items: center; justify-content: space-around;
-  z-index: 100;
-}
-.nav-item {
-  display: flex; flex-direction: column; align-items: center; gap: 2px;
-  font-size: 10px; color: var(--text-tertiary); cursor: pointer;
-  transition: color 0.15s ease;
-}
-.nav-item.active { color: var(--text-primary); }
-.nav-icon { font-size: 20px; }
-</style>
+        /* COLOR PALETTE SECTION */
+        .palette {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin: 20px 0 40px;
+        }
+        .swatch {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 4px;
+            font-size: 7px;
+            color: rgba(255,255,255,0.7);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+    </style>
 </head>
 <body>
 
-<!-- Status Bar Mock -->
-<div class="status-bar">
-  <span>9:41</span>
-  <span>● ● ● ▮</span>
+<div class="preview-header">
+    <h1>FitBase UI Preview</h1>
+    <p>Así se ve la app con la nueva paleta vivida, macro cards, plan anual y timer</p>
+    <div class="version">v3.0 · Vivid Dark · 02/07/2026</div>
 </div>
 
-<!-- Dynamic Island (Timer notification - hidden by default) -->
-<div class="dynamic-island hidden" id="dynamicIsland">
-  <span class="island-icon">⏱</span>
-  <span class="island-text">Descanso</span>
-  <span class="island-timer" id="islandTimer">2:00</span>
+<!-- COLOR PALETTE -->
+<div class="section-title">Paleta de colores</div>
+<div class="palette">
+    <div class="swatch" style="background:#0F1419">BG</div>
+    <div class="swatch" style="background:#1B2028">Surface</div>
+    <div class="swatch" style="background:#252D38">Elevated</div>
+    <div class="swatch" style="background:#FF6D3B">Accent</div>
+    <div class="swatch" style="background:#FF3D00">Accent2</div>
+    <div class="swatch" style="background:#4CAF50">Success</div>
+    <div class="swatch" style="background:#FFB300">Warning</div>
+    <div class="swatch" style="background:#42A5F5">Chart</div>
+    <div class="swatch" style="background:#7E57C2">Chart2</div>
+    <div class="swatch" style="background:#FF8A65">Prot</div>
+    <div class="swatch" style="background:#4FC3F7">Carbs</div>
+    <div class="swatch" style="background:#FFD54F">Fat</div>
+    <div class="swatch" style="background:#4DD0E1">Agua</div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════ -->
-<!-- HOME SCREEN -->
-<!-- ═══════════════════════════════════════════════════════════ -->
-<div id="home" class="screen active">
+<div class="screens">
 
-  <!-- Demo Banner -->
-  <div class="banner banner-success">
-    <div class="dot dot-green"></div>
-    <span class="body" style="color:var(--success)">Demo activa · BBDD conectada · Escribe datos reales</span>
-  </div>
+    <!-- ═══════ HOME SCREEN ═══════ -->
+    <div>
+        <div class="phone-frame">
+            <div class="phone-status-bar">
+                <span>9:41</span>
+                <div class="notch"></div>
+                <span>100%</span>
+            </div>
+            <div class="phone-content">
+                <div class="home-saludo">Buenos días</div>
+                <div class="home-fecha">miércoles 2 de julio</div>
 
-  <!-- Greeting -->
-  <div class="greeting">Buenos días</div>
-  <div class="date" id="dateDisplay"></div>
+                <!-- Energía del día -->
+                <div class="card">
+                    <div class="card-label">Energía del día</div>
+                    <div class="card-big-number">1830<span>kcal restantes</span></div>
+                    <div class="progress-bar"><div class="progress-fill cal"></div></div>
+                    <div class="progress-meta">
+                        <span>1450 consumidas</span>
+                        <span>de 3280 kcal</span>
+                    </div>
+                </div>
 
-  <!-- Calorías -->
-  <div class="calories-section">
-    <span class="caption">Calorías restantes</span>
-    <div class="calories-number">1,830</div>
-    <div class="progress-bar" style="margin-top:16px">
-      <div class="fill" style="width:44%; background:var(--accent)"></div>
+                <!-- Macros con borde -->
+                <div class="macros-row">
+                    <div class="macro-card prot">
+                        <div class="macro-val">96g</div>
+                        <div class="macro-label">Prot rest.</div>
+                    </div>
+                    <div class="macro-card carbs">
+                        <div class="macro-val">288g</div>
+                        <div class="macro-label">Carbs rest.</div>
+                    </div>
+                    <div class="macro-card fat">
+                        <div class="macro-val">48g</div>
+                        <div class="macro-label">Grasa rest.</div>
+                    </div>
+                </div>
+
+                <!-- Pasos + Agua -->
+                <div class="stats-row">
+                    <div class="card">
+                        <div class="stat-val">4,523</div>
+                        <div class="stat-sub">/ 8,000 pasos</div>
+                        <div class="progress-bar"><div class="progress-fill pasos"></div></div>
+                    </div>
+                    <div class="card">
+                        <div class="stat-val" style="color:var(--agua)">3.2L</div>
+                        <div class="stat-sub">Objetivo hidratación</div>
+                    </div>
+                </div>
+
+                <!-- Sesión -->
+                <div class="session-card">
+                    <div class="card-label">Sesión de hoy</div>
+                    <div class="session-title">Push Day — 6 ejercicios</div>
+                    <div class="session-info">Hipertrofia I · RIR 2-3 · ~72 min</div>
+                </div>
+
+                <!-- Botones -->
+                <div class="btn-primary">Empezar entreno</div>
+                <div class="btn-row">
+                    <div class="btn-secondary">Plan</div>
+                    <div class="btn-secondary">Progresión</div>
+                </div>
+            </div>
+        </div>
+        <div class="screen-label">Home</div>
     </div>
-    <div class="calories-meta">
-      <span>1,450 consumidas</span>
-      <span>de 3,280 kcal</span>
+
+    <!-- ═══════ PLAN ANUAL ═══════ -->
+    <div>
+        <div class="phone-frame">
+            <div class="phone-status-bar">
+                <span>9:41</span>
+                <div class="notch"></div>
+                <span>100%</span>
+            </div>
+            <div class="phone-content">
+                <div class="plan-header">
+                    <span class="back">←</span>
+                    <h2>Plan 2026–2027</h2>
+                </div>
+
+                <!-- Fase actual destacada arriba -->
+                <div class="fase-actual-card">
+                    <div class="titulo">FASE ACTUAL: Adaptación</div>
+                    <div class="sub">10 fases cargadas · 31 ago 2026 → 31 jul 2027</div>
+                </div>
+
+                <!-- Lista de fases -->
+                <div class="fase-item actual vol">
+                    <div class="fase-info">
+                        <div class="fase-nombre">Adaptación</div>
+                        <div class="fase-fechas">31 ago 26 → 27 sep 26 · 4 sem</div>
+                        <div class="fase-rir">RIR 4-5 · General</div>
+                    </div>
+                    <div class="badge-actual">ACTUAL</div>
+                </div>
+
+                <div class="fase-item vol">
+                    <div class="fase-info">
+                        <div class="fase-nombre">Hipertrofia I</div>
+                        <div class="fase-fechas">28 sep 26 → 8 nov 26 · 6 sem</div>
+                        <div class="fase-rir">RIR 2-3 · Hombros, Espalda</div>
+                    </div>
+                </div>
+
+                <div class="fase-item deload">
+                    <div class="fase-info">
+                        <div class="fase-nombre">Deload 1</div>
+                        <div class="fase-fechas">9 nov 26 → 15 nov 26 · 1 sem</div>
+                        <div class="fase-rir">RIR 4-5 · Recuperación</div>
+                    </div>
+                </div>
+
+                <div class="fase-item vol">
+                    <div class="fase-info">
+                        <div class="fase-nombre">Hipertrofia II</div>
+                        <div class="fase-fechas">16 nov 26 → 27 dic 26 · 6 sem</div>
+                        <div class="fase-rir">RIR 2-3 · Pecho, Brazos</div>
+                    </div>
+                </div>
+
+                <div class="fase-item fza">
+                    <div class="fase-info">
+                        <div class="fase-nombre">Fuerza</div>
+                        <div class="fase-fechas">28 dic 26 → 7 feb 27 · 6 sem</div>
+                        <div class="fase-rir">RIR 1-2 · Compuestos</div>
+                    </div>
+                </div>
+
+                <div class="fase-item vol">
+                    <div class="fase-info">
+                        <div class="fase-nombre">Hipertrofia III</div>
+                        <div class="fase-fechas">8 feb 27 → 21 mar 27 · 6 sem</div>
+                        <div class="fase-rir">RIR 2-3 · Piernas, Core</div>
+                    </div>
+                </div>
+
+                <div class="fase-item def">
+                    <div class="fase-info">
+                        <div class="fase-nombre">Definición</div>
+                        <div class="fase-fechas">22 mar 27 → 2 may 27 · 6 sem</div>
+                        <div class="fase-rir">RIR 2-3 · Superseries</div>
+                    </div>
+                </div>
+
+                <div class="fase-item mnt">
+                    <div class="fase-info">
+                        <div class="fase-nombre">Peak / Mantenimiento</div>
+                        <div class="fase-fechas">3 may 27 → 31 jul 27 · 13 sem</div>
+                        <div class="fase-rir">RIR 2-3 · Mantener</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="screen-label">Plan Anual</div>
     </div>
-  </div>
 
-  <div class="separator"></div>
+    <!-- ═══════ TIMER NOTIFICATIONS ═══════ -->
+    <div>
+        <div class="phone-frame">
+            <div class="phone-status-bar">
+                <span>9:41</span>
+                <div class="notch"></div>
+                <span>100%</span>
+            </div>
+            <div class="phone-content" style="display:flex; flex-direction:column; justify-content:center;">
+                <h3 style="font-size:14px; color:var(--text2); margin-bottom:16px; text-align:center;">
+                    Notificación Timer — Durante descanso
+                </h3>
 
-  <!-- Macros -->
-  <div class="macros-row">
-    <div class="macro-item">
-      <div class="macro-value">72g</div>
-      <div class="macro-label">Proteína</div>
+                <!-- Compact notification (durante) -->
+                <div class="notif-compact">
+                    <div class="icon">⏱</div>
+                    <div class="info">
+                        <div class="title">Descanso</div>
+                        <div class="subtitle">Press inclinado mancuernas</div>
+                    </div>
+                    <div class="chrono" id="chrono">1:47</div>
+                </div>
+
+                <p style="font-size:11px; color:var(--text3); text-align:center; margin:8px 0;">
+                    ↑ Se muestra mientras estás en Twitter, Instagram, etc.<br>
+                    Cronómetro nativo de Android — sigue contando aunque el SO mate el proceso
+                </p>
+
+                <div style="height:40px"></div>
+
+                <h3 style="font-size:14px; color:var(--text2); margin-bottom:16px; text-align:center;">
+                    Notificación Timer — ¡Terminó! (se expande)
+                </h3>
+
+                <!-- Expanded notification (al terminar) -->
+                <div class="notif-expanded">
+                    <div class="title">⏱ ¡Siguiente serie!</div>
+                    <div class="exercise">Press inclinado mancuernas</div>
+                    <div class="cta">VAMOS — Toca para volver</div>
+                </div>
+
+                <p style="font-size:11px; color:var(--text3); text-align:center; margin-top:12px;">
+                    ↑ Aparece como HEADS-UP (popup arriba) incluso con pantalla bloqueada<br>
+                    • Vibra el móvil (200ms-100ms-200ms)<br>
+                    • Vibra el reloj Amazfit vía Zepp<br>
+                    • Sonido sutil SOLO si hay auriculares conectados<br>
+                    • Si estás DENTRO de la app → silencio total, transición automática
+                </p>
+
+                <div style="height:30px"></div>
+
+                <div style="background:var(--surface); border-radius:10px; padding:14px; border:1px solid var(--sep);">
+                    <div style="font-size:12px; color:var(--accent); font-weight:600; margin-bottom:8px;">Comportamiento del Timer:</div>
+                    <div style="font-size:11px; color:var(--text2); line-height:1.7;">
+                        • <b>Dentro de la app</b> → SILENCIO. UI transiciona sola.<br>
+                        • <b>Fuera (Twitter, etc)</b> → Notificación expandida + vibración<br>
+                        • <b>Auriculares BT</b> → Sonido sutil adicional<br>
+                        • <b>Reloj Amazfit</b> → Vibra (Zepp replica la notificación)<br>
+                        • <b>Hotspot/WiFi activo</b> → No interfiere (cada app su isla)
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="screen-label">Timer (Notificaciones)</div>
     </div>
-    <div class="macro-divider"></div>
-    <div class="macro-item">
-      <div class="macro-value">264g</div>
-      <div class="macro-label">Carbos</div>
+
+    <!-- ═══════ PROGRESSION ═══════ -->
+    <div>
+        <div class="phone-frame">
+            <div class="phone-status-bar">
+                <span>9:41</span>
+                <div class="notch"></div>
+                <span>100%</span>
+            </div>
+            <div class="phone-content">
+                <h2 style="font-size:26px; font-weight:200; margin-bottom:4px;">Progresión</h2>
+                <p style="font-size:13px; color:var(--text2); margin-bottom:14px;">Seguimiento de métricas clave</p>
+
+                <!-- Filtros -->
+                <div class="prog-filters">
+                    <div class="pill">7d</div>
+                    <div class="pill active">30d</div>
+                    <div class="pill">90d</div>
+                </div>
+
+                <!-- Resumen cards -->
+                <div class="prog-cards">
+                    <div class="prog-card">
+                        <div class="label">Peso</div>
+                        <div class="value">78.3 kg</div>
+                        <div class="change up">+0.8 kg</div>
+                    </div>
+                    <div class="prog-card">
+                        <div class="label">Grasa</div>
+                        <div class="value">16.2%</div>
+                        <div class="change down">-0.4%</div>
+                    </div>
+                </div>
+                <div class="prog-cards">
+                    <div class="prog-card">
+                        <div class="label">Sueño</div>
+                        <div class="value">82<span style="font-size:12px;color:var(--text3)">/100</span></div>
+                    </div>
+                    <div class="prog-card">
+                        <div class="label">Pasos media</div>
+                        <div class="value">6,420</div>
+                    </div>
+                </div>
+
+                <!-- Peso chart -->
+                <div class="prog-chart">
+                    <div class="chart-title">Peso corporal (últimos 30 días)</div>
+                    <div class="mini-chart">
+                        <div class="bar" style="height:45%; background:var(--chart)"></div>
+                        <div class="bar" style="height:48%; background:var(--chart)"></div>
+                        <div class="bar" style="height:46%; background:var(--chart)"></div>
+                        <div class="bar" style="height:50%; background:var(--chart)"></div>
+                        <div class="bar" style="height:52%; background:var(--chart)"></div>
+                        <div class="bar" style="height:49%; background:var(--chart)"></div>
+                        <div class="bar" style="height:55%; background:var(--chart)"></div>
+                        <div class="bar" style="height:53%; background:var(--chart)"></div>
+                        <div class="bar" style="height:58%; background:var(--chart)"></div>
+                        <div class="bar" style="height:56%; background:var(--chart)"></div>
+                        <div class="bar" style="height:60%; background:var(--chart)"></div>
+                        <div class="bar" style="height:62%; background:var(--accent)"></div>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-size:9px; color:var(--text3); margin-top:4px;">
+                        <span>2 jun</span><span>2 jul</span>
+                    </div>
+                </div>
+
+                <!-- Sueño chart -->
+                <div class="prog-chart">
+                    <div class="chart-title">Sueño score (últimos 30 días)</div>
+                    <div class="mini-chart">
+                        <div class="bar" style="height:85%; background:var(--chart2)"></div>
+                        <div class="bar" style="height:75%; background:var(--chart2)"></div>
+                        <div class="bar" style="height:90%; background:var(--chart2)"></div>
+                        <div class="bar" style="height:65%; background:var(--warning)"></div>
+                        <div class="bar" style="height:80%; background:var(--chart2)"></div>
+                        <div class="bar" style="height:85%; background:var(--chart2)"></div>
+                        <div class="bar" style="height:70%; background:var(--chart2)"></div>
+                        <div class="bar" style="height:95%; background:var(--success)"></div>
+                        <div class="bar" style="height:80%; background:var(--chart2)"></div>
+                        <div class="bar" style="height:75%; background:var(--chart2)"></div>
+                        <div class="bar" style="height:85%; background:var(--chart2)"></div>
+                        <div class="bar" style="height:82%; background:var(--chart2)"></div>
+                    </div>
+                </div>
+
+                <!-- Nota HC -->
+                <div style="background:rgba(66,165,245,0.1); border:1px solid rgba(66,165,245,0.3); border-radius:10px; padding:12px; margin-top:8px;">
+                    <div style="font-size:11px; color:var(--chart); font-weight:600;">Datos de Health Connect</div>
+                    <div style="font-size:10px; color:var(--text2); margin-top:4px; line-height:1.5;">
+                        Peso → Zepp/Mi Fitness (báscula inteligente)<br>
+                        Sueño + FC → Amazfit GTS 4 (via Zepp)<br>
+                        Nutrición → FatSecret → Health Connect
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="screen-label">Progresión</div>
     </div>
-    <div class="macro-divider"></div>
-    <div class="macro-item">
-      <div class="macro-value">38g</div>
-      <div class="macro-label">Grasas</div>
-    </div>
-  </div>
 
-  <div class="separator" style="margin-bottom:24px"></div>
-
-  <!-- Pasos + Agua -->
-  <div class="metrics-row">
-    <div class="metric-col">
-      <span class="caption">Pasos</span>
-      <div class="metric-value">4,523</div>
-      <div class="progress-bar" style="margin-top:10px">
-        <div class="fill" style="width:56%; background:var(--text-secondary)"></div>
-      </div>
-      <div class="metric-target">/ 8,000</div>
-    </div>
-    <div class="metric-divider"></div>
-    <div class="metric-col">
-      <span class="caption">Agua</span>
-      <div class="metric-value">1.2L</div>
-      <div class="progress-bar" style="margin-top:10px">
-        <div class="fill" style="width:37%; background:var(--chart)"></div>
-      </div>
-      <div class="metric-target">/ 3.2L</div>
-    </div>
-  </div>
-
-  <!-- Sesión del día -->
-  <div class="separator"></div>
-  <div class="session-section">
-    <span class="caption">Entrenamiento</span>
-    <div class="session-title">Push — Pecho & Hombros · 6 ejercicios, ~72 min</div>
-    <div class="session-phase">Modo demo — datos se guardan en BBDD para verificar</div>
-    <button class="btn-primary" style="margin-top:20px" onclick="goTo('workout')">Empezar entreno</button>
-  </div>
-
-  <div class="separator"></div>
-
-  <!-- Plan Anual + Progresion -->
-  <button class="btn-secondary" style="margin-top:20px" onclick="goTo('plan')">Ver Plan Anual</button>
-  <button class="btn-secondary" style="margin-top:12px" onclick="goTo('progression')">Ver Progresión</button>
-
-  <!-- Ausencia -->
-  <div style="text-align:center; margin-top:12px; padding-bottom: 70px;">
-    <span style="font-size:13px; color:var(--text-tertiary); cursor:pointer">Registrar ausencia</span>
-  </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════ -->
-<!-- WORKOUT SCREEN -->
-<!-- ═══════════════════════════════════════════════════════════ -->
-<div id="workout" class="screen">
-  <div class="top-bar">
-    <span class="body" style="font-weight:500">1/6</span>
-    <span class="body">0:00</span>
-  </div>
-
-  <div class="exercise-name">Press Inclinado Mancuernas</div>
-  <div class="weight">22.0 kg</div>
-  <div class="reps-box">8-10 reps</div>
-  <div class="serie-info">Serie 1 / 4</div>
-  <div class="swipe-hint" onclick="goTo('rir')">desliza para completar →</div>
+<!-- NOTAS TÉCNICAS -->
+<div style="max-width:800px; margin:60px auto 40px; background:var(--surface); border:1px solid var(--sep); border-radius:var(--radius); padding:24px;">
+    <h3 style="font-size:14px; color:var(--accent); margin-bottom:12px;">Notas técnicas de esta versión</h3>
+    <div style="font-size:12px; color:var(--text2); line-height:1.8;">
+        <b>Timer:</b> Usa Handler + SystemClock.elapsedRealtime() (no CountDownTimer, no MediaSession).<br>
+        Notificación con <code>DecoratedCustomViewStyle</code> + <code>RemoteViews</code> custom.<br>
+        Al terminar: <code>fullScreenIntent</code> → heads-up garantizado incluso con pantalla off.<br>
+        Canal <code>CANAL_TIMER_RELOJ</code> con IMPORTANCE_HIGH + vibración [0,200,100,200]ms.<br>
+        <br>
+        <b>Plan Anual:</b> <code>formatearFecha()</code> limpia CUALQUIER formato (T, GMT, milisegundos).<br>
+        Si <code>str_rir_rango</code> contiene una fecha por error → muestra "—".<br>
+        Fase actual: fondo <code>#1A3D5C</code> + borde naranja 2dp + badge pill "ACTUAL".<br>
+        <br>
+        <b>Progresión:</b> <code>ProgressionActivity</code> solicita permisos HC con <code>registerForActivityResult</code>.<br>
+        Si HC devuelve 0 registros → mensaje diagnóstico con pasos exactos para Zepp sync.<br>
+        <br>
+        <b>Colores:</b> Fondo #0F1419 (azulado), accent #FF6D3B, macros coloreados,<br>
+        progress bars con gradiente, botones con gradient naranja.
+    </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════ -->
-<!-- RIR SCREEN -->
-<!-- ═══════════════════════════════════════════════════════════ -->
-<div id="rir" class="screen">
-  <div style="margin-bottom:16px" class="body" style="font-weight:500">Repeticiones realizadas</div>
-  <input type="number" class="reps-input" value="10">
-  <div style="margin-top:40px; margin-bottom:16px" class="body">RIR (repeticiones en reserva)</div>
-  <div class="rir-buttons">
-    <button class="rir-btn" onclick="selectRir(this)">0</button>
-    <button class="rir-btn" onclick="selectRir(this)">1</button>
-    <button class="rir-btn selected" onclick="selectRir(this)">2</button>
-    <button class="rir-btn" onclick="selectRir(this)">3</button>
-    <button class="rir-btn" onclick="selectRir(this)">4+</button>
-  </div>
-  <div class="db-badge" style="margin-top:32px">✓ Serie guardada en BBDD</div>
-  <div class="swipe-hint" style="margin-top:24px" onclick="goTo('timer')">confirmar →</div>
-</div>
-
-<!-- ═══════════════════════════════════════════════════════════ -->
-<!-- TIMER SCREEN (with Dynamic Island) -->
-<!-- ═══════════════════════════════════════════════════════════ -->
-<div id="timer" class="screen">
-  <div class="countdown" id="timerDisplay">2:00</div>
-  <div class="body" style="margin-top:12px; color:var(--text-tertiary)">En la app → silencio total</div>
-  <div class="next-info">Próximo: Serie 2/4<br>22.0 kg × 8-10</div>
-
-  <div class="card-flat" style="margin-top:40px; text-align:left; width:100%">
-    <div class="caption" style="margin-bottom:8px">Fuera de la app</div>
-    <div class="body">• Notificación expandida tipo WhatsApp</div>
-    <div class="body">• Sonido solo si llevas auriculares</div>
-    <div class="body">• Vibración solo en reloj (Amazfit)</div>
-    <div class="body">• 0 molestias en el móvil</div>
-  </div>
-
-  <div class="swipe-hint" style="margin-top:24px" onclick="goTo('workout2')">saltar timer →</div>
-</div>
-
-<!-- ═══════════════════════════════════════════════════════════ -->
-<!-- WORKOUT 2 -->
-<!-- ═══════════════════════════════════════════════════════════ -->
-<div id="workout2" class="screen" style="display:none; flex-direction:column; align-items:center; justify-content:center; text-align:center; min-height:100vh;">
-  <div class="top-bar">
-    <span class="body" style="font-weight:500">2/6</span>
-    <span class="body">12:34</span>
-  </div>
-  <div class="exercise-name">Press Plano Barra</div>
-  <div class="weight">50.0 kg</div>
-  <div class="reps-box">6-8 reps</div>
-  <div class="serie-info">Serie 1 / 4</div>
-  <div class="swipe-hint" onclick="goTo('summary')">finalizar sesión →</div>
-</div>
-
-<!-- ═══════════════════════════════════════════════════════════ -->
-<!-- SUMMARY SCREEN -->
-<!-- ═══════════════════════════════════════════════════════════ -->
-<div id="summary" class="screen">
-  <div class="body" style="font-weight:500; margin-top:32px">Sesión completada</div>
-  <div class="score">87</div>
-  <div class="score-sub">/100</div>
-
-  <div class="summary-metrics">
-    <div class="summary-metric">
-      <div class="value">1h 12min</div>
-      <div class="label">Duración</div>
-    </div>
-    <div class="summary-divider"></div>
-    <div class="summary-metric">
-      <div class="value">8,450 kg</div>
-      <div class="label">Volumen</div>
-    </div>
-  </div>
-
-  <div class="db-badge">✓ Sesión guardada en BBDD · Cola offline: 0 pendientes</div>
-
-  <div class="tips">
-    Para hoy:<br><br>
-    • Toma batido proteína + carbos en los próximos 30 min<br>
-    • Duerme mínimo 8h esta noche<br>
-    • Mantén actividad ligera (paseo)<br>
-    • Hidratación extra: +500ml
-  </div>
-
-  <button class="btn-primary" style="margin-top:32px; width:100%" onclick="goTo('home')">Cerrar</button>
-</div>
-
-<!-- ═══════════════════════════════════════════════════════════ -->
-<!-- PLAN ANUAL SCREEN -->
-<!-- ═══════════════════════════════════════════════════════════ -->
-<div id="plan" class="screen">
-  <div class="plan-header">
-    <span class="back-btn" onclick="goTo('home')">←</span>
-    <span class="plan-title">Plan 2026–2027</span>
-    <span style="width:30px"></span>
-  </div>
-
-  <div style="margin-bottom:16px">
-    <div class="title">FASE ACTUAL: Adaptación</div>
-    <div class="body" style="margin-top:4px">11 meses · 31/08/2026 → 31/07/2027</div>
-  </div>
-
-  <div class="separator" style="margin-bottom:8px"></div>
-
-  <!-- Fases -->
-  <div class="fase-item">
-    <div class="fase-indicator" style="background:#81C784"></div>
-    <div class="fase-info">
-      <div class="fase-name">Adaptación</div>
-      <div class="fase-dates">31/08 → 27/09 (4 sem)</div>
-      <div class="fase-rir">RIR 3-4 | Full Body</div>
-    </div>
-  </div>
-  <div class="fase-item dimmed">
-    <div class="fase-indicator" style="background:#81C784"></div>
-    <div class="fase-info">
-      <div class="fase-name">Hipertrofia I</div>
-      <div class="fase-dates">28/09 → 08/11 (6 sem)</div>
-      <div class="fase-rir">RIR 2-3 | Hombros, Espalda</div>
-    </div>
-  </div>
-  <div class="fase-item dimmed">
-    <div class="fase-indicator" style="background:#78909C"></div>
-    <div class="fase-info">
-      <div class="fase-name">Deload 1</div>
-      <div class="fase-dates">09/11 → 15/11 (1 sem)</div>
-      <div class="fase-rir">RIR 5-6 | Recuperación</div>
-    </div>
-  </div>
-  <div class="fase-item dimmed">
-    <div class="fase-indicator" style="background:#81C784"></div>
-    <div class="fase-info">
-      <div class="fase-name">Hipertrofia II</div>
-      <div class="fase-dates">16/11 → 27/12 (6 sem)</div>
-      <div class="fase-rir">RIR 2-3 | Pecho, Brazos</div>
-    </div>
-  </div>
-  <div class="fase-item dimmed">
-    <div class="fase-indicator" style="background:var(--accent)"></div>
-    <div class="fase-info">
-      <div class="fase-name">Fuerza</div>
-      <div class="fase-dates">28/12 → 07/02 (6 sem)</div>
-      <div class="fase-rir">RIR 1-2 | Compuestos</div>
-    </div>
-  </div>
-  <div class="fase-item dimmed">
-    <div class="fase-indicator" style="background:#78909C"></div>
-    <div class="fase-info">
-      <div class="fase-name">Deload 2</div>
-      <div class="fase-dates">08/02 → 14/02 (1 sem)</div>
-      <div class="fase-rir">RIR 5-6 | Recuperación</div>
-    </div>
-  </div>
-  <div class="fase-item dimmed">
-    <div class="fase-indicator" style="background:#81C784"></div>
-    <div class="fase-info">
-      <div class="fase-name">Hipertrofia III</div>
-      <div class="fase-dates">15/02 → 28/03 (6 sem)</div>
-      <div class="fase-rir">RIR 2-3 | Piernas, Core</div>
-    </div>
-  </div>
-  <div class="fase-item dimmed">
-    <div class="fase-indicator" style="background:var(--warning)"></div>
-    <div class="fase-info">
-      <div class="fase-name">Definición</div>
-      <div class="fase-dates">29/03 → 09/05 (6 sem)</div>
-      <div class="fase-rir">RIR 2-3 | Full Body</div>
-    </div>
-  </div>
-  <div class="fase-item dimmed">
-    <div class="fase-indicator" style="background:var(--accent)"></div>
-    <div class="fase-info">
-      <div class="fase-name">Peak</div>
-      <div class="fase-dates">17/05 → 27/06 (6 sem)</div>
-      <div class="fase-rir">RIR 0-1 | Compuestos</div>
-    </div>
-  </div>
-  <div class="fase-item dimmed" style="margin-bottom:70px">
-    <div class="fase-indicator" style="background:var(--chart)"></div>
-    <div class="fase-info">
-      <div class="fase-name">Mantenimiento</div>
-      <div class="fase-dates">28/06 → 31/07 (5 sem)</div>
-      <div class="fase-rir">RIR 3-4 | Full Body</div>
-    </div>
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════════════════════════ -->
-<!-- PROGRESSION SCREEN (NEW) -->
-<!-- ═══════════════════════════════════════════════════════════ -->
-<div id="progression" class="screen">
-  <div class="prog-header">
-    <span class="back-btn" onclick="goTo('home')">←</span>
-  </div>
-
-  <div class="prog-title">Progresión</div>
-  <div class="prog-subtitle">Seguimiento de métricas clave</div>
-
-  <!-- Filter -->
-  <div class="filter-row">
-    <button class="filter-btn" onclick="setFilter(this)">7d</button>
-    <button class="filter-btn active" onclick="setFilter(this)">30d</button>
-    <button class="filter-btn" onclick="setFilter(this)">90d</button>
-  </div>
-
-  <!-- Stats Cards -->
-  <div class="stat-cards">
-    <div class="stat-card">
-      <div class="stat-label">Peso</div>
-      <div class="stat-value">78.2 kg</div>
-      <div class="stat-change positive">+0.8 kg</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Grasa</div>
-      <div class="stat-value">15.2%</div>
-      <div class="stat-change negative">-0.4%</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Sueño</div>
-      <div class="stat-value">74/100</div>
-      <div class="stat-change positive">media</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Pasos/día</div>
-      <div class="stat-value">6,240</div>
-      <div class="stat-change positive">+820</div>
-    </div>
-  </div>
-
-  <!-- Peso Detail -->
-  <div class="data-section">
-    <div class="data-section-title">Peso corporal</div>
-    <div class="sparkline" id="sparkPeso"></div>
-    <div class="data-row">
-      <span class="data-date">24/06</span>
-      <span class="data-value">78.2 kg</span>
-      <span class="data-secondary">15.2% grasa</span>
-    </div>
-    <div class="data-row">
-      <span class="data-date">22/06</span>
-      <span class="data-value">78.0 kg</span>
-      <span class="data-secondary">15.3% grasa</span>
-    </div>
-    <div class="data-row">
-      <span class="data-date">20/06</span>
-      <span class="data-value">77.8 kg</span>
-      <span class="data-secondary">15.4% grasa</span>
-    </div>
-    <div class="data-row">
-      <span class="data-date">18/06</span>
-      <span class="data-value">77.6 kg</span>
-      <span class="data-secondary">15.5% grasa</span>
-    </div>
-    <div class="data-row">
-      <span class="data-date">16/06</span>
-      <span class="data-value">77.4 kg</span>
-      <span class="data-secondary">15.6% grasa</span>
-    </div>
-  </div>
-
-  <!-- Sleep Detail -->
-  <div class="data-section">
-    <div class="data-section-title">Sueño y recuperación</div>
-    <div class="sparkline" id="sparkSueno"></div>
-    <div class="data-row">
-      <span class="data-date">24/06</span>
-      <span class="data-value">Score: 78</span>
-      <span class="data-secondary">7.2h | FC 52 | HRV 48</span>
-    </div>
-    <div class="data-row">
-      <span class="data-date">23/06</span>
-      <span class="data-value">Score: 72</span>
-      <span class="data-secondary">6.8h | FC 54 | HRV 44</span>
-    </div>
-    <div class="data-row">
-      <span class="data-date">22/06</span>
-      <span class="data-value">Score: 81</span>
-      <span class="data-secondary">7.5h | FC 51 | HRV 52</span>
-    </div>
-    <div class="data-row">
-      <span class="data-date">21/06</span>
-      <span class="data-value">Score: 65</span>
-      <span class="data-secondary">5.9h | FC 58 | HRV 38</span>
-    </div>
-    <div class="data-row">
-      <span class="data-date">20/06</span>
-      <span class="data-value">Score: 76</span>
-      <span class="data-secondary">7.1h | FC 53 | HRV 46</span>
-    </div>
-  </div>
-
-  <!-- Volume Detail -->
-  <div class="data-section" style="padding-bottom:70px">
-    <div class="data-section-title">Volumen de entrenamiento</div>
-    <div class="sparkline" id="sparkVolumen"></div>
-    <div class="data-row">
-      <span class="data-date">24/06</span>
-      <span class="data-value">8,450 kg</span>
-      <span class="data-secondary"></span>
-    </div>
-    <div class="data-row">
-      <span class="data-date">22/06</span>
-      <span class="data-value">7,820 kg</span>
-      <span class="data-secondary"></span>
-    </div>
-    <div class="data-row">
-      <span class="data-date">20/06</span>
-      <span class="data-value">9,100 kg</span>
-      <span class="data-secondary"></span>
-    </div>
-    <div class="data-row">
-      <span class="data-date">18/06</span>
-      <span class="data-value">6,340 kg</span>
-      <span class="data-secondary"></span>
-    </div>
-    <div class="data-row">
-      <span class="data-date">16/06</span>
-      <span class="data-value">8,780 kg</span>
-      <span class="data-secondary"></span>
-    </div>
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════════════════════════ -->
-<!-- BOTTOM NAV BAR -->
-<!-- ═══════════════════════════════════════════════════════════ -->
-<div class="nav-bar">
-  <div class="nav-item active" onclick="goTo('home')">
-    <span class="nav-icon">⌂</span>
-    <span>Hoy</span>
-  </div>
-  <div class="nav-item" onclick="goTo('workout')">
-    <span class="nav-icon">◎</span>
-    <span>Entreno</span>
-  </div>
-  <div class="nav-item" onclick="goTo('progression')">
-    <span class="nav-icon">↗</span>
-    <span>Progreso</span>
-  </div>
-  <div class="nav-item" onclick="goTo('plan')">
-    <span class="nav-icon">▦</span>
-    <span>Plan</span>
-  </div>
+<div style="text-align:center; color:var(--text3); font-size:11px; padding:20px;">
+    FitBase © 2026 · Preview UI v3.0 · No buildeable — solo referencia visual
 </div>
 
 <script>
-// Navigation
-function goTo(screenId) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  const target = document.getElementById(screenId);
-  if (target) {
-    target.classList.add('active');
-    if (screenId === 'timer') startTimer();
-    // Update nav
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    if (screenId === 'home') document.querySelectorAll('.nav-item')[0].classList.add('active');
-    else if (screenId === 'workout' || screenId === 'workout2' || screenId === 'rir' || screenId === 'timer') document.querySelectorAll('.nav-item')[1].classList.add('active');
-    else if (screenId === 'progression') document.querySelectorAll('.nav-item')[2].classList.add('active');
-    else if (screenId === 'plan') document.querySelectorAll('.nav-item')[3].classList.add('active');
-  }
-}
-
-// RIR button selection
-function selectRir(btn) {
-  document.querySelectorAll('.rir-btn').forEach(b => b.classList.remove('selected'));
-  btn.classList.add('selected');
-  btn.style.transform = 'scale(0.9)';
-  setTimeout(() => btn.style.transform = '', 100);
-}
-
-// Filter buttons
-function setFilter(btn) {
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-}
-
-// Timer countdown + Dynamic Island
-let timerInterval;
-function startTimer() {
-  let seconds = 120;
-  clearInterval(timerInterval);
-  const island = document.getElementById('dynamicIsland');
-  island.classList.remove('hidden');
-
-  timerInterval = setInterval(() => {
-    seconds--;
-    if (seconds <= 0) {
-      clearInterval(timerInterval);
-      seconds = 0;
-      // Expand island on finish
-      island.classList.add('expanded');
-      document.getElementById('islandTimer').textContent = '¡VAMOS!';
-      document.querySelector('.island-text').textContent = 'Siguiente serie';
-      setTimeout(() => island.classList.add('hidden'), 3000);
-    }
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    document.getElementById('timerDisplay').textContent = `${m}:${s.toString().padStart(2,'0')}`;
-    document.getElementById('islandTimer').textContent = `${m}:${s.toString().padStart(2,'0')}`;
-  }, 1000);
-}
-
-// Set today's date
-const now = new Date();
-const options = { weekday: 'long', day: 'numeric', month: 'long' };
-const dateStr = now.toLocaleDateString('es-ES', options);
-document.getElementById('dateDisplay').textContent = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
-
-// Generate sparklines
-function generateSparkline(id, values) {
-  const container = document.getElementById(id);
-  const max = Math.max(...values);
-  values.forEach(v => {
-    const bar = document.createElement('div');
-    bar.className = 'spark-bar';
-    bar.style.height = `${(v / max) * 100}%`;
-    container.appendChild(bar);
-  });
-}
-
-// Sparkline data
-setTimeout(() => {
-  generateSparkline('sparkPeso', [77.0,77.1,77.2,77.4,77.4,77.6,77.6,77.8,77.8,78.0,78.0,78.1,78.2]);
-  generateSparkline('sparkSueno', [72,65,78,81,70,74,68,82,76,65,72,78,74]);
-  generateSparkline('sparkVolumen', [8200,0,7500,0,8780,0,6340,0,9100,0,7820,0,8450]);
-}, 300);
-
-// Animate progress bars on load
-setTimeout(() => {
-  document.querySelectorAll('.progress-bar .fill').forEach(bar => {
-    const w = bar.style.width;
-    bar.style.width = '0%';
-    setTimeout(() => bar.style.width = w, 100);
-  });
-}, 200);
+    // Animación del cronómetro
+    let seconds = 107;
+    const chrono = document.getElementById('chrono');
+    setInterval(() => {
+        if (seconds <= 0) seconds = 120;
+        seconds--;
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        chrono.textContent = m + ':' + String(s).padStart(2, '0');
+    }, 1000);
 </script>
 </body>
 </html>

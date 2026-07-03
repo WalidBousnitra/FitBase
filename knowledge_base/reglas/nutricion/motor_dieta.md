@@ -20,7 +20,8 @@ Algoritmo para calcular y ajustar calorías y macronutrientes basados en objetiv
 | Altura | 188 cm | `biometria.md` |
 | Edad | 24 años | `biometria.md` |
 | Sexo | Hombre | `biometria.md` |
-| Actividad | 4 días/semana gym + sedentario | `horarios.md` |
+| Actividad | 4 gym + 2 natación + trabajo sedentario | `horarios.md` |
+| Factor actividad | 1.55 (conservador) → ver nota §3 | Heurístico |
 | Pasos promedio | 7390/día | `biometria.md` |
 | Objetivo | **Bulk limpio** (+4.8 kg) | `prioridades.md` |
 | Comidas | 3 + snacks | Input usuario |
@@ -40,6 +41,12 @@ Mujeres: BMR = (10 × peso_kg) + (6.25 × altura_cm) - (5 × edad) - 161
 ### Factor de Actividad (HEURÍSTICO)
 > ⚠️ **Nota**: Estos factores son estimaciones heurísticas comúnmente usadas.
 > No hay paper único que los valide; usar con criterio y ajustar según feedback.
+>
+> **Decisión**: Se usa 1.55 (Moderado) a pesar de entrenar 6 días porque:
+> 1. El trabajo es 100% sedentario (oficina)
+> 2. Natación 2x/sem es baja intensidad (principiante, ~250 kcal/sesión)
+> 3. Es mejor infraestimar y ajustar al alza que sobreestimar y acumular grasa
+> 4. Si el peso se estanca en bulk durante 2+ semanas → subir a 1.65 manualmente
 
 | Nivel | Factor | Descripción |
 |-------|--------|-------------|
@@ -56,7 +63,7 @@ Mujeres: BMR = (10 × peso_kg) + (6.25 × altura_cm) - (5 × edad) - 161
 | Objetivo | Ajuste Calórico | Ganancia/Pérdida Peso |
 |----------|-----------------|----------------------|
 | Pérdida grasa | TDEE × 0.80-0.90 | 0.5-1% peso/semana (Helms 2014) |
-| Mantenimiento | TDEE | — |
+| Mantenimiento | TDEE × 1.0 | — |
 | Ganancia muscular | TDEE × **1.10-1.20** | **0.25-0.5% peso/semana** |
 
 > **Nota**: Avanzados deben ser más conservadores (menor potencial de ganancia).
@@ -143,13 +150,14 @@ CARBOS:
 ### Distribución por Comida (3 + snacks)
 
 > ✅ **Fuente**: 0.40-0.55 g/kg proteína/comida (Iraki 2019)
+> A 78.2 kg → máximo óptimo por comida: ~31-43g
 
 | Comida | Calorías | Proteína | Carbos | Grasas |
 |--------|----------|----------|--------|--------|
-| **Desayuno** | ~660 kcal | 35g | 100g | 15g |
-| **Comida** | ~980 kcal | 50g | 150g | 25g |
-| **Cena** | ~980 kcal | 50g | 150g | 25g |
-| **Snacks** | ~660 kcal | 21g | 88g | 13g |
+| **Desayuno** | ~720 kcal | 40g | 105g | 16g |
+| **Comida** | ~920 kcal | 42g | 140g | 23g |
+| **Cena** | ~920 kcal | 42g | 140g | 23g |
+| **Snacks** | ~720 kcal | 32g | 103g | 16g |
 | **TOTAL** | ~3280 kcal | 156g | 488g | 78g |
 
 > 💡 **Días de entreno**: Priorizar carbos pre/post entreno (evidencia: Helms 2014)

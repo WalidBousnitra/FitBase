@@ -5,26 +5,31 @@ import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import androidx.activity.result.ActivityResultLauncher;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.fitbase.R;
+import com.fitbase.data.health.HealthConnectBridge;
 import com.fitbase.data.model.MetricasProgresionResponse;
 
 import java.util.Collections;
+import java.util.Set;
 
 /**
  * Pantalla de progresion de metricas clave.
  * Muestra historico de: Peso, Grasa%, Sueno, HRV, FC reposo, Volumen entreno.
- * Referencia: Sistema_Diseno_Fitness.md (Modern Flat UI)
+ *
+ * Si Health Connect no tiene permisos, los solicita antes de cargar.
  */
 public class ProgressionActivity extends AppCompatActivity {
 
     private ProgressionViewModel viewModel;
     private ProgressBar progressBar;
     private TextView tvError;
+    private int diasSeleccionados = 30;
 
     // Cards de resumen
     private TextView tvPesoActual, tvPesoCambio;
@@ -35,6 +40,21 @@ public class ProgressionActivity extends AppCompatActivity {
     // Listas de datos
     private RecyclerView rvPeso, rvSueno, rvVolumen;
 
+    // HC permission launcher
+    @SuppressWarnings("unchecked")
+    private final ActivityResultLauncher<Set<String>> hcPermLauncher =
+            registerForActivityResult(HealthConnectBridge.getPermissionContract(),
+                    granted -> {
+                        if (granted != null && !granted.isEmpty()) {
+                            // Permisos concedidos → recargar
+                            viewModel.cargar(diasSeleccionados);
+                        } else {
+                            tvError.setText("Permisos de Health Connect denegados. " +
+                                    "Ve a Ajustes → Apps → Health Connect → Permisos → FitBase y actívalos.");
+                            tvError.setVisibility(View.VISIBLE);
+                        }
+                    });
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -44,8 +64,16 @@ public class ProgressionActivity extends AppCompatActivity {
         viewModel = new ViewModelProvider(this).get(ProgressionViewModel.class);
         observar();
 
-        // Cargar ultimos 30 dias por defecto
-        viewModel.cargar(30);
+        // Solicitar permisos HC si no los tiene, luego cargar
+        if (HealthConnectBridge.isAvailable(this) && !HealthConnectBridge.hasPermissions(this)) {
+            try {
+                hcPermLauncher.launch(HealthConnectBridge.getRequiredPermissions());
+            } catch (Exception e) {
+                viewModel.cargar(diasSeleccionados);
+            }
+        } else {
+            viewModel.cargar(diasSeleccionados);
+        }
     }
 
     private void vincularVistas() {
@@ -67,9 +95,9 @@ public class ProgressionActivity extends AppCompatActivity {
         rvVolumen.setLayoutManager(new LinearLayoutManager(this));
 
         // Boton 7d / 30d / 90d
-        findViewById(R.id.btn7d).setOnClickListener(v -> viewModel.cargar(7));
-        findViewById(R.id.btn30d).setOnClickListener(v -> viewModel.cargar(30));
-        findViewById(R.id.btn90d).setOnClickListener(v -> viewModel.cargar(90));
+        findViewById(R.id.btn7d).setOnClickListener(v -> { diasSeleccionados = 7; viewModel.cargar(7); });
+        findViewById(R.id.btn30d).setOnClickListener(v -> { diasSeleccionados = 30; viewModel.cargar(30); });
+        findViewById(R.id.btn90d).setOnClickListener(v -> { diasSeleccionados = 90; viewModel.cargar(90); });
     }
 
     private void observar() {

@@ -1,140 +1,54 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Summary Screen — Modern Flat UI -->
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/colorBackground"
-    android:fillViewport="true">
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="24dp"
+    android:background="@color/background">
 
-    <LinearLayout
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="✅ Sesión completada"
+        android:textSize="24sp"
+        android:textColor="@color/success" />
+
+    <TextView
+        android:id="@+id/tvSummarySeries"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="24 series"
+        android:textSize="20sp"
+        android:textColor="@color/text_primary"
+        android:layout_marginTop="24dp" />
+
+    <TextView
+        android:id="@+id/tvSummaryVolumen"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="4500 kg total"
+        android:textSize="20sp"
+        android:textColor="@color/text_primary"
+        android:layout_marginTop="8dp" />
+
+    <TextView
+        android:id="@+id/tvSummaryImpacto"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="24dp"
-        android:gravity="center">
+        android:text="El motor ajustará tu próxima sesión."
+        android:textSize="14sp"
+        android:textColor="@color/text_secondary"
+        android:gravity="center"
+        android:layout_marginTop="16dp" />
 
-        <!-- Estado completado -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Sesión completada"
-            android:textColor="@color/colorTextSecondary"
-            android:textSize="14sp"
-            android:fontFamily="sans-serif-medium"
-            android:layout_marginTop="32dp" />
+    <Button
+        android:id="@+id/btnSummaryCerrar"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="32dp"
+        android:text="CERRAR"
+        android:background="@drawable/gradient_primary_button"
+        android:textColor="@color/white" />
 
-        <!-- Puntuación -->
-        <TextView
-            android:id="@+id/tvPuntuacion"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="87"
-            android:textColor="@color/colorTextPrimary"
-            android:textSize="64sp"
-            android:fontFamily="sans-serif-light"
-            android:layout_marginTop="16dp" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="/100"
-            android:textColor="@color/colorTextTertiary"
-            android:textSize="18sp"
-            android:fontFamily="sans-serif" />
-
-        <!-- Métricas inline -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center"
-            android:layout_marginTop="32dp"
-            android:paddingVertical="16dp">
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical"
-                android:gravity="center">
-
-                <TextView
-                    android:id="@+id/tvTiempoTotal"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="1h 12min"
-                    android:textColor="@color/colorTextPrimary"
-                    android:textSize="18sp"
-                    android:fontFamily="sans-serif-medium" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Duración"
-                    android:textColor="@color/colorTextTertiary"
-                    android:textSize="12sp" />
-            </LinearLayout>
-
-            <View
-                android:layout_width="1dp"
-                android:layout_height="32dp"
-                android:background="@color/colorSeparator" />
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical"
-                android:gravity="center">
-
-                <TextView
-                    android:id="@+id/tvVolumenTotal"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="8,450 kg"
-                    android:textColor="@color/colorTextPrimary"
-                    android:textSize="18sp"
-                    android:fontFamily="sans-serif-medium" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Volumen"
-                    android:textColor="@color/colorTextTertiary"
-                    android:textSize="12sp" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <!-- Separador -->
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="@color/colorSeparator"
-            android:layout_marginTop="24dp" />
-
-        <!-- Tips -->
-        <TextView
-            android:id="@+id/tvTips"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textColor="@color/colorTextSecondary"
-            android:textSize="14sp"
-            android:fontFamily="sans-serif"
-            android:lineSpacingExtra="6dp"
-            android:layout_marginTop="24dp" />
-
-        <!-- Botón Cerrar -->
-        <Button
-            android:id="@+id/btnCerrar"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:layout_marginTop="32dp"
-            android:background="@drawable/gradient_primary_button"
-            android:text="Cerrar"
-            android:textColor="@color/colorBackground"
-            android:textSize="14sp"
-            android:fontFamily="sans-serif-medium"
-            android:textAllCaps="false" />
-
-    </LinearLayout>
-</ScrollView>
+</LinearLayout>

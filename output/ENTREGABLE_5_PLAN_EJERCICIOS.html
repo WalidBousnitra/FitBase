@@ -836,10 +836,10 @@ EJE_PLANCHA,Plancha (lastrada),Core,,Anti-extensión,"Suelo,Disco",false,false</
             <div style="color:var(--success); font-weight:500;">DÍA A DÍA (runtime):</div>
             <div>1. App abre → fecha de hoy → busca sesión en sesiones_plan</div>
             <div>2. Sesión encontrada → carga ejercicios_plan de esa sesión</div>
-            <div>3. peso_sugerido = último peso usado + regla ACSM</div>
-            <div>4. Si peso_sugerido = 0 → "Elige tu peso" (primera vez)</div>
-            <div>5. Usuario entrena → registra en ejercicios_log</div>
-            <div>6. Motor actualiza peso_sugerido de la PRÓXIMA sesión</div>
+            <div>3. Motor de 6 capas calcula peso DINÁMICAMENTE (no está en el plan)</div>
+            <div>4. Si no hay historial → "Elige tu peso" (primera vez)</div>
+            <div>5. Usuario entrena → registra en ejercicios_log (peso, reps, RIR, sensación)</div>
+            <div>6. Próxima sesión → motor recalcula desde último log + fase + día</div>
             <div>7. Sin red → Room encola → sincroniza después</div>
             <br>
             <div style="color:var(--warning); font-weight:500;">GARANTÍA:</div>

@@ -89,10 +89,13 @@ def calcular_ajuste(datos_usuario):
     
     # --- ADAPTADO DE EVIDENCIA (Kiviniemi 2007) ---
     # Usando FC reposo como proxy de HRV (Health Connect: HC_HR_REST)
+    # PRIORIDAD 1: Tendencia ascendente → early return (no acumula)
+    if datos_usuario.fc_tendencia == "ascendente_2d":
+        return { factor: 0.70, tipo: "RECUPERACION_ACTIVA" }
+    
+    # PRIORIDAD 2: FC puntualmente alta
     if datos_usuario.fc_reposo > datos_usuario.fc_media_10d + 10:
         ajuste *= 0.80  # Reducción significativa
-    elif datos_usuario.fc_tendencia == "ascendente_2d":
-        return "RECUPERACION_ACTIVA"
     
     # --- HEURÍSTICAS (marcar claramente) ---
     # Sleep Score: calculado desde HC_SLEEP_DURATION + fases
@@ -101,7 +104,7 @@ def calcular_ajuste(datos_usuario):
     if datos_usuario.estres_subjetivo > 7:
         ajuste *= 0.85  # ⚠️ HEURÍSTICO
         
-    return ajuste
+    return { factor: ajuste, tipo: "normal" si ajuste >= 1 sino "reducida" }
 ```
 
 ---
@@ -122,7 +125,7 @@ REGLA_SUBIR_PESO:
 | Objetivo | Descanso |
 |----------|----------|
 | Fuerza (1-6 RM) | **3-5 min** |
-| Hipertrofia (8-12 RM) | 1-2 min |
+| Hipertrofia (8-12 RM) | 2-3 min | ⚠️ Superseded: Schoenfeld 2016 demostró 3 min > 1 min |
 | Resistencia (15+ RM) | <1 min |
 
 ### Protocolo APRE Simplificado (Mann 2010)
@@ -173,23 +176,82 @@ ALERTAS:
 
 ## 8. Uso en el Sistema
 
-> **IMPORTANTE**: El motor NO genera sesiones ni selecciona ejercicios.
-> Las sesiones están PRE-GENERADAS (ver `base_datos.md` §7).
-> El motor SOLO ajusta el campo `num_peso_sugerido_kg` de ejercicios_plan.
+> **IMPORTANTE**: El motor NO almacena pesos en `ejercicios_plan`.
+> Los pesos se calculan DINÁMICAMENTE al servir la sesión (`getSesionHoy_`).
+> Esto hace el POST `guardarLog_` instantáneo (O(1), solo append).
+
+### Función principal: `calcularPesoSugerido_(ejercicioId, ctx)`
+
+Recibe un objeto de contexto con:
+```yaml
+ctx:
+  ajusteDia: 0.70-1.0       # Factor Kiviniemi (CAPA 6)
+  fase: VOL/FZA/DEF/MNT/DELOAD  # Fase actual del plan anual
+  objetivoNutri: bulk/cut/mantener  # Helms 2014
+  repsObjetivo: 10           # Reps planificadas (del plan)
+  rirObjetivo: 2             # RIR planificado (cambia por semana, Helms 2016)
+```
+
+### Capas de ajuste (multiplicativas):
+
+| Capa | Fuente | Qué hace |
+|------|--------|----------|
+| 1. BASE | ejercicios_log | Último peso usado para este ejercicio |
+| 2. APRE | Mann 2010 + ACSM 2009 | delta_capacidad → -10% a +10% |
+| 3. FASE | Bompa 2019 (§7) | Cap de progresión: VOL ±5%, FZA ±10%, DEF ±3%, MNT ±2.5%, DELOAD -12.5% |
+| 4. NUTRICIÓN | Helms 2014 | En cutting, cap subida al 50% |
+| 5. DESCANSO | ACSM 2009 (frecuencia) | >7d gap → ×0.95, >14d → ×0.90 |
+| 6. DÍA | Kiviniemi 2007 | FC/sueño/estrés → factor externo |
+
+### Fórmula APRE (Capa 2):
+```
+delta_capacidad = (reps_hechas + RIR_percibido) − (reps_objetivo + RIR_objetivo)
+
+delta ≤ -4  → -10%  (muy pesado, Mann: reps_0-2)
+delta ≤ -2  → -5%   (pesado, Mann: reps_3-4)
+delta ≤ +1  → 0%    (correcto, Mann: reps_5-7)
+delta ≤ +3  → +5%   (fácil, ACSM: +2-10%, Mann: reps_8-12)
+delta > +3  → +10%  (muy fácil, Mann: reps_13+)
+```
+
+> **Auto-ajuste semanal**: Como `rirObjetivo` cambia cada semana (Helms 2016:
+> sem1 RIR 3-4, sem2 RIR 2-3, sem3 RIR 1-2, sem4 deload), la fórmula
+> se adapta automáticamente al microciclo sin lógica adicional.
+
+### Validación cruzada sensación ↔ RIR:
+```yaml
+OVERRIDE:
+  sensacion_fallo + RIR > 1: "RIR se fuerza a 0 (Helms 2016: RIR es habilidad aprendida)"
+  sensacion_facil + RIR < 3: "RIR se fuerza a 3"
+```
 
 ### Cuándo se ejecuta:
-1. **Post-registro de serie** (inmediato): Actualiza peso sugerido de la PRÓXIMA sesión que tenga el mismo ejercicio
-2. **Al abrir la app** (si hay métricas nuevas): Aplica ajuste de volumen (×0.80 si FC alta)
+1. **Al servir `getSesionHoy_`**: Para cada ejercicio de la sesión del día
+2. Recibe contexto completo: fase actual, nutrición, RIR objetivo, ajuste del día
 
 ### Qué NO hace:
-- NO genera sesiones (ya están pre-cargadas)
-- NO selecciona ejercicios (ya están en ejercicios_plan)
+- NO escribe en `ejercicios_plan` (pesos son efímeros)
+- NO genera sesiones ni selecciona ejercicios
 - NO cambia series ni reps (definidas por fase en el template)
-- NO es imprescindible: si falla, el usuario ve el último peso conocido o "Elige tu peso"
+- NO es bloqueante: si falla, el usuario ve "Elige tu peso"
 
 ### Fallback sin red:
-- La app usa el ÚLTIMO `num_peso_sugerido_kg` cacheado en Room
-- Si es la primera sesión (peso = 0): la app muestra "Elige tu peso" y el usuario introduce manualmente
+- La app usa el ÚLTIMO peso cacheado en Room
+- Si es la primera sesión (peso = 0): "Elige tu peso" y el usuario introduce manualmente
 - El peso manual se registra en ejercicios_log y sirve de base para la siguiente sugerencia
 
-> **Estado**: Motor FUNCIONAL. Solo modifica peso sugerido. No es bloqueante.
+### Retorno enriquecido:
+```json
+{
+  "peso": 82.5,
+  "detalle": "80kg | ↑ fácil | Hipertrofia | → 82.5kg",
+  "capas": {
+    "base": 80, "ultimoReps": 11, "ultimoRIR": 3,
+    "deltaCap": 2, "pctAPRE": 0.05, "nivelAPRE": "facil",
+    "fase": "VOL", "faseNombre": "Hipertrofia",
+    "factorDescanso": 1.0, "factorDia": 1.0
+  }
+}
+```
+
+> **Estado**: Motor COMPLETO. 6 capas multiplicativas. Evidencia en cada capa.

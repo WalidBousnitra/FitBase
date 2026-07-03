@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Timer notification: compact view (durante cuenta atrás) -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:padding="12dp">
+
+    <!-- Icono animado de reloj -->
+    <ImageView
+        android:id="@+id/ivTimerIcon"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:src="@drawable/ic_timer"
+        android:layout_marginEnd="12dp" />
+
+    <!-- Info del ejercicio -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tvNotifTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Descanso"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/tvNotifExercise"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Press inclinado mancuernas"
+            android:textColor="#9AA0A6"
+            android:textSize="11sp"
+            android:maxLines="1"
+            android:ellipsize="end" />
+    </LinearLayout>
+
+    <!-- Cronómetro grande -->
+    <Chronometer
+        android:id="@+id/chrono"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#FF6D3B"
+        android:textSize="20sp"
+        android:fontFamily="sans-serif-medium"
+        android:countDown="true" />
+</LinearLayout>

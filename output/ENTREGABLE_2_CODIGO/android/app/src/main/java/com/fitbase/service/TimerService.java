@@ -15,6 +15,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.SystemClock;
+import android.widget.RemoteViews;
 
 import androidx.core.app.NotificationCompat;
 
@@ -145,17 +146,26 @@ public class TimerService extends Service {
     };
 
     /**
-     * Notificación con Chronometer nativo — cuenta atrás visible en barra de estado.
-     * El Chronometer del sistema funciona independientemente del proceso de la app.
+     * Notificación con layout custom — estilo "Live Activity" de iOS.
+     * Compact: icono + nombre ejercicio + cronómetro countdown naranja.
+     * El Chronometer del sistema funciona independientemente del proceso.
      */
     private Notification crearNotificacion(int segundos, PendingIntent pi) {
         long whenMs = System.currentTimeMillis() + (segundos * 1000L);
+
+        // Custom compact view con cronómetro naranja
+        RemoteViews compactView = new RemoteViews(getPackageName(), R.layout.notification_timer_compact);
+        compactView.setTextViewText(R.id.tvNotifExercise, ejercicioNombre);
+        compactView.setChronometerCountDown(R.id.chrono, true);
+        compactView.setChronometer(R.id.chrono, SystemClock.elapsedRealtime() + (segundos * 1000L), null, true);
 
         return new NotificationCompat.Builder(this, FitBaseApp.CANAL_TIMER)
                 .setSmallIcon(R.drawable.ic_timer)
                 .setContentTitle("Descanso")
                 .setContentText(ejercicioNombre)
                 .setContentIntent(pi)
+                .setCustomContentView(compactView)
+                .setStyle(new NotificationCompat.DecoratedCustomViewStyle())
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
                 .setSilent(true)
@@ -205,18 +215,27 @@ public class TimerService extends Service {
     }
 
     /**
-     * Notificación heads-up al terminar (tipo llamada entrante).
+     * Notificación expandida al terminar — se agranda tipo "Live Activity fin".
+     * Usa layout custom grande con título naranja vibrante, nombre ejercicio y CTA.
+     * fullScreenIntent hace que aparezca como heads-up incluso en pantalla bloqueada.
      */
     private void mostrarNotificacionFin(PendingIntent pi) {
+        // Vista expandida custom
+        RemoteViews expandedView = new RemoteViews(getPackageName(), R.layout.notification_timer_expanded);
+        expandedView.setTextViewText(R.id.tvFinExercise, ejercicioNombre);
+
         Notification expandida = new NotificationCompat.Builder(this, FitBaseApp.CANAL_TIMER_RELOJ)
                 .setSmallIcon(R.drawable.ic_timer)
                 .setContentTitle("¡Siguiente serie!")
                 .setContentText(ejercicioNombre)
                 .setContentIntent(pi)
+                .setCustomBigContentView(expandedView)
+                .setStyle(new NotificationCompat.DecoratedCustomViewStyle())
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setCategory(NotificationCompat.CATEGORY_ALARM)
                 .setAutoCancel(true)
-                .setVibrate(new long[]{0}) // Trigger heads-up sin vibrar
+                .setFullScreenIntent(pi, true) // Aparece como popup/heads-up
+                .setVibrate(new long[]{0, 200, 100, 200}) // Patrón corto
                 .setSound(null)
                 .build();
 
