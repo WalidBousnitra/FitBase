@@ -38,6 +38,11 @@ public class Ejercicio {
     @SerializedName("bool_es_warmup")
     private boolean esWarmup;
 
+    // Superserie (preferencias.md §5): si coincide con el grupo del siguiente
+    // ejercicio, no hay descanso entre ambos — ver WorkoutViewModel.
+    @SerializedName("str_superset_grupo")
+    private String supersetGrupo;
+
     // ─── Campos del motor (calculados en getSesionHoy_) ───
     @SerializedName("num_peso_sugerido_kg")
     private float pesoSugerido;
@@ -102,6 +107,7 @@ public class Ejercicio {
     public int getDescansoSeg() { return descansoSeg; }
     public String getNotas() { return notas; }
     public boolean isEsWarmup() { return esWarmup; }
+    public String getSupersetGrupo() { return supersetGrupo; }
     public float getPesoSugerido() { return pesoSugerido; }
     public String getMotorDetalle() { return motorDetalle; }
     public MotorCapas getMotorCapas() { return motorCapas; }
@@ -110,6 +116,16 @@ public class Ejercicio {
     public String getGrupoMuscular() { return grupoMuscular; }
     public int getSerieCompletada() { return serieCompletada; }
     public void setSerieCompletada(int s) { this.serieCompletada = s; }
+
+    // ─── Setters (para demo — ver WorkoutViewModel.crearSesionDemo) ───
+    public void setEjercicioId(String id) { this.ejercicioId = id; }
+    public void setNombre(String nombre) { this.nombre = nombre; }
+    public void setSeriesPlan(int series) { this.seriesPlan = series; }
+    public void setRepsPlan(String reps) { this.repsPlan = reps; }
+    public void setRirObjetivo(int rir) { this.rirObjetivo = rir; }
+    public void setDescansoSeg(int seg) { this.descansoSeg = seg; }
+    public void setPesoSugerido(float peso) { this.pesoSugerido = peso; }
+    public void setMotorDetalle(String detalle) { this.motorDetalle = detalle; }
 
     /** Texto legible del peso: "82.5 kg" o "Elige tu peso" si es 0. */
     public String getPesoTexto() {

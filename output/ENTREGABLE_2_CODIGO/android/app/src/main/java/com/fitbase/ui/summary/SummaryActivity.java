@@ -1,6 +1,7 @@
 package com.fitbase.ui.summary;
 
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
@@ -19,19 +20,27 @@ public class SummaryActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_summary);
+        com.fitbase.util.InsetsHelper.aplicarInsetsSistema(this);
 
         TextView tvSeries = findViewById(R.id.tvSummarySeries);
         TextView tvVolumen = findViewById(R.id.tvSummaryVolumen);
+        TextView tvRir = findViewById(R.id.tvSummaryRir);
+        TextView tvIntensidad = findViewById(R.id.tvSummaryIntensidad);
         TextView tvImpacto = findViewById(R.id.tvSummaryImpacto);
         Button btnCerrar = findViewById(R.id.btnSummaryCerrar);
 
         // Datos del intent
         int series = getIntent().getIntExtra("series", 0);
         int volumen = getIntent().getIntExtra("volumen", 0);
+        float rirMedio = getIntent().getFloatExtra("rir_medio", 0f);
+        String intensidad = getIntent().getStringExtra("intensidad");
         String impacto = getIntent().getStringExtra("impacto");
 
         tvSeries.setText(series + " series");
         tvVolumen.setText(volumen + " kg total");
+        tvRir.setText("RIR medio " + rirMedio);
+        tvIntensidad.setText(intensidad != null ? intensidad : "");
+        tvIntensidad.setVisibility(intensidad != null ? View.VISIBLE : View.GONE);
         tvImpacto.setText(impacto != null ? impacto : "Sesión registrada correctamente.");
 
         btnCerrar.setOnClickListener(v -> finish());

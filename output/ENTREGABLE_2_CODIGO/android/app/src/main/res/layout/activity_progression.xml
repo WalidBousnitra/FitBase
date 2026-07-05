@@ -41,7 +41,7 @@
                 android:id="@+id/btn7d"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:layout_width="0dp"
-                android:layout_height="40dp"
+                android:layout_height="@dimen/touch_target_min"
                 android:layout_weight="1"
                 android:text="7d"
                 android:textSize="12sp"
@@ -51,7 +51,7 @@
                 android:id="@+id/btn30d"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:layout_width="0dp"
-                android:layout_height="40dp"
+                android:layout_height="@dimen/touch_target_min"
                 android:layout_weight="1"
                 android:text="30d"
                 android:textSize="12sp"
@@ -61,7 +61,7 @@
                 android:id="@+id/btn90d"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:layout_width="0dp"
-                android:layout_height="40dp"
+                android:layout_height="@dimen/touch_target_min"
                 android:layout_weight="1"
                 android:text="90d"
                 android:textSize="12sp" />
@@ -152,6 +152,14 @@
                     android:textSize="22sp"
                     android:textColor="?android:textColorPrimary"
                     android:fontFamily="sans-serif-medium" />
+
+                <TextView
+                    android:id="@+id/tvGrasaCambio"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="—"
+                    android:textSize="12sp"
+                    android:textColor="@color/success" />
             </LinearLayout>
         </LinearLayout>
 
@@ -218,52 +226,133 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- ═══ DETALLE PESO ═══ -->
+        <!-- ═══ EVOLUCION: Peso, Grasa, Sueno, Pasos en una sola grafica ═══ -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Peso corporal"
+            android:text="Evolucion"
             android:textSize="16sp"
             android:textColor="?android:textColorPrimary"
             android:fontFamily="sans-serif-medium"
             android:layout_marginBottom="8dp" />
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvPeso"
+        <com.fitbase.ui.progression.ProgresionChartView
+            android:id="@+id/chartProgresion"
+            android:layout_width="match_parent"
+            android:layout_height="176dp"
+            android:layout_marginBottom="12dp" />
+
+        <!-- Leyenda -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:nestedScrollingEnabled="false"
-            android:layout_marginBottom="24dp" />
+            android:orientation="horizontal"
+            android:layout_marginBottom="24dp">
 
-        <!-- ═══ DETALLE SUENO ═══ -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Sueno y recuperacion"
-            android:textSize="16sp"
-            android:textColor="?android:textColorPrimary"
-            android:fontFamily="sans-serif-medium"
-            android:layout_marginBottom="8dp" />
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+                <View
+                    android:layout_width="8dp"
+                    android:layout_height="8dp"
+                    android:layout_marginEnd="6dp"
+                    android:background="@color/colorAccentPrimary" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Peso"
+                    android:textSize="12sp"
+                    android:textColor="?android:textColorSecondary" />
+            </LinearLayout>
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvSueno"
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+                <View
+                    android:layout_width="8dp"
+                    android:layout_height="8dp"
+                    android:layout_marginEnd="6dp"
+                    android:background="@color/colorGrasa" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Grasa"
+                    android:textSize="12sp"
+                    android:textColor="?android:textColorSecondary" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+                <View
+                    android:layout_width="8dp"
+                    android:layout_height="8dp"
+                    android:layout_marginEnd="6dp"
+                    android:background="@color/colorChartSecondary" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Sueno"
+                    android:textSize="12sp"
+                    android:textColor="?android:textColorSecondary" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+                <View
+                    android:layout_width="8dp"
+                    android:layout_height="8dp"
+                    android:layout_marginEnd="6dp"
+                    android:background="@color/colorSuccess" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Pasos"
+                    android:textSize="12sp"
+                    android:textColor="?android:textColorSecondary" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- ═══ DETALLE ENERGÍA Y ESTRÉS ═══ -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:nestedScrollingEnabled="false"
-            android:layout_marginBottom="24dp" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="8dp">
 
-        <!-- ═══ DETALLE VOLUMEN ═══ -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Volumen de entrenamiento"
-            android:textSize="16sp"
-            android:textColor="?android:textColorPrimary"
-            android:fontFamily="sans-serif-medium"
-            android:layout_marginBottom="8dp" />
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Energía y estrés (subjetivo)"
+                android:textSize="16sp"
+                android:textColor="?android:textColorPrimary"
+                android:fontFamily="sans-serif-medium" />
+
+            <TextView
+                android:id="@+id/tvEstadoEmoji"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="—"
+                android:textSize="22sp" />
+        </LinearLayout>
 
         <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvVolumen"
+            android:id="@+id/rvSubjetiva"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:nestedScrollingEnabled="false"

@@ -79,7 +79,6 @@ Mapeo de datos capturados por dispositivos wearables y APIs de salud.
 | Masa muscular | `SCALE_MUSCLE` | Masa muscular (kg) |
 | Agua corporal | `SCALE_WATER` | Porcentaje agua (%) |
 | Masa ósea | `SCALE_BONE` | Masa ósea (kg) |
-| Grasa visceral | `SCALE_VISCERAL` | Nivel grasa visceral |
 | BMI | `SCALE_BMI` | Índice masa corporal |
 | BMR | `SCALE_BMR` | Metabolismo basal (kcal) |
 | Edad corporal | `SCALE_BODY_AGE` | Edad metabólica estimada |
@@ -136,7 +135,6 @@ Mapeo de datos capturados por dispositivos wearables y APIs de salud.
 | Readiness Score | Propietario de Zepp | Calcular con sueño + FC |
 | PAI | Propietario de Zepp | Ignorar |
 | Estrés | Zepp no lo exporta | Entrada manual |
-| Grasa visceral | Xiaomi no lo exporta | Entrada manual |
 
 ### Permisos Requeridos
 ```xml

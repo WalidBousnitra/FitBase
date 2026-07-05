@@ -64,11 +64,16 @@ Reglas para la generación de código por parte de la IA.
 | "Backend" | Google Apps Script | V8 Runtime | Solo API, sin lógica pesada |
 | Base de datos | Google Sheets | — | 12 hojas (REG-LOG-02) |
 | API | REST (Apps Script Web App) | — | JSON |
-| Min SDK | 26 (Android 8.0) | — | ~95% dispositivos |
-| Target SDK | 34 (Android 14) | — | Última estable |
+| Min SDK | 35 (Android 15) | — | Requerido por Hyper Island (HyperOS 3, ver REG-DEV-04) — antes 26/~95% dispositivos, aceptable por ser app de un único usuario |
+| Target SDK | 36 (Android 16) | — | Última estable |
+| Compile SDK | 36 | — | AGP 8.9.1+ requerido |
 | Cache local | Room | 2.6.1 | Para offline |
 
 > **IMPORTANTE**: Java, NO Kotlin. El usuario debe poder leer y modificar el código.
+> Excepción puntual: puentes finos hacia SDKs que son Kotlin-first y no
+> exponen una API cómoda desde Java (`HealthConnectBridge.kt` para Health
+> Connect, `HyperIslandTimerBridge.kt` para Hyper Island/HyperOS — ver §16).
+> Toda la lógica de negocio sigue en Java; estos ficheros solo traducen llamadas.
 
 ---
 
@@ -972,6 +977,43 @@ Los siguientes datos requieren entrada manual del usuario porque Zepp/Xiaomi no 
 |---------|--------------|------------|
 | HRV (RMSSD) | Usuario mira Zepp app | Diario (opcional) |
 | Nivel estrés | Usuario mira Zepp app | Diario (opcional) |
-| Grasa visceral | Usuario mira Mi Fitness | Semanal |
 
 > **Recomendación**: Hacer estos campos opcionales en la UI para no frustrar al usuario.
+
+---
+
+## 16. Hyper Island (HyperOS 3) — Timer de Descanso
+
+> Referencia: [HyperIsland ToolKit](https://github.com/D4vidDf/HyperIsland-ToolKit) (Apache 2.0)
+
+### Por qué
+El Redmi Note 14 Pro 5G (dispositivo de referencia) corre HyperOS 3, que tiene
+"Hyper Island" — el equivalente Xiaomi a la Dynamic Island de iOS. La
+notificación del timer de descanso (`TimerService`) se muestra ahí además de
+como notificación normal, sin coste de batería extra: el sistema hace el
+"tick" de la cuenta atrás nativamente (igual que ya hacíamos con el
+`Chronometer` nativo de Android), la app no refresca nada cada segundo.
+
+### Espectro de plantillas evaluado
+La librería expone ~30 métodos de configuración (chat/texto, progreso lineal,
+progreso circular, countdown/count-up, highlight, cover, animación, dígitos de
+ancho fijo, pasos...). Para un timer de descanso que cuenta HACIA ATRÁS
+segundos, la plantilla nativa **Countdown** (`setBigIslandCountdown` +
+`setSmallIslandIcon` + `TimerInfo`) es la que mejor encaja — es exactamente el
+propósito para el que existe, y evita tener que animar nosotros un progreso
+lineal/circular actualizándolo constantemente.
+
+### Implementación
+- `HyperIslandTimerBridge.kt` (Kotlin, puente hacia la librería — ver
+  excepción en la cabecera de este documento) construye el payload.
+- `TimerService.crearNotificacion()` lo añade a la MISMA notificación normal
+  vía `notification.extras.putString("miui.focus.param", json)` — en
+  dispositivos no compatibles (`HyperIslandNotification.isSupported()` ==
+  false) la notificación se comporta exactamente igual que antes, sin cambios.
+
+### Coste: subida de plataforma
+La librería exige `minSdk 35` (Android 15+) y `compileSdk 36` / AGP 8.9.1+ —
+no hay versión publicada con requisitos menores (Hyper Island es una función
+exclusiva de una base Android reciente). Se aceptó subir todo el proyecto
+(antes minSdk 26/~95% dispositivos) porque FitBase es una app de un único
+usuario (ver `manifest.md`) cuyo dispositivo real ya cumple el requisito.

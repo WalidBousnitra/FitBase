@@ -1,44 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Design System: Vivid Dark — Multi-color accents -->
+<!-- Design System: Semántico multi-tono, dark, plano -->
 <resources>
     <!-- Base: Carbón profundo con tono azulado sutil -->
-    <color name="colorBackground">#0F1419</color>
-    <color name="colorSurface">#1B2028</color>
-    <color name="colorSurfaceElevated">#252D38</color>
+    <color name="colorBackground">#14161C</color>
+    <color name="colorSurface">#1E2129</color>
+    <color name="colorSurfaceElevated">#262A34</color>
 
     <!-- Texto: Claro con jerarquía -->
-    <color name="colorTextPrimary">#F0F2F5</color>
-    <color name="colorTextSecondary">#A8B3C0</color>
-    <color name="colorTextTertiary">#6B7785</color>
+    <color name="colorTextPrimary">#F2F3F5</color>
+    <color name="colorTextSecondary">#9BA1AC</color>
+    <color name="colorTextTertiary">#5B6170</color>
 
-    <!-- Bordes: Subtle con toque de color -->
-    <color name="colorSeparator">#2A3442</color>
+    <!-- Bordes -->
+    <color name="colorSeparator">#2B2F3A</color>
 
-    <!-- Accent principal: Naranja vibrante -->
-    <color name="colorAccentPrimary">#FF6D3B</color>
-    <!-- Funcionales con más viveza -->
-    <color name="colorAccentSecondary">#66BB6A</color>
-    <color name="colorSuccess">#4CAF50</color>
-    <color name="colorWarning">#FFB300</color>
+    <!-- Accent principal: AZUL — acciones, CTA, botones primarios -->
+    <color name="colorAccentPrimary">#3B82F6</color>
+    <!-- Funcionales: hue propio por rol -->
+    <color name="colorSuccess">#22C55E</color>
     <!-- Aliases for direct R.color usage -->
-    <color name="success">#4CAF50</color>
-    <color name="warning">#FFB300</color>
-    <color name="colorError">#FF5252</color>
-    <color name="error">#FF5252</color>
-    <color name="colorChart">#42A5F5</color>
-    <color name="colorChartSecondary">#7E57C2</color>
+    <color name="success">#22C55E</color>
+    <color name="warning">#F97316</color>
+    <color name="error">#EF4444</color>
+    <color name="colorChart">#3B82F6</color>
+    <color name="colorChartSecondary">#A855F7</color>
 
-    <!-- Colores por macronutriente -->
-    <color name="colorProteina">#FF8A65</color>
-    <color name="colorCarbos">#4FC3F7</color>
-    <color name="colorGrasa">#FFD54F</color>
-    <color name="colorAgua">#4DD0E1</color>
+    <!-- Colores por macronutriente: hue propio por macro -->
+    <color name="colorProteina">#F472B6</color>
+    <color name="colorCarbos">#60A5FA</color>
+    <color name="colorGrasa">#FBBF24</color>
+    <color name="colorAgua">#22D3EE</color>
 
     <!-- Colores de fase (plan anual) -->
-    <color name="colorFaseVol">#66BB6A</color>
-    <color name="colorFaseFza">#FF6D3B</color>
-    <color name="colorFaseDef">#FFB300</color>
-    <color name="colorFaseMnt">#42A5F5</color>
-    <color name="colorFaseDeload">#78909C</color>
-    <color name="colorFaseActualBg">#1A3D5C</color>
+    <color name="colorFaseVol">#22C55E</color>
+    <color name="colorFaseFza">#3B82F6</color>
+    <color name="colorFaseDef">#F97316</color>
+    <color name="colorFaseMnt">#A855F7</color>
+    <color name="colorFaseDeload">#5B6170</color>
+    <color name="colorFaseActualBg">#1E2A47</color>
 </resources>

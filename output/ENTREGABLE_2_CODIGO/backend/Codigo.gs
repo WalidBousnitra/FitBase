@@ -9,24 +9,113 @@
 //   §5. AUXILIARES (helpers genéricos)
 //   §6. INICIALIZAR (crear hojas + cabeceras — ejecutar 1 vez)
 //   §7. RELLENAR (pre-generar plan anual, semanal, sesiones)
+//   §7b. RELLENAR DATOS FICTICIOS (histórico de prueba: sueño/peso/entrenos)
 //   §8. LIMPIAR (borrar logs de test, conservar estructura y planes)
+//   §9. BIOMETRÍA INICIO/FIN (ajeno a la app — checkpoint manual para
+//       comparar antes/después del plan anual, ver knowledge_base/usuario/biometria.md)
 // ═══════════════════════════════════════════════════════════════
 
 // ─── §1. CONFIGURACIÓN ────────────────────────────────────────
 
 const HOJAS = {
+  // metricas_zepp centraliza TODO lo que se recoge de Health Connect: sueño,
+  // pasos, FC reposo, peso y % grasa (antes peso/grasa vivían en peso_log,
+  // ahora fusionado aquí — una sola fila por día).
   METRICAS_ZEPP: 'metricas_zepp',
   METRICAS_SUBJETIVAS: 'metricas_subjetivas',
-  PESO_LOG: 'peso_log',
   PLAN_ANUAL: 'plan_anual',
-  PLAN_SEMANAL: 'plan_semanal',
   SESIONES_PLAN: 'sesiones_plan',
   EJERCICIOS_PLAN: 'ejercicios_plan',
+  // Solo últimos 7 días — únicamente para el reajuste dinámico del motor de
+  // cargas (ver limpiarEjerciciosLogAntiguos_). No es un historial permanente.
   EJERCICIOS_LOG: 'ejercicios_log',
   EJERCICIOS_CATALOGO: 'ejercicios_catalogo'
 };
 
+// Días que se conservan en ejercicios_log — el motor de cargas solo necesita
+// el rendimiento reciente para reajustar (más peso en fase de adaptación,
+// donde lo planeado y lo real difieren más; cada vez más preciso con el tiempo).
+const EJERCICIOS_LOG_RETENCION_DIAS = 7;
+
 const CACHE_TTL = 30; // segundos
+
+// ─── Ramadán (usuario/perfil/cultura.md §5-8) ─────────────────
+// Fechas confirmadas por el usuario (04/07/2026). El calendario islámico es
+// lunar — estas fechas hay que actualizarlas a mano cada año, no se calculan.
+// Eid al-Fitr = día siguiente al fin de Ramadán (cultura.md §6: "1-3 días" de
+// excepción — se deja en 1 día por defecto; ampliar aquí si la familia lo
+// celebra más días).
+const RAMADAN_FECHAS = { inicio: '2027-02-08', fin: '2027-03-10' };
+const EID_FITR_FECHAS = { inicio: '2027-03-11', fin: '2027-03-11' };
+
+function esRamadan_(fecha) {
+  fecha = fecha || fechaHoy_();
+  return fecha >= RAMADAN_FECHAS.inicio && fecha <= RAMADAN_FECHAS.fin;
+}
+
+function esEidFitr_(fecha) {
+  fecha = fecha || fechaHoy_();
+  return fecha >= EID_FITR_FECHAS.inicio && fecha <= EID_FITR_FECHAS.fin;
+}
+
+// ─── Horario semanal (configurable) ───────────────────────────
+// Día de la semana (0=dom..6=sáb) → tipo de sesión. A diferencia de las
+// fases (evidencia fija), este split SÍ puede necesitar cambiar: natación
+// depende del horario de la piscina del curso/cuatrimestre, que se publica
+// cada cierto tiempo y no coincide siempre con los mismos días. Se guarda
+// en PropertiesService (persiste entre despliegues, no necesita hoja nueva
+// para un objeto tan pequeño) y se actualiza vía accion=actualizar_horario,
+// que regenera SOLO las sesiones futuras (desde mañana) — el histórico ya
+// vivido (incluidas sesiones completadas) no se toca nunca.
+const TIPOS_DIA_VALIDOS = ['PUSH', 'PIERNA', 'PULL', 'HOMBR', 'NATACION', 'DESCANSO'];
+const HORARIO_SEMANAL_DEFECTO = { 0: 'DESCANSO', 1: 'PUSH', 2: 'NATACION', 3: 'PIERNA', 4: 'NATACION', 5: 'PULL', 6: 'HOMBR' };
+
+function getHorarioSemanal_() {
+  var guardado = PropertiesService.getScriptProperties().getProperty('HORARIO_SEMANAL');
+  if (!guardado) return HORARIO_SEMANAL_DEFECTO;
+  try {
+    var obj = JSON.parse(guardado);
+    for (var d = 0; d <= 6; d++) {
+      if (TIPOS_DIA_VALIDOS.indexOf(obj[d]) < 0) return HORARIO_SEMANAL_DEFECTO;
+    }
+    return obj;
+  } catch (e) {
+    return HORARIO_SEMANAL_DEFECTO;
+  }
+}
+
+/**
+ * Guarda el horario semanal nuevo y regenera las sesiones futuras (desde
+ * mañana) para que reflejen el cambio de inmediato. Hoy no se toca — si ya
+ * se sirvió o completó la sesión de hoy, cambiar el horario ahora no debe
+ * reescribirla por debajo.
+ */
+function guardarHorarioSemanal_(datos) {
+  var nuevo = datos.horario;
+  if (!nuevo) return { error: 'Falta horario' };
+  for (var d = 0; d <= 6; d++) {
+    if (TIPOS_DIA_VALIDOS.indexOf(nuevo[d]) < 0) {
+      return { error: 'Día ' + d + ' tiene un tipo inválido: ' + nuevo[d] };
+    }
+  }
+
+  PropertiesService.getScriptProperties().setProperty('HORARIO_SEMANAL', JSON.stringify(nuevo));
+
+  // fechaHoy_() ya está en huso Europe/Madrid — sumar el día ahí evita
+  // desajustes con el huso por defecto del proyecto de Apps Script.
+  var manana = parseDate_(fechaHoy_());
+  manana.setDate(manana.getDate() + 1);
+  var mananaStr = formatDate_(manana);
+  var resultado = regenerarSesionesDesde_(mananaStr);
+
+  return {
+    ok: true,
+    horario: nuevo,
+    sesiones_eliminadas: resultado.eliminadas,
+    sesiones_generadas: resultado.generadas,
+    mensaje: 'Horario actualizado desde mañana (' + mananaStr + '). Hoy y el histórico no se han tocado.'
+  };
+}
 
 // ─── §2. ENDPOINTS ────────────────────────────────────────────
 
@@ -45,9 +134,10 @@ function doGet(e) {
       case 'sesion_hoy':       resultado = getSesionHoy_(); break;
       case 'vista_manana':     resultado = getVistaMañana_(); break;
       case 'plan_anual':       resultado = getPlanAnual_(); break;
-      case 'plan_semanal':     resultado = getPlanSemanal_(e.parameter.semana); break;
       case 'macros_hoy':       resultado = getMacrosHoy_(); break;
       case 'check_ausencia':   resultado = checkAusencia_(); break;
+      case 'cambio_fase':      resultado = getCambioFase_(); break;
+      case 'horario_semanal':  resultado = { horario: getHorarioSemanal_() }; break;
       case 'progresion_metricas': resultado = getProgresionMetricas_(e.parameter.dias); break;
       default: resultado = { error: 'Acción no reconocida' };
     }
@@ -68,14 +158,15 @@ function doPost(e) {
     let resultado;
     switch (datos.accion) {
       case 'guardar_log':       resultado = guardarLog_(datos); break;
-      case 'guardar_peso':      resultado = guardarPeso_(datos); break;
       case 'guardar_metricas':  resultado = guardarMetricas_(datos); break;
+      case 'guardar_metricas_subjetivas': resultado = guardarMetricasSubjetivas_(datos); break;
       case 'completar_sesion':  resultado = completarSesion_(datos); break;
       case 'registrar_ausencia': resultado = registrarAusencia_(datos); break;
+      case 'actualizar_horario': resultado = guardarHorarioSemanal_(datos); break;
       default: resultado = { error: 'Acción POST no reconocida' };
     }
     // Invalidar cache tras escritura
-    CacheService.getScriptCache().removeAll(['GET:sesion_hoy:', 'GET:macros_hoy:', 'GET:progresion_metricas:']);
+    CacheService.getScriptCache().removeAll(['GET:sesion_hoy:', 'GET:macros_hoy:', 'GET:progresion_metricas:', 'GET:vista_manana:', 'GET:plan_anual:']);
     return jsonOutput_(JSON.stringify(resultado));
   } catch (err) {
     return jsonOutput_(JSON.stringify({ error: err.message }));
@@ -105,6 +196,11 @@ function getSesionHoy_() {
   }
   if (!sesion) return { sesion: null, ejercicios: [], mensaje: 'No hay sesión para hoy' };
 
+  // Ramadán (cultura.md §5): -30% volumen, intensidad se mantiene. Se aplica
+  // aquí (al SERVIR la sesión), no en la generación del plan — el ayuno es un
+  // periodo lunar fijo por fechas de calendario, independiente de las fases.
+  const ramadan = esRamadan_(hoy);
+
   // Ejercicios con peso calculado DINÁMICAMENTE (no almacenado en plan)
   const ejercicios = getEjerciciosSesion_(sesion.sesion_id);
   const ajuste = calcularAjusteDia_();
@@ -114,6 +210,7 @@ function getSesionHoy_() {
   const objetivoNutri = (plan.fase_actual && plan.fase_actual.str_objetivo_nutri) || 'bulk';
 
   const ejerciciosAjustados = ejercicios.map(function(ej) {
+    var seriesPlan = ramadan ? Math.max(1, Math.round(ej.num_series_plan * 0.7)) : ej.num_series_plan;
     var resultado = calcularPesoSugerido_(ej.ejercicio_id, {
       ajusteDia: ajuste.factor,
       fase: sesion.str_fase || 'VOL',
@@ -123,6 +220,7 @@ function getSesionHoy_() {
     });
     return {
       ...ej,
+      num_series_plan: seriesPlan,
       num_peso_sugerido_kg: resultado.peso,
       motor_detalle: resultado.detalle,
       motor_capas: resultado.capas,
@@ -130,7 +228,101 @@ function getSesionHoy_() {
     };
   });
 
-  return { sesion: sesion, ejercicios: ejerciciosAjustados, ajuste_dia: ajuste };
+  return {
+    sesion: sesion,
+    ejercicios: ejerciciosAjustados,
+    ajuste_dia: ajuste,
+    ramadan_activo: ramadan,
+    ramadan_nota: ramadan
+      ? 'Ramadán: volumen -30% (intensidad igual). Ideal entrenar 30-60 min antes de Iftar, o 2-3h después si no puedes antes. Nada de HIIT ni sesiones >60 min.'
+      : null,
+    calentamiento: getCalentamiento_(sesion.str_tipo),
+    estiramientos: getEstiramientos_(sesion.str_tipo)
+  };
+}
+
+/**
+ * Calentamiento: movilidad dinámica (común a toda sesión) + activación
+ * específica según el tipo de día. Sin descanso entre items — cada uno
+ * lleva su propia duración/reps (no hay "series" que descansar entre sí).
+ * Fuente: reglas/entrenamiento/calentamiento.md §3 (Fase 2 y 3).
+ * Rodrigues 2020: ningún protocolo mejora fuerza aguda, pero previene
+ * lesiones. Page 2012: NO estático pre-entreno (reduce fuerza).
+ */
+function getCalentamiento_(tipoDia) {
+  var items = [
+    { nombre: 'Círculos de cadera', reps: '10/lado', objetivo: 'Movilidad dinámica' },
+    { nombre: 'Gato-vaca', reps: '10 reps', objetivo: 'Movilidad dinámica' },
+    { nombre: 'Dislocaciones con banda', reps: '10 reps', objetivo: 'Movilidad dinámica' }
+  ];
+
+  var activacion = {
+    'Push': [
+      { nombre: 'Face pulls ligeros', reps: '15 reps', objetivo: 'Activación Push' },
+      { nombre: 'Rotación externa banda', reps: '10/lado', objetivo: 'Activación Push' }
+    ],
+    'Pull': [
+      { nombre: 'Dead hangs', reps: '20s', objetivo: 'Activación Pull' },
+      { nombre: 'Retracción escapular', reps: '15 reps', objetivo: 'Activación Pull' }
+    ],
+    'Pierna': [
+      { nombre: 'Glute bridges', reps: '15 reps', objetivo: 'Activación Pierna' },
+      { nombre: 'Sentadillas sin peso', reps: '10 reps', objetivo: 'Activación Pierna' }
+    ]
+  };
+  items = items.concat(activacion[tipoDia] || [
+    { nombre: 'Rotación externa banda', reps: '10/lado', objetivo: 'Activación Hombros+Brazos' },
+    { nombre: 'Face pulls ligeros', reps: '15 reps', objetivo: 'Activación Hombros+Brazos' }
+  ]);
+
+  // Fase 4: series de aproximación (calentamiento.md §3, primer compuesto pesado)
+  items.push({
+    nombre: 'Series aproximación 1er compuesto',
+    reps: '40% → 60% → 75% → 85%',
+    objetivo: 'Preparación neuromuscular (calentamiento.md §3)'
+  });
+
+  return { duracion_min: 12, ejercicios: items };
+}
+
+/**
+ * Estiramientos post-entreno: estáticos 3×30s por grupo TRABAJADO en la sesión.
+ * Page 2012: estático post-entreno no reduce fuerza (al revés que pre-entreno).
+ * Bandy 1997: 30s = 60s, sin beneficio adicional a estirar MÁS TIEMPO por serie.
+ * Page 2012 (evidencia/flexibilidad.md §5): sí se recomiendan 2-4 repeticiones
+ * por músculo — se usa 3 (punto medio) — antes solo era 1 repetición.
+ */
+function getEstiramientos_(tipoDia) {
+  var porTipo = {
+    'Push': [
+      { nombre: 'Pectoral en marco de puerta', reps: '3x30s/lado', objetivo: 'Pecho' },
+      { nombre: 'Estiramiento deltoides (brazo cruzado)', reps: '3x30s/lado', objetivo: 'Hombros' },
+      { nombre: 'Extensión tríceps overhead', reps: '3x30s/brazo', objetivo: 'Tríceps' }
+    ],
+    'Pull': [
+      { nombre: 'Estiramiento dorsal en barra', reps: '3x30s', objetivo: 'Espalda' },
+      { nombre: 'Estiramiento bíceps en pared', reps: '3x30s/brazo', objetivo: 'Bíceps' },
+      { nombre: 'Rotación torácica tumbado', reps: '3x30s/lado', objetivo: 'Espalda' }
+    ],
+    'Pierna': [
+      { nombre: 'Cuádriceps de pie', reps: '3x30s/pierna', objetivo: 'Cuádriceps' },
+      { nombre: 'Isquios de pie (pierna en banco)', reps: '3x30s/pierna', objetivo: 'Isquios' },
+      { nombre: 'Estiramiento psoas/flexor cadera', reps: '3x30s/lado', objetivo: 'Cadera' },
+      { nombre: 'Aductores en mariposa', reps: '3x30s', objetivo: 'Aductores' }
+    ],
+    'Hombros+Brazos': [
+      { nombre: 'Deltoides posterior (brazo cruzado)', reps: '3x30s/lado', objetivo: 'Hombros' },
+      { nombre: 'Extensión tríceps overhead', reps: '3x30s/brazo', objetivo: 'Tríceps' },
+      { nombre: 'Estiramiento bíceps en pared', reps: '3x30s/brazo', objetivo: 'Bíceps' },
+      { nombre: 'Rotación externa pasiva', reps: '3x30s/lado', objetivo: 'Manguito rotador' }
+    ]
+  };
+  var items = porTipo[tipoDia] || [
+    { nombre: 'Pectoral en marco de puerta', reps: '3x30s/lado', objetivo: 'Pecho' },
+    { nombre: 'Estiramiento dorsal', reps: '3x30s', objetivo: 'Espalda' },
+    { nombre: 'Cuádriceps de pie', reps: '3x30s/pierna', objetivo: 'Cuádriceps' }
+  ];
+  return { duracion_min: Math.round(items.length * 1.5), ejercicios: items };
 }
 
 /**
@@ -158,18 +350,8 @@ function getPlanAnual_() {
     fase_actual: faseActual,
     total_semanas: 48,
     fecha_inicio: '2026-08-31',
-    fecha_fin: '2027-07-31'
+    fecha_fin: '2027-08-01'
   };
-}
-
-function getPlanSemanal_(numSemana) {
-  const hoja = getHoja_(HOJAS.PLAN_SEMANAL);
-  const datos = hoja.getDataRange().getValues();
-  const cab = datos[0];
-  for (let i = 1; i < datos.length; i++) {
-    if (datos[i][cab.indexOf('num_semana_año')] == numSemana) return rowToObj_(cab, datos[i]);
-  }
-  return { error: 'Semana no encontrada' };
 }
 
 /**
@@ -206,7 +388,14 @@ function getMacrosHoy_() {
     // Bulk: TDEE×1.15 = +15% (Iraki 2019: rango 1.10-1.20, elegido 1.15 = punto medio)
   }
 
-  const calorias = Math.round(tdee * mult);
+  var calorias = Math.round(tdee * mult);
+
+  // Ajuste por actividad diaria (motor_dieta.md §6): pasos extra por encima
+  // del objetivo de NEAT queman calorías reales no capturadas por el factor
+  // de actividad fijo (1.55) — se compensan con carbos extra (van al remainder).
+  const pasos = getPasosHoy_();
+  if (pasos > 12000) calorias += 175; // +150-200 kcal (motor_dieta.md §6), 175 = punto medio
+
   const protG = Math.round(peso * protRatio);
   // Grasas: Iraki 2019 (bulk: 0.5-1.5 g/kg, ~20-30% kcal). Usar 1.0 g/kg (punto medio)
   // En cut: mínimo 0.5 g/kg para función hormonal (Helms 2014), usamos ~25% kcal
@@ -222,7 +411,6 @@ function getMacrosHoy_() {
   const esEntreno = sesionHoy.sesion !== null;
   // Agua: 35 ml/kg/día (evidencia/vitalidad.md) + 500ml extra en día entreno (compensar sudor)
   const agua = Math.round(peso * 35) + (esEntreno ? 500 : 0);
-  const pasos = getPasosHoy_();
 
   // Pasos objetivo por fase (programacion.md §13, Wilson 2012)
   var pasosPorFase = { VOL: 8000, FZA: 8000, DEF: 10000, MNT: 9000, DELOAD: 7000 };
@@ -248,21 +436,24 @@ function getProgresionMetricas_(dias) {
   dias = parseInt(dias) || 30;
   const desde = new Date(Date.now() - dias * 86400000);
 
-  // Peso
-  const pesoData = leerDatosDesdeFecha_(HOJAS.PESO_LOG, 'date_fecha', desde, function(row) {
-    return {
-      fecha: row.date_fecha, peso_kg: row.num_peso_kg,
-      grasa_pct: row.num_grasa_pct || null, hidratacion_pct: row.num_hidratacion_pct || null,
-      grasa_visceral: row.num_grasa_visceral || null
-    };
-  });
-
-  // Zepp
+  // Zepp — centraliza sueño, pasos, FC reposo, peso y % grasa (una fila/día;
+  // peso_kg/grasa_pct pueden venir vacíos los días sin pesada).
   const zeppData = leerDatosDesdeFecha_(HOJAS.METRICAS_ZEPP, 'date_fecha', desde, function(row) {
     return {
       fecha: row.date_fecha, sleep_score: row.num_sleep_score || 0,
       hr_reposo: row.num_hr_reposo || 0, pasos: row.num_pasos || 0,
-      vo2max: row.num_vo2max || 0, sleep_horas: 0, sleep_deep_min: 0, hrv_rmssd: 0, stress_avg: 0
+      peso_kg: row.num_peso_kg || null, grasa_pct: row.num_grasa_pct || null
+    };
+  });
+  const conPeso = zeppData.filter(function(d) { return d.peso_kg; });
+
+  // Energía / estrés subjetivos (escala 1-5, entrada manual tras las 22:00)
+  const subjetivaData = leerDatosDesdeFecha_(HOJAS.METRICAS_SUBJETIVAS, 'date_fecha', desde, function(row) {
+    return {
+      fecha: row.date_fecha,
+      energia: row.num_energia || null,
+      estres: row.num_estres || null,
+      notas: row.str_notas || null
     };
   });
 
@@ -279,14 +470,18 @@ function getProgresionMetricas_(dias) {
 
   // Resumen
   const resumen = {
-    peso_actual: pesoData.length > 0 ? pesoData[pesoData.length - 1].peso_kg : null,
-    peso_inicio: pesoData.length > 0 ? pesoData[0].peso_kg : null,
-    grasa_actual: pesoData.length > 0 ? pesoData[pesoData.length - 1].grasa_pct : null,
+    peso_actual: conPeso.length > 0 ? conPeso[conPeso.length - 1].peso_kg : null,
+    peso_inicio: conPeso.length > 0 ? conPeso[0].peso_kg : null,
+    grasa_actual: conPeso.length > 0 ? conPeso[conPeso.length - 1].grasa_pct : null,
+    grasa_inicio: conPeso.length > 0 ? conPeso[0].grasa_pct : null,
     sleep_media: zeppData.length > 0 ? Math.round(zeppData.reduce(function(s, d) { return s + d.sleep_score; }, 0) / zeppData.length) : null,
     pasos_media: zeppData.length > 0 ? Math.round(zeppData.reduce(function(s, d) { return s + d.pasos; }, 0) / zeppData.length) : null
   };
 
-  return { dias_solicitados: dias, peso: pesoData, zepp: zeppData, volumen_entreno: volumenData, resumen: resumen };
+  return {
+    dias_solicitados: dias, zepp: zeppData,
+    subjetiva: subjetivaData, volumen_entreno: volumenData, resumen: resumen
+  };
 }
 
 function checkAusencia_() {
@@ -342,26 +537,69 @@ function guardarLog_(datos) {
   return { ok: true, log_id: logId };
 }
 
-function guardarPeso_(datos) {
-  const hoja = getHoja_(HOJAS.PESO_LOG);
-  const id = genId_('PES');
-  hoja.appendRow([
-    id, datos.fecha || fechaHoy_(), datos.peso_kg,
-    datos.grasa_pct || '', datos.hidratacion_pct || '',
-    datos.grasa_visceral || '', new Date().toISOString()
-  ]);
-  return { ok: true, peso_id: id };
+/**
+ * Inserta una fila nueva o ACTUALIZA la existente si ya hay una fila con esa
+ * fecha en la hoja (mismo día = mismo registro). Evita duplicados cuando el
+ * sync diario de la app (Health Connect → BBDD) se ejecuta más de una vez el
+ * mismo día (reinstalación, abrir la app varias veces, etc). Si actualiza,
+ * conserva el ID original de la fila (columna 1).
+ */
+function upsertPorFecha_(hoja, colFecha, fecha, filaCompleta) {
+  const datos = hoja.getDataRange().getValues();
+  const cab = datos[0];
+  const idx = cab.indexOf(colFecha);
+  if (idx >= 0) {
+    for (let i = datos.length - 1; i >= 1; i--) {
+      const f = parseDate_(datos[i][idx]);
+      if (f && formatDate_(f) === fecha) {
+        const filaActualizada = [datos[i][0]].concat(filaCompleta.slice(1));
+        hoja.getRange(i + 1, 1, 1, filaActualizada.length).setValues([filaActualizada]);
+        return true; // actualizado
+      }
+    }
+  }
+  hoja.appendRow(filaCompleta);
+  return false; // insertado
 }
 
+/**
+ * Guarda TODO lo que se recoge de Health Connect en una sola fila por día:
+ * sueño, pasos, FC reposo, peso y % grasa (antes peso/grasa vivían en
+ * peso_log, separado — ahora centralizado aquí). Los campos que no vengan
+ * en la llamada mantienen el valor ya guardado ese día (no se pisan a '0'
+ * si, por ejemplo, solo se sincroniza el peso más tarde).
+ */
 function guardarMetricas_(datos) {
   const hoja = getHoja_(HOJAS.METRICAS_ZEPP);
-  const id = genId_('ZEP');
-  hoja.appendRow([
-    id, datos.fecha, datos.sleep_score || 0,
-    datos.pasos || 0, datos.hr_reposo || 0,
-    datos.vo2max || 0, new Date().toISOString()
+  const fecha = datos.fecha || fechaHoy_();
+  const existente = getUltimaFila_(HOJAS.METRICAS_ZEPP, 'date_fecha', fecha);
+  const id = existente ? existente.metrica_id : genId_('ZEP');
+
+  const sleepScore = datos.sleep_score != null ? datos.sleep_score : (existente ? existente.num_sleep_score : 0);
+  const pasos = datos.pasos != null ? datos.pasos : (existente ? existente.num_pasos : 0);
+  const hrReposo = datos.hr_reposo != null ? datos.hr_reposo : (existente ? existente.num_hr_reposo : 0);
+  const pesoKg = datos.peso_kg != null ? datos.peso_kg : (existente ? existente.num_peso_kg : '');
+  const grasaPct = datos.grasa_pct != null ? datos.grasa_pct : (existente ? existente.num_grasa_pct : '');
+
+  const actualizado = upsertPorFecha_(hoja, 'date_fecha', fecha, [
+    id, fecha, sleepScore, pasos, hrReposo, pesoKg, grasaPct, new Date().toISOString()
   ]);
-  return { ok: true, metrica_id: id };
+  return { ok: true, metrica_id: id, actualizado: actualizado };
+}
+
+/**
+ * Energía, estrés y notas subjetivas — entrada manual (escala 1-5, selector
+ * de 5 niveles en la app). Se pregunta una vez al día, después de las 22:00
+ * (ver HomeActivity), para captar el desgaste físico/mental del día completo.
+ */
+function guardarMetricasSubjetivas_(datos) {
+  const hoja = getHoja_(HOJAS.METRICAS_SUBJETIVAS);
+  const fecha = datos.fecha || fechaHoy_();
+  const id = genId_('SUB');
+  const actualizado = upsertPorFecha_(hoja, 'date_fecha', fecha, [
+    id, fecha, datos.energia || '', datos.estres || '', datos.notas || ''
+  ]);
+  return { ok: true, subjetiva_id: id, actualizado: actualizado };
 }
 
 function completarSesion_(datos) {
@@ -463,25 +701,40 @@ function getVistaMañana_() {
   var tipoFase = faseActual ? faseActual.str_tipo : 'VOL';
 
   // 4. Tipo de día: gym/natación/descanso
+  // Antes de plan.fecha_inicio el split semanal fijo todavía no rige — no
+  // hay sesiones reales en sesiones_plan (rellenarPlanCompleto solo genera
+  // filas dentro de las fechas de FASES) y no tiene sentido "descansar" de
+  // un programa que no ha empezado. Se fuerza gym todos los días en esta
+  // pre-temporada para poder probar el flujo de entreno (WorkoutViewModel
+  // cae a su sesión demo cuando no encuentra sesión real, ver crearSesionDemo).
+  var preTemporada = hoy < plan.fecha_inicio;
+  var tipoSesionHoy = getHorarioSemanal_()[diaSemana];
   var tipoDia;
-  if (diaSemana === 0) tipoDia = 'descanso';
-  else if (diaSemana === 2 || diaSemana === 4) tipoDia = 'natacion';
-  else if ([1, 3, 5, 6].indexOf(diaSemana) >= 0) tipoDia = 'gym';
-  else tipoDia = 'descanso';
+  if (preTemporada) tipoDia = 'gym';
+  else if (tipoSesionHoy === 'NATACION') tipoDia = 'natacion';
+  else if (tipoSesionHoy === 'DESCANSO') tipoDia = 'descanso';
+  else tipoDia = 'gym'; // PUSH/PIERNA/PULL/HOMBR
 
   // 5. Cardio objetivo del día (programacion.md §13, Wilson 2012)
   var cardio = getCardioObjetivo_(tipoFase, tipoDia);
 
   // 6. Movilidad matutina (programacion.md §14, Ruivo 2017, Hansraj 2014)
-  var movilidad = getMovilidadMatutina_();
+  var movilidad = getMovilidadMatutina_(plan.fecha_inicio);
 
   // 7. Aviso de día perdido (excepciones.md §2.1)
   var ausencia = checkAusenciaAyer_();
 
+  // 8. ¿Ya se completó la sesión de gym de hoy? Si sí, no se puede empezar
+  // otra — solo revisar el resumen (evita duplicar series en ejercicios_log).
+  var sesionHoyEstado = getSesionCompletadaHoy_(hoy);
+
+  // 9. Ramadán / Eid (cultura.md §5-6)
+  var ramadan = getRamadanInfo_(hoy);
+
   return {
     fecha: hoy,
     tipo_dia: tipoDia,
-    fase: faseActual ? { nombre: faseActual.str_nombre_fase, tipo: tipoFase, nutri: faseActual.str_objetivo_nutri } : null,
+    fase: faseActual ? { fase_id: faseActual.fase_id, nombre: faseActual.str_nombre_fase, tipo: tipoFase, nutri: faseActual.str_objetivo_nutri } : null,
     sueno: sueno,
     macros: {
       calorias: macros.calorias_objetivo,
@@ -492,12 +745,148 @@ function getVistaMañana_() {
     },
     cardio: cardio,
     movilidad_matutina: movilidad,
-    aviso_ausencia: ausencia
+    aviso_ausencia: ausencia,
+    sesion_completada: sesionHoyEstado.completada,
+    resumen_hoy: sesionHoyEstado.resumen,
+    ramadan: ramadan
   };
 }
 
 /**
- * Objetivo de cardio/pasos según fase (programacion.md §13).
+ * Guía de Ramadán/Eid para la vista matutina (cultura.md §5-6).
+ * Los OBJETIVOS de calorías/macros NO cambian (el ayuno no cambia tus
+ * necesidades calóricas) — lo que cambia es CUÁNDO se reparten: colapsadas
+ * en Iftar + Cena + Suhur en vez de 3 comidas + snacks repartidas por el día.
+ * Horario de ayuno aproximado (no se calcula por astronomía/ubicación,
+ * cultura.md §5 solo da rangos estacionales) — el usuario debe verificar el
+ * horario exacto local (mezquita/app islámica) día a día.
+ */
+function getRamadanInfo_(hoy) {
+  if (esEidFitr_(hoy)) {
+    return {
+      activo: false,
+      es_eid: true,
+      nota: 'Eid al-Fitr — día de excepción (cultura.md §6). No trackear estrictamente, disfruta con la familia. Mañana vuelves a la rutina normal.'
+    };
+  }
+  if (!esRamadan_(hoy)) return { activo: false, es_eid: false };
+
+  var diaAyuno = Math.round((parseDate_(hoy) - parseDate_(RAMADAN_FECHAS.inicio)) / 86400000) + 1;
+  return {
+    activo: true,
+    es_eid: false,
+    dia_ayuno: diaAyuno,
+    horario_aproximado: 'Ayuno Fajr→Maghrib, aprox. 7:00-19:00 (varía cada día — verifica horario exacto local)',
+    timing_entreno: '30-60 min antes de Iftar (entrenas en ayunas, comes justo después) — alternativa: 2-3h después de Iftar',
+    hidratacion: 'Toda el agua (2-3L) entre Iftar y Suhur — nada durante el ayuno',
+    nutricion: 'Mismas calorías/macros de hoy, pero repartidas en Iftar + Cena + Suhur (no 3 comidas + snacks)',
+    iftar_orden: 'Dátiles + agua → Harira/sopa → proteína + verduras (evita fritos y dulces en exceso)',
+    suhur_incluir: 'Carbos complejos (avena/integral) + proteína + frutos secos — evita muy salado y cafeína',
+    entreno_prohibido: 'Nada de HIIT, sesiones >60 min, ni entrenar en horas centrales del ayuno'
+  };
+}
+
+/**
+ * Resumen de cambio de fase — se llama SOLO cuando la app detecta que la
+ * fase actual es distinta a la última vista (comparando fase_id en el
+ * cliente). Da un cierre a la fase que acaba de terminar y presenta la que
+ * empieza.
+ *
+ * NO depende de ejercicios_log (solo guarda 7 días) — usa sesiones_plan
+ * (permanente, para adherencia: completadas/totales) y metricas_zepp
+ * (permanente, para peso/sueño) dentro del rango de fechas de la fase.
+ */
+function getCambioFase_() {
+  const plan = getPlanAnual_();
+  const faseActual = plan.fase_actual;
+  if (!faseActual) return { hay_cambio: false };
+
+  const fases = plan.fases.slice().sort(function(a, b) { return a.num_orden - b.num_orden; });
+  const idxActual = fases.findIndex(function(f) { return f.fase_id === faseActual.fase_id; });
+
+  const faseActualInfo = {
+    fase_id: faseActual.fase_id, nombre: faseActual.str_nombre_fase, tipo: faseActual.str_tipo,
+    foco: faseActual.str_foco_muscular, nutri: faseActual.str_objetivo_nutri,
+    rir_rango: faseActual.str_rir_rango, semanas: faseActual.num_semanas
+  };
+
+  if (idxActual <= 0) {
+    // Primera fase del plan — no hay fase anterior que resumir.
+    return { hay_cambio: true, fase_anterior: null, resumen_fase_anterior: null, fase_actual: faseActualInfo };
+  }
+
+  const faseAnterior = fases[idxActual - 1];
+
+  // Adherencia: sesiones completadas vs totales dentro del rango de fechas
+  var hSes = getHoja_(HOJAS.SESIONES_PLAN);
+  var datosSes = hSes.getDataRange().getValues();
+  var cabSes = datosSes[0];
+  var colFecha = cabSes.indexOf('date_fecha');
+  var colComp = cabSes.indexOf('bool_completada');
+  var totalSesiones = 0, completadas = 0;
+  for (var i = 1; i < datosSes.length; i++) {
+    var f = parseDate_(datosSes[i][colFecha]);
+    var fStr = f ? formatDate_(f) : null;
+    if (fStr && fStr >= faseAnterior.date_inicio && fStr <= faseAnterior.date_fin) {
+      totalSesiones++;
+      if (datosSes[i][colComp]) completadas++;
+    }
+  }
+
+  // Peso/sueño dentro del rango de la fase (metricas_zepp, permanente)
+  var zeppFase = leerDatosDesdeFecha_(HOJAS.METRICAS_ZEPP, 'date_fecha', parseDate_(faseAnterior.date_inicio), function(row) {
+    return { fecha: row.date_fecha, peso_kg: row.num_peso_kg || null, sleep_score: row.num_sleep_score || 0 };
+  }).filter(function(r) { return r.fecha <= faseAnterior.date_fin; });
+
+  var conPeso = zeppFase.filter(function(z) { return z.peso_kg; });
+  var pesoInicio = conPeso.length ? conPeso[0].peso_kg : null;
+  var pesoFin = conPeso.length ? conPeso[conPeso.length - 1].peso_kg : null;
+  var sleepMedia = zeppFase.length
+    ? Math.round(zeppFase.reduce(function(s, z) { return s + z.sleep_score; }, 0) / zeppFase.length)
+    : null;
+
+  return {
+    hay_cambio: true,
+    fase_anterior: {
+      fase_id: faseAnterior.fase_id, nombre: faseAnterior.str_nombre_fase, tipo: faseAnterior.str_tipo,
+      foco: faseAnterior.str_foco_muscular
+    },
+    resumen_fase_anterior: {
+      sesiones_completadas: completadas, sesiones_totales: totalSesiones,
+      peso_inicio: pesoInicio, peso_fin: pesoFin, sleep_media: sleepMedia
+    },
+    fase_actual: faseActualInfo
+  };
+}
+
+/**
+ * Busca la sesión de hoy en sesiones_plan y, si ya está marcada como
+ * completada, adjunta su resumen (mismo cálculo que completar_sesion).
+ */
+function getSesionCompletadaHoy_(hoy) {
+  var hoja = getHoja_(HOJAS.SESIONES_PLAN);
+  if (!hoja) return { completada: false, resumen: null };
+  var datos = hoja.getDataRange().getValues();
+  var cab = datos[0];
+  var colFecha = cab.indexOf('date_fecha');
+  var colComp = cab.indexOf('bool_completada');
+  var colId = cab.indexOf('sesion_id');
+
+  for (var i = 1; i < datos.length; i++) {
+    var f = parseDate_(datos[i][colFecha]);
+    if (f && formatDate_(f) === hoy) {
+      var completada = !!datos[i][colComp];
+      return {
+        completada: completada,
+        resumen: completada ? getResumenSesion_(datos[i][colId]) : null
+      };
+    }
+  }
+  return { completada: false, resumen: null };
+}
+
+/**
+ * Objetivo de cardio/pasos según fase (programacion.md §13 + §12 FLUJO_DESCANSO).
  * DECISIÓN BASADA EN EVIDENCIA:
  *   - Wilson 2012: bici/elíptica NO interfiere con hipertrofia (correr SÍ: -31%)
  *   - Viana 2019: LISS (60-70% FC) = HIIT para pérdida de grasa, menor fatiga
@@ -505,15 +894,23 @@ function getVistaMañana_() {
  *   - DEF: 15-20 min bici → aumentar NEAT + déficit (Viana 2019)
  *   - MNT: 10 min opcional → balance sin interferencia
  *   - DELOAD: 0 min → recuperación total
+ * En días de NATACIÓN el cardio extra se anula: la propia clase (1h, bajo
+ * impacto) ya cuenta como cardio (programacion.md §11 "natacion_cuenta: true").
+ * En días de DESCANSO SÍ se prescribe (programacion.md §12 FLUJO_DESCANSO:
+ * "cardio_suave: SOLO si fase = DEF o MNT") — antes se anulaba en cualquier
+ * día que no fuera gym, lo que dejaba el domingo siempre en 0 incluso en
+ * fases de déficit/mantenimiento, contradiciendo el flujo documentado.
+ * En Ramadán se anula SIEMPRE (cultura.md §5: "cardio: mínimo o eliminar" —
+ * sin agua/comida durante el ayuno, cardio extra no tiene sentido).
  * La app decide automáticamente — el usuario NO elige si hacer cardio o no.
  */
 function getCardioObjetivo_(tipoFase, tipoDia) {
   var pasosPorFase = { VOL: 8000, FZA: 8000, DEF: 10000, MNT: 9000, DELOAD: 7000 };
-  var cardioPorFase = { VOL: 0, FZA: 0, DEF: 20, MNT: 10, DELOAD: 0 }; // minutos post-gym
+  var cardioPorFase = { VOL: 0, FZA: 0, DEF: 20, MNT: 10, DELOAD: 0 }; // minutos
   var justificaciones = {
     VOL: 'Wilson 2012: minimizar interferencia durante volumen',
     FZA: 'Wilson 2012: priorizar recuperación neural en fuerza',
-    DEF: 'Viana 2019: LISS post-gym aumenta déficit sin interferir',
+    DEF: 'Viana 2019: LISS aumenta déficit sin interferir',
     MNT: 'Balance: mantener capacidad aeróbica sin exceso',
     DELOAD: 'Recuperación total — sin carga adicional'
   };
@@ -521,12 +918,15 @@ function getCardioObjetivo_(tipoFase, tipoDia) {
   var pasos = pasosPorFase[tipoFase] || 8000;
   var cardioMin = cardioPorFase[tipoFase] || 0;
 
-  // Cardio extra solo aplica en días de gym (Wilson 2012: post-entreno)
-  if (tipoDia !== 'gym') cardioMin = 0;
+  // Natación ya cubre el cardio de bajo impacto ese día (§11) — no se suma más.
+  if (tipoDia === 'natacion') cardioMin = 0;
+  // Ramadán: eliminar cardio extra siempre, sea cual sea la fase.
+  if (esRamadan_()) cardioMin = 0;
 
   return {
     pasos_objetivo: pasos,
     cardio_post_gym_min: cardioMin,
+    contexto: tipoDia === 'gym' ? 'post-gym' : (tipoDia === 'descanso' ? 'dia_descanso' : null),
     modalidad: cardioMin > 0 ? 'bici estática o elíptica (Wilson 2012: no interfiere)' : null,
     intensidad: cardioMin > 0 ? '60-70% FC máx (LISS — Viana 2019)' : null,
     justificacion: justificaciones[tipoFase] || null
@@ -540,17 +940,31 @@ function getCardioObjetivo_(tipoFase, tipoDia) {
  * Razón: Ruivo 2017 demuestra que sin frecuencia diaria no hay corrección postural.
  * ÚNICO caso de NO mostrar: lesión activa o enfermedad aguda.
  */
-function getMovilidadMatutina_() {
+/**
+ * Rutina diaria postural (P2) con progresión gradual (programacion.md §14:
+ * "Cada 4 semanas añadir 1 ejercicio o reps"). Se sube reps/duración +1 tramo
+ * cada 4 semanas, tope en el tramo 4 (semana 16) — Ruivo 2017 solo validó su
+ * protocolo correctivo durante 16 semanas, así que no hay evidencia para
+ * seguir progresando pasado ese punto; se mantiene en el nivel máximo.
+ */
+function getMovilidadMatutina_(fechaInicioPlan) {
+  var inicio = parseDate_(fechaInicioPlan);
+  var semanas = inicio ? Math.floor((new Date() - inicio) / (7 * 86400000)) : 0;
+  var tramo = Math.min(3, Math.max(0, Math.floor(semanas / 4)));
+  var reps = 10 + tramo * 2;   // +2 reps por tramo de 4 semanas
+  var seg = 30 + tramo * 5;    // +5s por tramo de 4 semanas
+
   return {
-    duracion_min: 6,
+    duracion_min: 6 + tramo,
     frecuencia: 'DIARIA',
-    justificacion: 'Ruivo 2017: protocolo correctivo requiere frecuencia diaria. Hansraj 2014: estrés cervical constante requiere corrección constante.',
+    nivel_progresion: tramo + 1,
+    justificacion: 'Ruivo 2017: protocolo correctivo requiere frecuencia diaria y progresión gradual cada 4 semanas. Hansraj 2014: estrés cervical constante requiere corrección constante.',
     ejercicios: [
-      { nombre: 'Retracción cervical (chin tucks)', reps: '10 reps', objetivo: 'Forward head (Hansraj 2014)' },
-      { nombre: 'Extensión torácica foam roller', reps: '30 segundos', objetivo: 'Hipercifosis (Ruivo 2017)' },
-      { nombre: 'Cat-cow (gato-vaca)', reps: '10 reps', objetivo: 'Movilidad columna' },
-      { nombre: 'Rotación externa con banda', reps: '10/lado', objetivo: 'Hombros internos (Ruivo 2017)' },
-      { nombre: 'Dead bugs', reps: '10/lado', objetivo: 'Hiperlordosis/APT' }
+      { nombre: 'Retracción cervical (chin tucks)', reps: reps + ' reps', objetivo: 'Forward head (Hansraj 2014)' },
+      { nombre: 'Extensión torácica foam roller', reps: seg + ' segundos', objetivo: 'Hipercifosis (Ruivo 2017)' },
+      { nombre: 'Cat-cow (gato-vaca)', reps: reps + ' reps', objetivo: 'Movilidad columna' },
+      { nombre: 'Rotación externa con banda', reps: reps + '/lado', objetivo: 'Hombros internos (Ruivo 2017)' },
+      { nombre: 'Dead bugs', reps: reps + '/lado', objetivo: 'Hiperlordosis/APT' }
     ],
     nota: 'Rutina diaria postural — la ciencia exige frecuencia diaria para corrección (P2)'
   };
@@ -566,8 +980,9 @@ function checkAusenciaAyer_() {
   var ayerStr = formatDate_(ayer);
   var diaSemana = ayer.getDay();
 
-  // Solo comprobar en días de gym (1=lun, 3=mie, 5=vie, 6=sab)
-  if ([1, 3, 5, 6].indexOf(diaSemana) < 0) return null;
+  // Solo comprobar en días de gym según el horario semanal vigente
+  var tipoAyer = getHorarioSemanal_()[diaSemana];
+  if (['PUSH', 'PIERNA', 'PULL', 'HOMBR'].indexOf(tipoAyer) < 0) return null;
 
   var hoja = getHoja_(HOJAS.SESIONES_PLAN);
   var datos = hoja.getDataRange().getValues();
@@ -681,11 +1096,17 @@ function calcularAjusteDia_() {
     }
   }
 
-  // ⚠️ HEURÍSTICO: estrés subjetivo
-  var subjetiva = getUltimaFila_(HOJAS.METRICAS_SUBJETIVAS, 'date_fecha', hoy);
-  if (subjetiva && subjetiva.num_estres > 7) {
+  // ⚠️ HEURÍSTICO: estrés subjetivo (escala 1-5). Se pregunta tras las 22:00,
+  // así que lo que hay guardado con fecha de HOY se refiere al desgaste de
+  // AYER-NOCHE→esta mañana — es el dato relevante para ajustar la sesión de
+  // HOY (se pidió anoche, sobre el día que terminaba). Si por lo que sea no
+  // hay dato de ayer, se prueba con el de hoy por si se guardó ya avanzado el día.
+  var ayer = formatDate_(new Date(new Date(hoy).getTime() - 86400000));
+  var subjetiva = getUltimaFila_(HOJAS.METRICAS_SUBJETIVAS, 'date_fecha', ayer)
+      || getUltimaFila_(HOJAS.METRICAS_SUBJETIVAS, 'date_fecha', hoy);
+  if (subjetiva && subjetiva.num_estres >= 4) {
     factor *= 0.85;
-    razones.push('Estrés subjetivo alto >7/10 (heurístico)');
+    razones.push('Estrés subjetivo alto (4-5/5, heurístico)');
   }
 
   return {
@@ -1066,13 +1487,17 @@ function leerDatosDesdeFecha_(nombreHoja, colFecha, desde, mapper) {
 }
 
 function getPesoActual_() {
-  const hoja = getHoja_(HOJAS.PESO_LOG);
+  const hoja = getHoja_(HOJAS.METRICAS_ZEPP);
   if (!hoja) return 78.2; // Fallback: biometria.md peso actual
   const datos = hoja.getDataRange().getValues();
   if (datos.length <= 1) return 78.2; // Fallback: biometria.md
   const cab = datos[0];
   const colP = cab.indexOf('num_peso_kg');
+  const colSync = cab.indexOf('date_sync');
   for (let i = datos.length - 1; i >= 1; i--) {
+    // Ignorar filas de rellenarDatosFicticios() (date_sync = 'FICTICIO') — el
+    // peso real usado para calcular macros nunca debe venir de datos de prueba.
+    if (colSync >= 0 && datos[i][colSync] === 'FICTICIO') continue;
     const p = Number(datos[i][colP]);
     if (p > 0) return p;
   }
@@ -1084,6 +1509,16 @@ function getPasosHoy_() {
   return m ? (m.num_pasos || 0) : 0;
 }
 
+/**
+ * ejercicios_log SOLO guarda la última semana (EJERCICIOS_LOG_RETENCION_DIAS)
+ * — únicamente sirve para el reajuste dinámico del motor de cargas
+ * (calcularPesoSugerido_ lee el último rendimiento real). No es un historial
+ * permanente: sobre todo en la fase de adaptación habrá bastante diferencia
+ * entre lo planeado y lo real, y con el tiempo el motor se vuelve más
+ * preciso — pero eso lo capta el peso ya recalculado en ejercicios_plan
+ * implícitamente (vía el motor), no hace falta guardar meses de logs.
+ * Se llama tras cada guardarLog_(), así se mantiene solo sin cron externo.
+ */
 function limpiarLogsAntiguos_() {
   const hoja = getHoja_(HOJAS.EJERCICIOS_LOG);
   if (!hoja) return;
@@ -1093,7 +1528,7 @@ function limpiarLogsAntiguos_() {
   const col = cab.indexOf('date_timestamp');
   if (col < 0) return;
   const limite = new Date();
-  limite.setDate(limite.getDate() - 30);
+  limite.setDate(limite.getDate() - EJERCICIOS_LOG_RETENCION_DIAS);
   // Borrar de abajo a arriba para no desplazar índices
   for (let i = datos.length - 1; i >= 1; i--) {
     const f = parseDate_(datos[i][col]);
@@ -1108,13 +1543,11 @@ function limpiarLogsAntiguos_() {
 function inicializarHojas() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const esquema = {
-    [HOJAS.METRICAS_ZEPP]: ['metrica_id','date_fecha','num_sleep_score','num_pasos','num_hr_reposo','num_vo2max','date_sync'],
-    [HOJAS.METRICAS_SUBJETIVAS]: ['subjetiva_id','date_fecha','num_energia','num_estres','num_doms','str_grupo_doms','str_notas'],
-    [HOJAS.PESO_LOG]: ['peso_id','date_fecha','num_peso_kg','num_grasa_pct','num_hidratacion_pct','num_grasa_visceral','date_sync'],
+    [HOJAS.METRICAS_ZEPP]: ['metrica_id','date_fecha','num_sleep_score','num_pasos','num_hr_reposo','num_peso_kg','num_grasa_pct','date_sync'],
+    [HOJAS.METRICAS_SUBJETIVAS]: ['subjetiva_id','date_fecha','num_energia','num_estres','str_notas'],
     [HOJAS.PLAN_ANUAL]: ['fase_id','num_año','num_orden','str_nombre_fase','str_tipo','date_inicio','date_fin','num_semanas','num_volumen_objetivo','str_rir_rango','str_foco_muscular','str_objetivo_nutri','str_notas'],
-    [HOJAS.PLAN_SEMANAL]: ['semana_id','fase_id','num_semana_año','num_semana_fase','str_lunes','str_martes','str_miercoles','str_jueves','str_viernes','str_sabado','str_domingo','str_rir_semana','bool_deload'],
     [HOJAS.SESIONES_PLAN]: ['sesion_id','date_fecha','str_tipo','num_semana_meso','str_fase','num_ajuste_volumen','num_duracion_est_min','bool_completada','date_inicio','date_fin','date_creado'],
-    [HOJAS.EJERCICIOS_PLAN]: ['plan_id','sesion_id','ejercicio_id','num_orden','num_series_plan','str_reps_plan','num_rir_objetivo','num_descanso_seg','str_notas','bool_es_warmup'],
+    [HOJAS.EJERCICIOS_PLAN]: ['plan_id','sesion_id','ejercicio_id','num_orden','num_series_plan','str_reps_plan','num_rir_objetivo','num_descanso_seg','str_notas','bool_es_warmup','str_superset_grupo'],
     [HOJAS.EJERCICIOS_LOG]: ['log_id','plan_id','sesion_id','ejercicio_id','num_serie','num_peso_usado_kg','num_reps_completadas','num_rir_percibido','str_sensacion','date_timestamp'],
     [HOJAS.EJERCICIOS_CATALOGO]: ['ejercicio_id','str_nombre','str_nombre_en','str_grupo_principal','arr_grupos_secundarios','str_patron','str_equipamiento','bool_compuesto','bool_favorito','bool_excluido','str_razon_exclusion','str_alternativa']
   };
@@ -1135,173 +1568,248 @@ function inicializarHojas() {
 // Los PESOS NO se almacenan — se calculan dinámicamente en cada
 // petición GET desde ejercicios_log (APRE Mann 2010).
 
-function rellenarPlanCompleto() {
-  // --- FASES (periodización basada en Bompa 2019 + prioridades.md) ---
-  // Estructura: VOL(6)→DELOAD(1)→VOL(6)→DELOAD(1)→FZA(6)→VOL(6)→DELOAD(1)→DEF(6)→MNT(11)
-  // Justificación:
-  //   - Mesociclos de 6 sem (Bompa 2019: 4-6 sem óptimo, se usa 6 por mayor volumen)
-  //   - Deloads cada 6 sem (Bompa: cada 4-6 semanas, -40% volumen)
-  //   - VOL→FZA→DEF (ondulación clásica Bompa: AA→MF→P)
-  //   - RIR progresión intra-meso: VOL 4→3→2 / FZA 2→2→1 (Helms 2016)
-  //   - Foco por fase según prioridades.md: P1(V-taper) → P3(brazos) → balance → cut
-  //   - Nutrición por fase: bulk → mantener(deloads) → cut(DEF) → mantener(MNT)
-  const FASES = [
-    {id:'FAS_01', nombre:'Adaptación + Postura', tipo:'VOL', inicio:'2026-08-31', fin:'2026-09-27', sem:4, rir:'3-4', foco:'Full Body + Correctivos posturales', nutri:'bulk'},
-    {id:'FAS_02', nombre:'Hipertrofia I — V-Taper', tipo:'VOL', inicio:'2026-09-28', fin:'2026-11-08', sem:6, rir:'2-3', foco:'Hombros+Espalda (P1: V-taper)', nutri:'bulk'},
-    {id:'FAS_03', nombre:'Deload 1', tipo:'DELOAD', inicio:'2026-11-09', fin:'2026-11-15', sem:1, rir:'5-6', foco:'Movilidad + Test Wall Angel', nutri:'mantener'},
-    {id:'FAS_04', nombre:'Hipertrofia II — Brazos', tipo:'VOL', inicio:'2026-11-16', fin:'2026-12-27', sem:6, rir:'2-3', foco:'Bíceps+Tríceps+Pecho', nutri:'bulk'},
-    {id:'FAS_05', nombre:'Deload 2', tipo:'DELOAD', inicio:'2026-12-28', fin:'2027-01-03', sem:1, rir:'5-6', foco:'Descanso activo + Flex', nutri:'mantener'},
-    {id:'FAS_06', nombre:'Fuerza — Compuestos', tipo:'FZA', inicio:'2027-01-04', fin:'2027-02-14', sem:6, rir:'1-2', foco:'Press militar+Dominadas+Sentadilla', nutri:'bulk'},
-    {id:'FAS_07', nombre:'Hipertrofia III — Balance', tipo:'VOL', inicio:'2027-02-15', fin:'2027-03-28', sem:6, rir:'2-3', foco:'Piernas+Core + Mantener V-taper', nutri:'bulk'},
-    {id:'FAS_08', nombre:'Deload 3', tipo:'DELOAD', inicio:'2027-03-29', fin:'2027-04-04', sem:1, rir:'5-6', foco:'Test postural final + Flex', nutri:'mantener'},
-    {id:'FAS_09', nombre:'Definición', tipo:'DEF', inicio:'2027-04-05', fin:'2027-05-16', sem:6, rir:'2-3', foco:'Mantener masa + Déficit controlado', nutri:'cut'},
-    {id:'FAS_10', nombre:'Peak Estético + Mant.', tipo:'MNT', inicio:'2027-05-17', fin:'2027-07-31', sem:11, rir:'2-3', foco:'Ratio cintura/hombros + Simetría', nutri:'mantener'}
-  ];
+// --- FASES (periodización basada en Bompa 2019 + prioridades.md) ---
+// Estructura: VOL(6)→DELOAD(1)→VOL(6)→DELOAD(1)→FZA(6)→VOL(6)→DELOAD(1)→DEF(6)→MNT(11)
+// Justificación:
+//   - Mesociclos de 6 sem (Bompa 2019: 4-6 sem óptimo, se usa 6 por mayor volumen)
+//   - Deloads cada 6 sem (Bompa: cada 4-6 semanas, -40% volumen)
+//   - VOL→FZA→DEF (ondulación clásica Bompa: AA→MF→P)
+//   - RIR progresión intra-meso: VOL 4→3→2 / FZA 2→2→1 (Helms 2016)
+//   - Foco por fase según prioridades.md: P1(V-taper) → P3(brazos) → balance → cut
+//   - Nutrición por fase: bulk → mantener(deloads) → cut(DEF) → mantener(MNT)
+// Revisión evidence-based (periodizacion.md §7: deload "cada 4-6 semanas,
+// por fatiga acumulada, o al final de cada macrociclo"). La versión anterior
+// tenía dos huecos sin deload que violaban esto: FZA(6sem)+Hipertrofia
+// III(6sem) = 12 semanas seguidas al RIR más bajo del año sin descarga, y
+// Definición(6sem)+Peak(11sem) = 17 semanas seguidas — la segunda mitad
+// encima en déficit calórico (Helms 2014: recuperación reducida), justo el
+// peor momento para acumular fatiga sin válvula de escape. Se añaden 3
+// deloads (FAS_07, FAS_11, FAS_13) y se parte el bloque Peak Estético en
+// dos para respetar la cadencia — el total sigue en 48 semanas (11 meses)
+// recortando Peak de 11 a 4+4 semanas.
+//
+// Módulo (no local a rellenarPlanCompleto): regenerarSesionesDesde_ también
+// necesita FASES/T/ESPECIALIZACION al cambiar el horario semanal.
+const FASES = [
+  {id:'FAS_01', nombre:'Adaptación + Postura', tipo:'VOL', inicio:'2026-08-31', fin:'2026-09-27', sem:4, rir:'3-4', foco:'Full Body + Correctivos posturales', nutri:'bulk'},
+  {id:'FAS_02', nombre:'Hipertrofia I — V-Taper', tipo:'VOL', inicio:'2026-09-28', fin:'2026-11-08', sem:6, rir:'2-3', foco:'Hombros+Espalda (P1: V-taper)', nutri:'bulk'},
+  {id:'FAS_03', nombre:'Deload 1', tipo:'DELOAD', inicio:'2026-11-09', fin:'2026-11-15', sem:1, rir:'5-6', foco:'Movilidad + Test Wall Angel', nutri:'mantener'},
+  {id:'FAS_04', nombre:'Hipertrofia II — Brazos', tipo:'VOL', inicio:'2026-11-16', fin:'2026-12-27', sem:6, rir:'2-3', foco:'Bíceps+Tríceps+Pecho', nutri:'bulk'},
+  {id:'FAS_05', nombre:'Deload 2', tipo:'DELOAD', inicio:'2026-12-28', fin:'2027-01-03', sem:1, rir:'5-6', foco:'Descanso activo + Flex', nutri:'mantener'},
+  {id:'FAS_06', nombre:'Fuerza — Compuestos', tipo:'FZA', inicio:'2027-01-04', fin:'2027-02-14', sem:6, rir:'1-2', foco:'Press militar+Dominadas+Sentadilla', nutri:'bulk'},
+  {id:'FAS_07', nombre:'Deload 3', tipo:'DELOAD', inicio:'2027-02-15', fin:'2027-02-21', sem:1, rir:'5-6', foco:'Movilidad + Descarga tras bloque Fuerza', nutri:'mantener'},
+  {id:'FAS_08', nombre:'Hipertrofia III — Balance', tipo:'VOL', inicio:'2027-02-22', fin:'2027-04-04', sem:6, rir:'2-3', foco:'Piernas+Core + Mantener V-taper', nutri:'bulk'},
+  {id:'FAS_09', nombre:'Deload 4', tipo:'DELOAD', inicio:'2027-04-05', fin:'2027-04-11', sem:1, rir:'5-6', foco:'Test postural + Flex', nutri:'mantener'},
+  {id:'FAS_10', nombre:'Definición', tipo:'DEF', inicio:'2027-04-12', fin:'2027-05-23', sem:6, rir:'2-3', foco:'Mantener masa + Déficit controlado', nutri:'cut'},
+  {id:'FAS_11', nombre:'Deload 5', tipo:'DELOAD', inicio:'2027-05-24', fin:'2027-05-30', sem:1, rir:'5-6', foco:'Transición cut→mantenimiento + Flex', nutri:'mantener'},
+  {id:'FAS_12', nombre:'Peak Estético I', tipo:'MNT', inicio:'2027-05-31', fin:'2027-06-27', sem:4, rir:'2-3', foco:'Ratio cintura/hombros + Simetría', nutri:'mantener'},
+  {id:'FAS_13', nombre:'Deload 6', tipo:'DELOAD', inicio:'2027-06-28', fin:'2027-07-04', sem:1, rir:'5-6', foco:'Descarga media-temporada peak', nutri:'mantener'},
+  {id:'FAS_14', nombre:'Peak Estético II + Mant.', tipo:'MNT', inicio:'2027-07-05', fin:'2027-08-01', sem:4, rir:'2-3', foco:'Ratio cintura/hombros + Simetría', nutri:'mantener'}
+];
 
-  // --- TEMPLATES EJERCICIOS (por tipo sesión × tipo fase) ---
-  // Volumen semanal por grupo (Schoenfeld 2017 + programacion.md §3):
-  //   Hombros: 14-18 ser/sem → Push(8) + Hombros(8) = 16 ✓ (Prioridad #1: V-taper)
-  //   Espalda: 14-18 ser/sem → Pull(11) + correctivos(6) = 17 ✓
-  //   Bíceps: 10-14 ser/sem → Pull(6) + Hombros(6) = 12 ✓
-  //   Tríceps: 10-14 ser/sem → Push(6 directo) + press(8 indirecto) = ~10 ✓
-  //   Pecho: 7 ser/sem → Trade-off consciente por prioridades.md (V-taper > pecho)
-  //          Schoenfeld 2017: 5-9 series = ES 0.378, aún efectivo
-  //   Pierna: 10-12 → Pierna(4+4+3+3+3) = 17 ✓ (incluye core separado)
-  //
-  // Descansos (programacion.md §5, Schoenfeld 2016):
-  //   Compuestos pesados: 150-270s (evidencia: 3-5 min = 180-300s)
-  //   Aislamiento: 90-120s (evidencia: 1.5-2 min)
-  //   Correctivos/postura: 60s (no buscan hipertrofia)
-  //
-  // Formato: [ejercicio_id, nombre, series, reps, descanso_seg, notas]
-  const T = {
+// --- TEMPLATES EJERCICIOS (por tipo sesión × tipo fase) ---
+// Volumen semanal por grupo (Schoenfeld 2017 + programacion.md §3):
+//   Hombros: 14-18 ser/sem → Push(11) + Hombros(11) = 22 ✓ (Prioridad #1: V-taper — SIN TOCAR)
+//   Espalda: 14-18 ser/sem → Dominadas+Remo neutro+Remo rotación = 11 directo + correctivos ✓
+//            (P1 V-taper: Dominadas es el que da ANCHURA — intacto)
+//   Bíceps: 10-14 ser/sem → Pull(6) + Hombros(6) = 12 ✓ (P3, sin tocar)
+//   Tríceps: 10-14 ser/sem → Push(6 directo) + press(8 indirecto) = ~10 ✓ (sin tocar)
+//   Pecho: 4 ser/sem (antes 7) → Trade-off MÁS FUERTE por duración de sesión
+//          (ver revisión 2026: PUSH_VOL rondaba 81min, por encima del ideal
+//          75min de preferencias.md). Pecho NO es prioridad (programacion.md
+//          §2: "no priorizar sobre hombros") — se eliminó Cruces polea alta
+//          (aislamiento puro), Press inclinado se mantiene como único directo.
+//          Por debajo del "mínimo efectivo 5 ser/sem" (programacion.md §3) —
+//          trade-off consciente y máximo dado que hombros/espalda/postura no
+//          se tocan; si en la práctica notas estancamiento de pecho, revisar.
+//   Pierna: Pierna(4+4+3+3+3+3) = 20 directo, cuádriceps ~10 (Sentadilla+Leg
+//           press+Ext.) ✓ — se quitó Pallof (core anti-rotación, sin
+//           prioridad ninguna) para bajar de ~90min a ~85min en FAS_08.
+//   Postura (P2): Kelso shrug y Band pull-aparts bajan de 3→2 series (Wall
+//           Angels, el objetivo postural PRINCIPAL de biometria.md §8, se
+//           mantiene intacto en 3) — recorte mínimo, repartido entre 2
+//           ejercicios en vez de eliminar ninguno, para bajar PULL_VOL de
+//           ~79min a ~75min sin tocar Dominadas/Remo neutro (espalda P1) ni
+//           Curl Z/Curl predicador (bíceps P3).
+//
+// Revisión de duración de sesión (2026): 3 de las 4 sesiones VOL superaban
+// el ideal de 75min (preferencias.md §2) y PIERNA_VOL llegaba a ~90-91min
+// en semanas de especialización (FAS_08) — por encima incluso del máximo.
+// Los recortes de arriba se hicieron SIEMPRE sobre grupos sin prioridad
+// (pecho, core, pierna) o repartidos en accesorios menores (postura), nunca
+// sobre hombros, espalda-anchura (Dominadas), bíceps ni el ejercicio
+// postural principal — ver prioridades.md (P1 V-taper hombros+espalda, P2
+// postura, P3 hipertrofia hombros>bíceps>espalda).
+//
+// Descansos (programacion.md §5, Schoenfeld 2016):
+//   Compuestos pesados: 150-270s (evidencia: 3-5 min = 180-300s)
+//   Aislamiento: 90-120s (evidencia: 1.5-2 min)
+//   Correctivos/postura: 60s (no buscan hipertrofia)
+//
+// Formato: [ejercicio_id, nombre, series, reps, descanso_seg, notas, superserie]
+// superserie: exercises con el mismo grupo (ej. 'SS1') van seguidos y sin
+// descanso entre ellos — preferencias.md §5: "usar superseries para
+// accesorios" (evidencia cumplida con descansos, pero el usuario se aburre
+// esperando; las superseries eliminan esa espera muerta). NUNCA se ponen en
+// superserie los ejercicios con aviso ⚠️ de codo — necesitan ejecución
+// cuidadosa y pausada, no un ritmo acelerado.
+const T = {
     PUSH_VOL: [
-      ['EJE_PRESS_HOMB','Press hombro mancuernas',4,'8-10',150,'Compuesto hombros'],
-      ['EJE_LAT_SENT','Elev. laterales sentado',4,'12-15',90,'P1: V-taper'],
-      ['EJE_LAT_POLEA','Elev. laterales polea',3,'12-15',90,''],
-      ['EJE_PRESS_INC','Press inclinado mancuernas',4,'8-10',150,'Pecho'],
-      ['EJE_CRUCES','Cruces polea alta',3,'10-12',90,''],
-      ['EJE_FRANC','Press francés 30°',3,'10-12',120,'Tríceps'],
-      ['EJE_EXT_POLEA','Extensión unilateral polea',3,'12-15',90,''],
-      ['EJE_FACE_PULL','Face pulls',3,'15-20',90,'P2: Postura']
+      ['EJE_PRESS_HOMB','Press hombro mancuernas',4,'8-10',150,'Compuesto hombros',''],
+      ['EJE_PRESS_INC','Press inclinado mancuernas',4,'8-10',150,'Pecho',''],
+      ['EJE_LAT_SENT','Elev. laterales sentado',4,'12-15',90,'P1: V-taper','SS1'],
+      ['EJE_LAT_POLEA','Elev. laterales polea',3,'12-15',90,'','SS1'],
+      // Cruces polea alta ELIMINADO (revisión 2026): PUSH_VOL rondaba ~81min,
+      // por encima del ideal 75min (preferencias.md §2). Pecho es la prioridad
+      // más baja de hipertrofia (prioridades.md: "hombros > pecho") — Press
+      // inclinado se mantiene como único directo de pecho.
+      ['EJE_FRANC','Press francés 30°',3,'10-12',120,'⚠️ Dolor codo: NO completar extensión total (biometria.md §9)',''],
+      ['EJE_EXT_POLEA','Extensión unilateral polea',3,'12-15',90,'⚠️ Dolor codo: rango controlado, NO extensión completa',''],
+      ['EJE_FACE_PULL','Face pulls',3,'15-20',90,'P2: Postura','']
     ],
     PIERNA_VOL: [
-      ['EJE_SENTADILLA','Sentadilla barra',4,'6-8',180,'Compuesto'],
-      ['EJE_RDL','RDL',4,'8-10',150,'Isquios+glúteo'],
-      ['EJE_HIP_THRUST','Hip thrust',3,'10-12',120,''],
-      ['EJE_EXT_QUAD','Extensión cuádriceps',3,'12-15',90,''],
-      ['EJE_CURL_FEM','Curl femoral',3,'10-12',90,''],
-      ['EJE_HOLLOW','Hollow hold',3,'30s',90,'Core anti-extensión'],
-      ['EJE_PALLOF','Press Pallof',3,'12/lado',90,'Core anti-rotación']
+      ['EJE_SENTADILLA','Sentadilla barra',4,'6-8',180,'Compuesto',''],
+      ['EJE_RDL','RDL',4,'8-10',150,'Isquios+glúteo',''],
+      ['EJE_HIP_THRUST','Hip thrust',3,'10-12',120,'',''],
+      // Añadido tras revisión experta: cuádriceps (P7, secundario) se quedaba
+      // corto (10-12 ser/sem objetivo, solo llegaba con sentadilla+extensión).
+      // Leg press confirmado disponible (equipamiento.md) — no viola ninguna
+      // exclusión.
+      ['EJE_LEG_PRESS','Leg press',3,'10-12',120,'Cuádriceps extra',''],
+      ['EJE_EXT_QUAD','Extensión cuádriceps',3,'12-15',90,'','SS1'],
+      ['EJE_CURL_FEM','Curl femoral',3,'10-12',90,'','SS1'],
+      // Press Pallof (core anti-rotación) ELIMINADO (revisión 2026): PIERNA_VOL
+      // llegaba a ~90-91min en FAS_08 (especialización), por encima incluso
+      // del máximo 90min (preferencias.md §2). Pierna/core no son prioridad
+      // (prioridades.md: "mantener piernas pero priorizar upper" — P1
+      // V-taper) — el candidato más seguro para recortar sin tocar hombros,
+      // espalda, bíceps ni postura.
+      ['EJE_HOLLOW','Hollow hold',3,'30s',90,'Core anti-extensión','']
     ],
     PULL_VOL: [
-      ['EJE_DOMINADAS','Dominadas',4,'6-8',180,'Tirón vertical (P1)'],
-      ['EJE_REMO_NEUTRO','Remo neutro polea',4,'8-10',150,''],
-      ['EJE_REMO_ROT','Remo unilateral con rotación',3,'10-12',120,''],
-      ['EJE_KELSO','Kelso shrug',3,'12-15',90,'P2: Retracción escapular'],
-      ['EJE_CURL_Z','Curl Z barra',3,'8-10',90,'Bíceps (P3)'],
-      ['EJE_CURL_PRED','Curl predicador',3,'10-12',90,''],
-      ['EJE_BAND_PULL','Band pull-aparts',3,'15-20',60,'P2: Postura'],
-      ['EJE_WALL_ANGEL','Wall angels',3,'8-10',60,'P2: Test postural']
+      ['EJE_DOMINADAS','Dominadas',4,'6-8',180,'Tirón vertical (P1)',''],
+      ['EJE_REMO_NEUTRO','Remo neutro polea',4,'8-10',150,'',''],
+      ['EJE_REMO_ROT','Remo unilateral con rotación',3,'10-12',120,'',''],
+      // Kelso shrug y Band pull-aparts bajan de 3→2 (revisión 2026, PULL_VOL
+      // rondaba ~79min): recorte mínimo repartido entre 2 correctivos en vez
+      // de eliminar ninguno — Wall angels (objetivo postural PRINCIPAL,
+      // biometria.md §8) se mantiene en 3. Dominadas/Remo neutro (espalda
+      // P1, V-taper) y Curl Z/Curl predicador (bíceps P3) intactos.
+      ['EJE_KELSO','Kelso shrug',2,'12-15',90,'P2: Retracción escapular',''],
+      ['EJE_CURL_Z','Curl Z barra',3,'8-10',90,'Bíceps (P3)','SS1'],
+      ['EJE_CURL_PRED','Curl predicador',3,'10-12',90,'','SS1'],
+      ['EJE_BAND_PULL','Band pull-aparts',2,'15-20',60,'P2: Postura','SS2'],
+      ['EJE_WALL_ANGEL','Wall angels',3,'8-10',60,'P2: Test postural','SS2']
     ],
     HOMBR_VOL: [
-      ['EJE_PRESS_HOMB','Press hombro mancuernas',4,'8-10',150,''],
-      ['EJE_LAT_SENT','Elev. laterales sentado',4,'12-15',90,'P1: V-taper extra'],
-      ['EJE_LAT_POLEA','Elev. laterales polea (tras nuca)',3,'12-15',90,''],
-      ['EJE_PAJARO','Pájaro inclinado',3,'12-15',90,'Rear delt'],
-      ['EJE_ZOTTMAN','Curl Zottman',3,'10-12',90,'Bíceps+Antebrazo'],
-      ['EJE_CURL_INC','Curl inclinado 45°',3,'10-12',90,''],
-      ['EJE_EXT_OVERHEAD','Extensión overhead polea',3,'10-12',90,'Tríceps'],
-      ['EJE_ROT_EXT','Rotación externa banda',3,'15/lado',60,'P2: Manguito rotador']
+      ['EJE_PRESS_HOMB','Press hombro mancuernas',4,'8-10',150,'',''],
+      ['EJE_LAT_SENT','Elev. laterales sentado',4,'12-15',90,'P1: V-taper extra','SS1'],
+      ['EJE_LAT_POLEA','Elev. laterales polea (tras nuca)',3,'12-15',90,'','SS1'],
+      ['EJE_PAJARO','Pájaro inclinado',3,'12-15',90,'Rear delt',''],
+      ['EJE_ZOTTMAN','Curl Zottman',3,'10-12',90,'Bíceps+Antebrazo','SS2'],
+      ['EJE_CURL_INC','Curl inclinado 45°',3,'10-12',90,'','SS2'],
+      // Extensión overhead polea EXCLUIDA (biometria.md §9 + seleccion_ejercicios.md
+      // §6: rango de estiramiento profundo, alto riesgo para dolor codo) — se
+      // sustituye por la variante ya aprobada de rango controlado (ver catálogo).
+      ['EJE_EXT_POLEA','Extensión unilateral polea',3,'10-12',90,'⚠️ Dolor codo: rango controlado, NO extensión completa',''],
+      ['EJE_ROT_EXT','Rotación externa banda',3,'15/lado',60,'P2: Manguito rotador','']
     ],
+    // FZA sin superseries: el objetivo es fuerza máxima, cada serie pesada
+    // necesita su descanso completo (ACSM 2009: 3-5min) — mezclar con
+    // superseries reduciría la recuperación justo donde más importa.
     PUSH_FZA: [
-      ['EJE_PRESS_INC','Press inclinado mancuernas',5,'4-6',210,'Pesado'],
-      ['EJE_PRESS_HOMB','Press hombro sentado',4,'5-7',180,''],
-      ['EJE_LAT_SENT','Elev. laterales sentado',4,'10-12',90,'Mantener volumen hombros'],
-      ['EJE_FRANC','Press francés',3,'6-8',120,'']
+      ['EJE_PRESS_INC','Press inclinado mancuernas',5,'4-6',210,'Pesado',''],
+      ['EJE_PRESS_HOMB','Press hombro sentado',4,'5-7',180,'',''],
+      ['EJE_LAT_SENT','Elev. laterales sentado',4,'10-12',90,'Mantener volumen hombros',''],
+      // Reps mantenidas en rango hipertrofia (NO rango fuerza 4-6 como el resto
+      // de la sesión): seleccion_ejercicios.md §6 — "evitar extensión tríceps
+      // bajo carga pesada" para dolor codo. Un aislamiento no necesita ir a
+      // rango de fuerza de todos modos (seleccion_ejercicios.md §4).
+      ['EJE_FRANC','Press francés 30°',3,'10-12',120,'⚠️ Dolor codo: NO completar extensión total, carga moderada (biometria.md §9)','']
     ],
     PIERNA_FZA: [
-      ['EJE_SENTADILLA','Sentadilla barra',5,'4-6',270,'Pesado'],
-      ['EJE_RDL','RDL',4,'5-7',180,''],
-      ['EJE_HIP_THRUST','Hip thrust',3,'6-8',150,''],
-      ['EJE_PLANCHA','Plancha lastrada',3,'45-60s',90,'Core']
+      ['EJE_SENTADILLA','Sentadilla barra',5,'4-6',270,'Pesado',''],
+      ['EJE_RDL','RDL',4,'5-7',180,'',''],
+      ['EJE_HIP_THRUST','Hip thrust',3,'6-8',150,'',''],
+      ['EJE_PLANCHA','Plancha lastrada',3,'45-60s',90,'Core','']
     ],
     PULL_FZA: [
-      ['EJE_DOMINADAS','Dominadas lastradas',5,'4-6',210,'Pesado'],
-      ['EJE_REMO_NEUTRO','Remo neutro',4,'6-8',180,''],
-      ['EJE_REMO_ROT','Remo unilateral',3,'8-10',150,''],
-      ['EJE_CURL_Z','Curl Z',3,'6-8',120,'Pesado'],
-      ['EJE_FACE_PULL','Face pulls',2,'15',60,'Postura mantenimiento']
+      ['EJE_DOMINADAS','Dominadas lastradas',5,'4-6',210,'Pesado',''],
+      ['EJE_REMO_NEUTRO','Remo neutro',4,'6-8',180,'',''],
+      ['EJE_REMO_ROT','Remo unilateral',3,'8-10',150,'',''],
+      ['EJE_CURL_Z','Curl Z',3,'6-8',120,'Pesado',''],
+      ['EJE_FACE_PULL','Face pulls',2,'15',60,'Postura mantenimiento','']
     ],
     HOMBR_FZA: [
-      ['EJE_PRESS_MIL','Press militar barra',4,'5-7',180,'Compuesto pesado'],
-      ['EJE_LAT_POLEA','Elev. laterales polea',4,'10-12',90,'Volumen medial'],
-      ['EJE_CURL_PRED','Curl predicador',4,'6-8',120,'Pesado'],
-      ['EJE_EXT_POLEA','Extensión polea',3,'8-10',120,'']
+      ['EJE_PRESS_MIL','Press militar barra',4,'5-7',180,'Compuesto pesado',''],
+      ['EJE_LAT_POLEA','Elev. laterales polea',4,'10-12',90,'Volumen medial',''],
+      ['EJE_CURL_PRED','Curl predicador',4,'6-8',120,'Pesado',''],
+      // Mismo criterio que en PUSH_FZA: rango hipertrofia, no fuerza, por el
+      // dolor de codo (seleccion_ejercicios.md §6 + biometria.md §9).
+      ['EJE_EXT_POLEA','Extensión unilateral polea',3,'10-12',120,'⚠️ Dolor codo: NO completar extensión total, carga moderada (biometria.md §9)','']
     ]
   };
 
-  // Mapa fase→template: DEF y MNT usan VOL (mantener masa)
-  function getTemplate(faseTipo, sesionTipo) {
-    if (faseTipo === 'FZA') return sesionTipo + '_FZA';
-    return sesionTipo + '_VOL'; // VOL, DELOAD, DEF, MNT → todos usan VOL template
-  }
+// Mapa fase→template: DEF y MNT usan VOL (mantener masa)
+function getTemplate(faseTipo, sesionTipo) {
+  if (faseTipo === 'FZA') return sesionTipo + '_FZA';
+  return sesionTipo + '_VOL'; // VOL, DELOAD, DEF, MNT → todos usan VOL template
+}
 
-  // Especialización de volumen por fase (Schoenfeld 2017: volumen es el driver)
-  // Las fases de hipertrofia especializadas añaden +1 serie a sus grupos foco.
-  // Esto se aplica post-template según el foco de la fase.
-  // Formato: { ejercicio_id: series_extra }
-  var ESPECIALIZACION = {
-    'FAS_02': { 'EJE_LAT_SENT':1, 'EJE_LAT_POLEA':1, 'EJE_DOMINADAS':1, 'EJE_REMO_NEUTRO':1 }, // V-Taper: +hombros +espalda
-    'FAS_04': { 'EJE_CURL_Z':1, 'EJE_CURL_PRED':1, 'EJE_ZOTTMAN':1, 'EJE_FRANC':1, 'EJE_EXT_POLEA':1 }, // Brazos: +bíceps +tríceps
-    'FAS_07': { 'EJE_SENTADILLA':1, 'EJE_RDL':1, 'EJE_HIP_THRUST':1, 'EJE_HOLLOW':1, 'EJE_PALLOF':1 }  // Balance: +pierna +core
-  };
+// Especialización de volumen por fase (Schoenfeld 2017: volumen es el driver)
+// Las fases de hipertrofia especializadas añaden +1 serie a sus grupos foco.
+// Esto se aplica post-template según el foco de la fase.
+// Formato: { ejercicio_id: series_extra }
+const ESPECIALIZACION = {
+  'FAS_02': { 'EJE_LAT_SENT':1, 'EJE_LAT_POLEA':1, 'EJE_DOMINADAS':1, 'EJE_REMO_NEUTRO':1 }, // V-Taper: +hombros +espalda
+  'FAS_04': { 'EJE_CURL_Z':1, 'EJE_CURL_PRED':1, 'EJE_ZOTTMAN':1, 'EJE_FRANC':1, 'EJE_EXT_POLEA':1 }, // Brazos: +bíceps +tríceps
+  'FAS_08': { 'EJE_SENTADILLA':1, 'EJE_RDL':1, 'EJE_HIP_THRUST':1, 'EJE_HOLLOW':1 }  // Balance: +pierna +core (EJE_PALLOF ya no está en el template, ver PIERNA_VOL)
+};
 
-  // Split semanal FIJO (programacion.md §11, Schoenfeld 2019: frecuencia meta-analysis):
-  // PPL + Hombros/Brazos = 4 gym + 2 natación + 1 descanso
-  // Justificación: prioridad V-taper (prioridades.md) requiere 14-18 ser/sem hombros+espalda
-  // → imposible con solo 2 Upper days → necesita día dedicado hombros
-  // Schoenfeld 2019: frecuencia 2×/sem NO es superior si volumen igualado → split válido
-  const DIAS_GYM = {1:'PUSH', 3:'PIERNA', 5:'PULL', 6:'HOMBR'};
+const TIPO_DISPLAY = { PUSH:'Push', PIERNA:'Pierna', PULL:'Pull', HOMBR:'Hombros+Brazos' };
 
-  const hojaPlan = getHoja_(HOJAS.PLAN_ANUAL);
-  const hojaSem = getHoja_(HOJAS.PLAN_SEMANAL);
-  const hojaSes = getHoja_(HOJAS.SESIONES_PLAN);
-  const hojaEj = getHoja_(HOJAS.EJERCICIOS_PLAN);
-
-  // Limpiar datos previos (conservar cabeceras)
-  [hojaPlan, hojaSem, hojaSes, hojaEj].forEach(function(h) {
-    if (h && h.getLastRow() > 1) h.deleteRows(2, h.getLastRow() - 1);
-  });
-
-  // Plan anual
-  const filasPlan = FASES.map(function(f, i) {
-    return [f.id, 2026, i+1, f.nombre, f.tipo, f.inicio, f.fin, f.sem, 16, f.rir, f.foco, f.nutri, ''];
-  });
-  hojaPlan.getRange(2, 1, filasPlan.length, filasPlan[0].length).setValues(filasPlan);
-
-  // Sesiones + Ejercicios + Semanal
-  var filasSes = [], filasEj = [], filasSem = [];
-  var sesN = 0, ejN = 0, semAño = 0;
+/**
+ * Genera filas de sesiones_plan + ejercicios_plan para el rango
+ * [fechaDesde, fechaHasta] (recortado al solape con cada fase), usando el
+ * horario semanal dado (día de la semana → PUSH/PIERNA/PULL/HOMBR/
+ * NATACION/DESCANSO). No escribe nada en las hojas — el llamador decide
+ * cómo insertar las filas (todo el plan de una vez en rellenarPlanCompleto,
+ * o solo el tramo futuro en regenerarSesionesDesde_).
+ */
+function generarFilasSesiones_(fechaDesde, fechaHasta, horario) {
+  var filasSes = [], filasEj = [];
+  var sesN = 0, ejN = 0;
 
   for (var fi = 0; fi < FASES.length; fi++) {
     var fase = FASES[fi];
-    var fecha = new Date(fase.inicio);
-    var fin = new Date(fase.fin);
+    var faseInicio = new Date(fase.inicio);
+    var faseFin = new Date(fase.fin);
     var esDeload = fase.tipo === 'DELOAD';
-    var semFase = 1;
 
-    while (fecha <= fin) {
+    var desde = faseInicio > fechaDesde ? faseInicio : fechaDesde;
+    var hasta = faseFin < fechaHasta ? faseFin : fechaHasta;
+    if (desde > hasta) continue; // esta fase no solapa con el rango pedido
+
+    // La semana-dentro-de-fase (para el RIR progresivo) se cuenta SIEMPRE
+    // desde el inicio real de la fase, no desde `desde` — si se regenera
+    // solo un tramo futuro, la progresión RIR no debe reiniciarse.
+    var fecha = new Date(faseInicio);
+    var semFase = 1;
+    while (fecha < desde) {
+      if (fecha.getDay() === 0) semFase++;
+      fecha.setDate(fecha.getDate() + 1);
+    }
+
+    while (fecha <= hasta) {
       var dia = fecha.getDay(); // 0=dom, 1=lun...6=sab
       var fStr = Utilities.formatDate(fecha, 'Europe/Madrid', 'yyyy-MM-dd');
+      var tipoSesion = horario[dia];
 
-      if (DIAS_GYM[dia]) {
+      if (TIPO_DISPLAY[tipoSesion]) {
         sesN++;
         var sesId = 'SES_' + fStr.replace(/-/g, '') + '_' + String(sesN).padStart(3,'0');
-        var tipoSesion = DIAS_GYM[dia];
-        var tipoDisplay = {PUSH:'Push',PIERNA:'Pierna',PULL:'Pull',HOMBR:'Hombros+Brazos'}[tipoSesion];
 
-        filasSes.push([sesId, fStr, tipoDisplay, semFase, fase.nombre, 1.0, 75, false, '', '', new Date().toISOString()]);
+        filasSes.push([sesId, fStr, TIPO_DISPLAY[tipoSesion], semFase, fase.nombre, 1.0, 75, false, '', '', new Date().toISOString()]);
 
         // Ejercicios
         var tmplKey = getTemplate(fase.tipo, tipoSesion);
@@ -1329,33 +1837,102 @@ function rellenarPlanCompleto() {
               rirNum = ((semFase - 1) % 3 === 0) ? 4 : ((semFase - 1) % 3 === 1) ? 3 : 2;
             }
             // SIN peso — se calcula dinámicamente desde ejercicios_log (APRE Mann 2010)
-            filasEj.push([planId, sesId, ej[0], oi+1, series, ej[3], rirNum, ej[4], ej[5], false]);
+            // Superserie (ej[6]) se anula en deload: en deload todo va a RIR
+            // 4-5 y volumen mínimo, no tiene sentido acelerar el ritmo.
+            filasEj.push([planId, sesId, ej[0], oi+1, series, ej[3], rirNum, ej[4], ej[5], false, esDeload ? '' : (ej[6] || '')]);
           }
         }
       }
 
-      // Fin de semana (domingo) → escribir plan_semanal
-      if (dia === 0) {
-        semAño++;
-        filasSem.push(['SEM_' + String(semAño).padStart(3,'0'), fase.id, semAño, semFase,
-          'Push','Natación','Pierna','Natación','Pull','Hombros+Brazos','Descanso',
-          fase.rir, esDeload]);
-        semFase++;
-      }
+      if (dia === 0) semFase++; // fin de semana → cambio de semana dentro de la fase
       fecha.setDate(fecha.getDate() + 1);
     }
   }
 
-  // Batch write (mucho más rápido que appendRow)
-  if (filasSes.length) hojaSes.getRange(2, 1, filasSes.length, filasSes[0].length).setValues(filasSes);
-  if (filasEj.length) hojaEj.getRange(2, 1, filasEj.length, filasEj[0].length).setValues(filasEj);
-  if (filasSem.length) hojaSem.getRange(2, 1, filasSem.length, filasSem[0].length).setValues(filasSem);
+  return { filasSes: filasSes, filasEj: filasEj, sesN: sesN, ejN: ejN };
+}
+
+/**
+ * Regenera sesiones_plan + ejercicios_plan SOLO desde `fechaDesdeStr`
+ * (inclusive) hasta el final del plan, con el horario semanal actual.
+ * Las filas anteriores a esa fecha (histórico ya vivido, sesiones
+ * completadas incluidas) se conservan tal cual — nunca se tocan.
+ */
+function regenerarSesionesDesde_(fechaDesdeStr) {
+  const hojaSes = getHoja_(HOJAS.SESIONES_PLAN);
+  const hojaEj = getHoja_(HOJAS.EJERCICIOS_PLAN);
+  const desde = parseDate_(fechaDesdeStr);
+
+  const datosSes = hojaSes.getDataRange().getValues();
+  const cabSes = datosSes[0];
+  const colFecha = cabSes.indexOf('date_fecha');
+  const colSesionId = cabSes.indexOf('sesion_id');
+  const filasSesHistoricas = [];
+  const sesionesHistoricas = {};
+  for (var i = 1; i < datosSes.length; i++) {
+    var f = parseDate_(datosSes[i][colFecha]);
+    if (f && f < desde) {
+      filasSesHistoricas.push(datosSes[i]);
+      sesionesHistoricas[datosSes[i][colSesionId]] = true;
+    }
+  }
+
+  const datosEj = hojaEj.getDataRange().getValues();
+  const cabEj = datosEj[0];
+  const colSesionIdEj = cabEj.indexOf('sesion_id');
+  const filasEjHistoricas = [];
+  for (var j = 1; j < datosEj.length; j++) {
+    if (sesionesHistoricas[datosEj[j][colSesionIdEj]]) filasEjHistoricas.push(datosEj[j]);
+  }
+
+  const horario = getHorarioSemanal_();
+  const fin = new Date(FASES[FASES.length - 1].fin);
+  const gen = generarFilasSesiones_(desde, fin, horario);
+
+  const eliminadas = (datosSes.length - 1) - filasSesHistoricas.length;
+
+  if (hojaSes.getLastRow() > 1) hojaSes.deleteRows(2, hojaSes.getLastRow() - 1);
+  if (hojaEj.getLastRow() > 1) hojaEj.deleteRows(2, hojaEj.getLastRow() - 1);
+
+  const todasSes = filasSesHistoricas.concat(gen.filasSes);
+  const todasEj = filasEjHistoricas.concat(gen.filasEj);
+  if (todasSes.length) hojaSes.getRange(2, 1, todasSes.length, todasSes[0].length).setValues(todasSes);
+  if (todasEj.length) hojaEj.getRange(2, 1, todasEj.length, todasEj[0].length).setValues(todasEj);
+
+  return { eliminadas: eliminadas, generadas: gen.filasSes.length };
+}
+
+function rellenarPlanCompleto() {
+  const hojaPlan = getHoja_(HOJAS.PLAN_ANUAL);
+  const hojaSes = getHoja_(HOJAS.SESIONES_PLAN);
+  const hojaEj = getHoja_(HOJAS.EJERCICIOS_PLAN);
+
+  // Limpiar datos previos (conservar cabeceras)
+  [hojaPlan, hojaSes, hojaEj].forEach(function(h) {
+    if (h && h.getLastRow() > 1) h.deleteRows(2, h.getLastRow() - 1);
+  });
+
+  // Plan anual
+  const filasPlan = FASES.map(function(f, i) {
+    return [f.id, 2026, i+1, f.nombre, f.tipo, f.inicio, f.fin, f.sem, 16, f.rir, f.foco, f.nutri, ''];
+  });
+  hojaPlan.getRange(2, 1, filasPlan.length, filasPlan[0].length).setValues(filasPlan);
+
+  // Sesiones + Ejercicios — horario semanal configurable (getHorarioSemanal_,
+  // por defecto lun/mié/vie/sáb gym + mar/jue natación + dom descanso).
+  const horario = getHorarioSemanal_();
+  const inicio = new Date(FASES[0].inicio);
+  const fin = new Date(FASES[FASES.length - 1].fin);
+  const gen = generarFilasSesiones_(inicio, fin, horario);
+
+  if (gen.filasSes.length) hojaSes.getRange(2, 1, gen.filasSes.length, gen.filasSes[0].length).setValues(gen.filasSes);
+  if (gen.filasEj.length) hojaEj.getRange(2, 1, gen.filasEj.length, gen.filasEj[0].length).setValues(gen.filasEj);
 
   // Catálogo de ejercicios
   rellenarCatalogo_();
 
-  Logger.log('Plan generado: ' + sesN + ' sesiones, ' + ejN + ' ejercicios');
-  return { ok: true, sesiones: sesN, ejercicios: ejN, semanas: semAño };
+  Logger.log('Plan generado: ' + gen.sesN + ' sesiones, ' + gen.ejN + ' ejercicios');
+  return { ok: true, sesiones: gen.sesN, ejercicios: gen.ejN };
 }
 
 function rellenarCatalogo_() {
@@ -1371,10 +1948,17 @@ function rellenarCatalogo_() {
     ['EJE_LAT_POLEA','Elev. laterales polea','Cable Lat Raise','Hombros','[]','Lateral','Polea',false,true,false,'',''],
     ['EJE_FRANC','Press francés 30°','Incline Skullcrusher','Tríceps','[]','Extensión','Barra Z',false,true,false,'',''],
     ['EJE_EXT_POLEA','Extensión unilateral polea','Cable Extension','Tríceps','[]','Extensión','Polea',false,true,false,'',''],
-    ['EJE_EXT_OVERHEAD','Extensión overhead polea','Overhead Extension','Tríceps','[]','Extensión','Polea',false,false,false,'',''],
+    // Excluido: biometria.md §9 (dolor codo) + seleccion_ejercicios.md §6 —
+    // el rango de estiramiento profundo overhead es de las variantes más
+    // exigentes para el codo. Ya no se usa en ningún template (ver EJE_EXT_POLEA).
+    ['EJE_EXT_OVERHEAD','Extensión overhead polea','Overhead Extension','Tríceps','[]','Extensión','Polea',false,false,true,'Dolor codo (biometria.md §9) — rango profundo overhead','EJE_EXT_POLEA'],
     ['EJE_SENTADILLA','Sentadilla barra','Barbell Squat','Cuádriceps','["Glúteos","Isquios"]','Extensión rodilla','Barra,Rack',true,true,false,'',''],
     ['EJE_RDL','RDL','Romanian Deadlift','Isquios','["Glúteos"]','Extensión cadera','Barra',true,true,false,'',''],
     ['EJE_HIP_THRUST','Hip thrust','Hip Thrust','Glúteos','["Isquios"]','Extensión cadera','Barra,Banco',true,true,false,'',''],
+    // Añadido tras revisión experta del plan: cuádriceps se quedaba corto de
+    // volumen (objetivo 10-12 ser/sem, programacion.md §3). Confirmado
+    // disponible en equipamiento.md (Fitness Park). Sin conflicto con lesiones.
+    ['EJE_LEG_PRESS','Leg press','Leg Press','Cuádriceps','["Glúteos"]','Extensión rodilla','Máquina Leg Press',true,true,false,'',''],
     ['EJE_EXT_QUAD','Extensión cuádriceps','Leg Extension','Cuádriceps','[]','Extensión rodilla','Máquina',false,false,false,'',''],
     ['EJE_CURL_FEM','Curl femoral','Leg Curl','Isquios','[]','Flexión rodilla','Máquina',false,false,false,'',''],
     ['EJE_DOMINADAS','Dominadas','Pull-ups','Espalda','["Bíceps"]','Tirón vertical','Barra',true,true,false,'',''],
@@ -1397,15 +1981,79 @@ function rellenarCatalogo_() {
   hoja.getRange(2, 1, cat.length, cat[0].length).setValues(cat);
 }
 
+// ─── §7b. RELLENAR DATOS FICTICIOS (SOLO PARA TESTING) ────────
+// Genera histórico de prueba en metricas_zepp y ejercicios_log
+// para poder comprobar que Progresión/Home funcionan con datos reales
+// de la BBDD, sin depender de semanas de tracking real.
+//
+// NO se expone por HTTP (doGet/doPost) — se ejecuta manualmente desde
+// el editor de Apps Script, igual que inicializarHojas() y
+// rellenarPlanCompleto(). Los valores son ficticios (marcados con
+// date_sync = 'FICTICIO') — usa limpiarDatosTest() para borrarlos
+// antes de empezar a trackear datos reales.
+
+function rellenarDatosFicticios(dias) {
+  dias = dias || 30;
+  const hoy = new Date();
+  const pesoBase = 78.2; // biometria.md
+  const grasaBase = 18.9; // biometria.md
+  const resultados = {};
+
+  // 1. metricas_zepp: sueño/pasos/FC/peso/grasa de los últimos N días, TODO
+  // en una fila por día (centralizado — ver HOJAS.METRICAS_ZEPP).
+  const hZepp = getHoja_(HOJAS.METRICAS_ZEPP);
+  const filasZepp = [];
+  for (let i = dias - 1; i >= 0; i--) {
+    const fechaStr = formatDate_(new Date(hoy.getTime() - i * 86400000));
+    const progreso = (dias - i) / dias; // 0 → 1 a lo largo del periodo
+    const sleepScore = 65 + Math.round(Math.random() * 25); // 65-90
+    const pasos = 4000 + Math.round(Math.random() * 6000); // 4000-10000
+    const hrReposo = 55 + Math.round(Math.random() * 12); // 55-67
+    const peso = Math.round((pesoBase + progreso * 1.2 + (Math.random() - 0.5) * 0.4) * 10) / 10;
+    const grasa = Math.round((grasaBase - progreso * 0.3 + (Math.random() - 0.5) * 0.3) * 10) / 10;
+    filasZepp.push([genId_('ZEP'), fechaStr, sleepScore, pasos, hrReposo, peso, grasa, 'FICTICIO']);
+  }
+  hZepp.getRange(hZepp.getLastRow() + 1, 1, filasZepp.length, filasZepp[0].length).setValues(filasZepp);
+  resultados[HOJAS.METRICAS_ZEPP] = filasZepp.length + ' filas ficticias añadidas';
+
+  // 2. ejercicios_log: series ficticias cada 2 días — SOLO dentro de la
+  // ventana de retención real (EJERCICIOS_LOG_RETENCION_DIAS), porque en
+  // producción cualquier fila más antigua se borra sola. Generar más días
+  // aquí sería simular algo que nunca pasaría de verdad.
+  const diasLog = Math.min(dias, EJERCICIOS_LOG_RETENCION_DIAS);
+  const hLog = getHoja_(HOJAS.EJERCICIOS_LOG);
+  const ejerciciosFicticios = ['EJE_PRESS_HOMB', 'EJE_DOMINADAS', 'EJE_SENTADILLA', 'EJE_REMO_NEUTRO'];
+  const filasLog = [];
+  for (let i = diasLog - 1; i >= 0; i -= 2) {
+    const fecha = new Date(hoy.getTime() - i * 86400000);
+    const ejercicio = ejerciciosFicticios[Math.floor(Math.random() * ejerciciosFicticios.length)];
+    for (let serie = 1; serie <= 4; serie++) {
+      const peso = 20 + Math.round(Math.random() * 60);
+      const reps = 6 + Math.round(Math.random() * 6);
+      filasLog.push([
+        genId_('LOG'), 'FICTICIO', 'FICTICIO', ejercicio,
+        serie, peso, reps, 2, 'FICTICIO', fecha.toISOString()
+      ]);
+    }
+  }
+  if (filasLog.length > 0) {
+    hLog.getRange(hLog.getLastRow() + 1, 1, filasLog.length, filasLog[0].length).setValues(filasLog);
+  }
+  resultados[HOJAS.EJERCICIOS_LOG] = filasLog.length + ' filas ficticias añadidas (limitado a ' + diasLog + ' días — ventana de retención real)';
+
+  Logger.log(JSON.stringify(resultados, null, 2));
+  return { ok: true, detalle: resultados, dias: dias, timestamp: new Date().toISOString() };
+}
+
 // ─── §8. LIMPIAR ─────────────────────────────────────────────
 // Borra SOLO datos de test/logs. Conserva estructura + planes.
-// Los datos que se borran: ejercicios_log, metricas_zepp, peso_log, metricas_subjetivas
-// Los datos que SE CONSERVAN: plan_anual, plan_semanal, sesiones_plan, ejercicios_plan, catalogo
+// Los datos que se borran: ejercicios_log, metricas_zepp, metricas_subjetivas
+// Los datos que SE CONSERVAN: plan_anual, sesiones_plan, ejercicios_plan, catalogo
 // ejercicios_plan NO necesita reset porque NO almacena pesos (son dinámicos).
 // Ejecutar manualmente cuando quieras resetear después de testear.
 
 function limpiarDatosTest() {
-  const aLimpiar = [HOJAS.EJERCICIOS_LOG, HOJAS.METRICAS_ZEPP, HOJAS.METRICAS_SUBJETIVAS, HOJAS.PESO_LOG];
+  const aLimpiar = [HOJAS.EJERCICIOS_LOG, HOJAS.METRICAS_ZEPP, HOJAS.METRICAS_SUBJETIVAS];
   var resultados = {};
 
   aLimpiar.forEach(function(nombre) {
@@ -1439,4 +2087,78 @@ function limpiarDatosTest() {
 
   Logger.log(JSON.stringify(resultados, null, 2));
   return { ok: true, detalle: resultados, timestamp: new Date().toISOString() };
+}
+
+// ─── §9. BIOMETRÍA INICIO/FIN ──────────────────────────────────
+// Totalmente AJENO a la app: ninguna otra función lee esta hoja, no tiene
+// endpoint, no la toca inicializarHojas() ni limpiarDatosTest(). Es solo un
+// checkpoint manual para poder comparar antes/después del plan de 11 meses.
+//
+// Uso:
+//   1. Ejecutar registrarBiometriaCheckpoint() AHORA (antes de empezar el
+//      plan, 31/08/2026) — añade la fila "Inicio" con los datos actuales de
+//      knowledge_base/usuario/biometria.md.
+//   2. Al terminar el plan (11 meses después), tomar las medidas de nuevo
+//      (báscula, cinta métrica, pesos actuales de los mismos ejercicios),
+//      actualizar los valores de aquí abajo con los datos NUEVOS, y volver
+//      a ejecutar la función — añade la fila "Fin" en la MISMA hoja, debajo,
+//      para comparar fila a fila.
+//
+// Los valores de abajo son los de biometria.md §2-5 (medición 18/06/2026) —
+// al re-ejecutar para el checkpoint "Fin", sustituir por las medidas reales
+// de ese momento (esta función nunca inventa números).
+function registrarBiometriaCheckpoint() {
+  const NOMBRE_HOJA = 'biometria_checkpoints';
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let hoja = ss.getSheetByName(NOMBRE_HOJA);
+
+  const cabeceras = [
+    'fecha', 'etiqueta',
+    'peso_kg', 'grasa_pct', 'masa_muscular_kg', 'grasa_visceral', 'agua_pct', 'imc',
+    'hombros_cm', 'pecho_cm', 'cintura_cm', 'cadera_cm',
+    'biceps_d_cm', 'biceps_i_cm', 'antebrazo_d_cm', 'antebrazo_i_cm',
+    'muslo_d_cm', 'muslo_i_cm', 'pantorrilla_d_cm', 'pantorrilla_i_cm',
+    'sentadilla_kg', 'sentadilla_reps', 'press_inclinado_kg', 'press_inclinado_reps',
+    'rdl_kg', 'rdl_reps', 'dominadas_reps', 'remo_neutro_kg', 'remo_neutro_reps',
+    'hip_thrust_kg', 'hip_thrust_reps', 'curl_predicador_kg', 'curl_predicador_reps',
+    'kelso_shrug_kg', 'kelso_shrug_reps',
+    'vo2max', 'fc_reposo'
+  ];
+
+  if (!hoja) {
+    hoja = ss.insertSheet(NOMBRE_HOJA);
+    hoja.getRange(1, 1, 1, cabeceras.length).setValues([cabeceras]).setFontWeight('bold');
+    hoja.setFrozenRows(1);
+  }
+
+  // ── Datos de knowledge_base/usuario/biometria.md (medición 18/06/2026) ──
+  // Al ejecutar para el checkpoint "Fin", sustituir por las medidas reales
+  // tomadas al terminar el plan — NUNCA inventar, siempre desde una medición real.
+  const datos = {
+    peso_kg: 78.2, grasa_pct: 18.9, masa_muscular_kg: 60.2, grasa_visceral: 9, agua_pct: 55, imc: 22.1,
+    hombros_cm: 114, pecho_cm: 94, cintura_cm: 86, cadera_cm: 100,
+    biceps_d_cm: 36, biceps_i_cm: 35, antebrazo_d_cm: 27, antebrazo_i_cm: 27,
+    muslo_d_cm: 57, muslo_i_cm: 57, pantorrilla_d_cm: 36, pantorrilla_i_cm: 36,
+    sentadilla_kg: 80, sentadilla_reps: '?', press_inclinado_kg: 18, press_inclinado_reps: 10,
+    rdl_kg: 14, rdl_reps: 12, dominadas_reps: '3-4', remo_neutro_kg: 40, remo_neutro_reps: 10,
+    hip_thrust_kg: 20, hip_thrust_reps: 8, curl_predicador_kg: 15, curl_predicador_reps: 12,
+    kelso_shrug_kg: 10, kelso_shrug_reps: 15,
+    vo2max: 50, fc_reposo: 53
+  };
+
+  // Primera fila de datos → "Inicio"; a partir de ahí, "Fin" (o "Checkpoint N"
+  // si se ejecuta más de dos veces, aunque el uso previsto es solo 2 veces).
+  const filasExistentes = hoja.getLastRow() - 1; // -1 por la cabecera
+  let etiqueta;
+  if (filasExistentes <= 0) etiqueta = 'Inicio';
+  else if (filasExistentes === 1) etiqueta = 'Fin';
+  else etiqueta = 'Checkpoint ' + (filasExistentes + 1);
+
+  const fila = [fechaHoy_(), etiqueta].concat(cabeceras.slice(2).map(function(campo) {
+    return datos[campo] !== undefined ? datos[campo] : '';
+  }));
+  hoja.appendRow(fila);
+
+  Logger.log('Checkpoint "' + etiqueta + '" registrado en ' + NOMBRE_HOJA);
+  return { ok: true, etiqueta: etiqueta, fila: fila };
 }

@@ -9,7 +9,7 @@ Estética **Linear App** — ultra limpio, plano, monocromático con **micro-acc
 1. **Flat & Clean**: Sin sombras, sin elevaciones, sin gradientes en estructura
 2. **Subtle Borders**: Secciones separadas por líneas finas (`1dp`, `colorSeparator`)
 3. **Monochromatic Structure**: Toda la UI en escala de grises
-4. **Micro-accents**: Naranja `#FF5722` SOLO en detalles quirúrgicos (progress line de calorías, dot de estado activo, icono seleccionado)
+4. **Micro-accents**: Índigo `#5E6AD2` SOLO en detalles quirúrgicos (progress line de calorías, dot de estado activo, icono seleccionado)
 5. **No Glassmorphism**: Cero transparencias, cero blur, fondos sólidos
 6. **Typography-driven**: Jerarquía por peso y tamaño de fuente, no por color
 
@@ -45,7 +45,7 @@ Estética **Linear App** — ultra limpio, plano, monocromático con **micro-acc
 
 | Token | Light | Dark | Uso |
 | :--- | :--- | :--- | :--- |
-| `colorAccentPrimary` | `#FF5722` | `#FF5722` | **SOLO**: progress calorías, dot notificación, icono activo |
+| `colorAccentPrimary` | `#5E6AD2` | `#7B86E3` | **SOLO**: progress calorías, dot notificación, icono activo |
 | `colorAccentSecondary` | `#5C8A5C` | `#7DAF7D` | Verde apagado: etiquetas success (sutil) |
 | `colorSuccess` | `#5C8A5C` | `#7DAF7D` | Completado (tono natural muted) |
 | `colorWarning` | `#C4930A` | `#D4A832` | Advertencias (ámbar apagado) |
@@ -53,9 +53,9 @@ Estética **Linear App** — ultra limpio, plano, monocromático con **micro-acc
 | `colorChart` | `#5A8A9E` | `#7AABB8` | Gris azulado: progress agua |
 | `colorChartSecondary` | `#7BA3B3` | `#94BDC8` | Gráficas secundarias |
 
-### 1.4 Reglas de Uso del Naranja (Micro-accent)
+### 1.4 Reglas de Uso del Índigo (Micro-accent)
 
-> ⚠️ El naranja `#FF5722` se usa **EXCLUSIVAMENTE** en:
+> ⚠️ El índigo `#5E6AD2` se usa **EXCLUSIVAMENTE** en:
 > - La línea de progreso de calorías (3dp de alto)
 > - El dot de estado activo (6dp)
 > - El icono de la pestaña seleccionada (si se añade bottom nav)

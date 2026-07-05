@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Horario semanal: NO es un editor libre día a día — el split (4 días
+     gym Push/Pierna/Pull/Hombros + 2 natación + 1 descanso) está diseñado
+     para cumplir frecuencia/volumen por grupo muscular (programacion.md).
+     Lo único que puede variar de verdad es (a) qué día se descansa y
+     (b) qué 2 días de natación tienes según el horario de piscina del
+     curso — por eso solo se ofrecen esas 2 decisiones, como una serie de
+     combinaciones válidas, no un picker libre de 7 días × 6 tipos. -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/colorBackground"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <!-- Header -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="8dp">
+
+            <TextView
+                android:id="@+id/btnVolver"
+                android:layout_width="wrap_content"
+                android:layout_height="@dimen/touch_target_min"
+                android:gravity="center"
+                android:text="←"
+                android:textColor="@color/colorTextPrimary"
+                android:textSize="20sp"
+                android:paddingHorizontal="8dp" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Horario semanal"
+                android:textColor="@color/colorTextPrimary"
+                android:textSize="20sp"
+                android:fontFamily="sans-serif-medium"
+                android:textAlignment="center" />
+
+            <View
+                android:layout_width="30dp"
+                android:layout_height="1dp" />
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="El reparto de Push/Pierna/Pull/Hombros está fijado para cumplir la frecuencia y el volumen por grupo muscular. Solo eliges 2 cosas: cuándo nadas y qué día descansas."
+            android:textSize="13sp"
+            android:textColor="@color/colorTextSecondary"
+            android:layout_marginBottom="20dp" />
+
+        <!-- ═══ NATACIÓN ═══ -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Natación (2 días fijos según el horario de piscina)"
+            android:textSize="14sp"
+            android:fontFamily="sans-serif-medium"
+            android:textColor="@color/colorTextPrimary"
+            android:layout_marginBottom="8dp" />
+
+        <LinearLayout
+            android:id="@+id/filaNatacion"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="20dp">
+
+            <TextView android:id="@+id/opNatLunMie" android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:minHeight="44dp" android:gravity="center"
+                android:text="Lunes y Miércoles" android:textSize="12sp"
+                android:textColor="@color/colorTextSecondary" android:background="@drawable/button_secondary" />
+
+            <TextView android:id="@+id/opNatMarJue" android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:minHeight="44dp" android:gravity="center"
+                android:layout_marginStart="8dp"
+                android:text="Martes y Jueves" android:textSize="12sp"
+                android:textColor="@color/colorTextSecondary" android:background="@drawable/button_secondary" />
+        </LinearLayout>
+
+        <!-- ═══ DÍA DE DESCANSO ═══ -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Día de descanso"
+            android:textSize="14sp"
+            android:fontFamily="sans-serif-medium"
+            android:textColor="@color/colorTextPrimary"
+            android:layout_marginBottom="8dp" />
+
+        <LinearLayout
+            android:id="@+id/filaDescanso"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="20dp" />
+
+        <!-- ═══ VISTA PREVIA ═══ -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Así quedaría la semana"
+            android:textSize="14sp"
+            android:fontFamily="sans-serif-medium"
+            android:textColor="@color/colorTextPrimary"
+            android:layout_marginBottom="8dp" />
+
+        <LinearLayout
+            android:id="@+id/filaPreview"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:background="@drawable/bg_card_flat"
+            android:padding="8dp"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:id="@+id/tvEstado"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="13sp"
+            android:textColor="@color/colorTextSecondary"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="16dp"
+            android:visibility="gone" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnGuardar"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/touch_target_min"
+            android:text="GUARDAR"
+            android:backgroundTint="@color/colorAccentPrimary"
+            android:textColor="@color/white" />
+
+    </LinearLayout>
+</ScrollView>

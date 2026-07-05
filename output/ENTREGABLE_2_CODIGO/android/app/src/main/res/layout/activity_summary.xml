@@ -10,7 +10,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="✅ Sesión completada"
+        android:text="Sesión completada"
         android:textSize="24sp"
         android:textColor="@color/success" />
 
@@ -30,6 +30,24 @@
         android:text="4500 kg total"
         android:textSize="20sp"
         android:textColor="@color/text_primary"
+        android:layout_marginTop="8dp" />
+
+    <TextView
+        android:id="@+id/tvSummaryRir"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="RIR medio 2.0"
+        android:textSize="16sp"
+        android:textColor="@color/text_secondary"
+        android:layout_marginTop="8dp" />
+
+    <TextView
+        android:id="@+id/tvSummaryIntensidad"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Alta — zona óptima hipertrofia"
+        android:textSize="14sp"
+        android:textColor="@color/success"
         android:layout_marginTop="8dp" />
 
     <TextView

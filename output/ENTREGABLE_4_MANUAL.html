@@ -9,7 +9,7 @@
         :root {
             --bg: #0F1419; --surface: #1B2028; --surface2: #2A3040;
             --text: #E8EAED; --text2: #9AA0A6; --text3: #5F6368;
-            --accent: #FF6D3B; --success: #81C784; --warning: #FFB74D;
+            --accent: #7B86E3; --success: #81C784; --warning: #FFB74D;
             --error: #EF5350; --chart: #4FC3F7; --purple: #CE93D8;
             --radius: 12px;
         }
@@ -74,6 +74,8 @@
         <a href="#uc1"><span class="num">1</span> Tu sesión del día (caso de uso principal)</a>
         <a href="#uc2"><span class="num">2</span> Registrar una serie</a>
         <a href="#uc3"><span class="num">3</span> Timer de descanso</a>
+        <a href="#uc35"><span class="num">3.5</span> Fin de sesión — resumen y guardar</a>
+        <a href="#uc36"><span class="num">3.6</span> Energía y estrés (diálogo nocturno)</a>
         <a href="#uc4"><span class="num">4</span> Cómo funciona el peso sugerido</a>
         <a href="#uc5"><span class="num">5</span> Plan anual y fases</a>
         <a href="#uc6"><span class="num">6</span> Nutrición del día</a>
@@ -94,8 +96,8 @@
     <div class="card">
         <h3>¿Qué ves al abrir?</h3>
         <ol>
-            <li><strong>Cómo dormiste:</strong> Sleep Score (0-100) + FC reposo. Si dormiste mal, la app avisa que tu sesión será reducida.</li>
-            <li><strong>Macros del día:</strong> Calorías, proteína, carbos, grasas — cambian automáticamente entre fases (bulk=3280 kcal, cut=2282 kcal, mantener=2855 kcal).</li>
+            <li><strong>Cómo dormiste:</strong> Sleep Score estimado (0-100, calculado por la app a partir de duración+eficiencia+fases de Health Connect, marcado con "≈") + FC reposo (literal). Si dormiste mal, la app avisa que tu sesión será reducida.</li>
+            <li><strong>Macros del día:</strong> Calorías, proteína, carbos, grasas — cambian automáticamente entre fases (bulk=3283 kcal, cut=2284 kcal, mantener=2855 kcal). Si el día anterior diste más de 12.000 pasos, se suman +175 kcal (NEAT extra).</li>
             <li><strong>Agua:</strong> Recordatorio visual siempre presente (peso × 35ml + 500ml si entrenas).</li>
             <li><strong>Objetivo pasos/cardio:</strong> VOL=8000 pasos, DEF=10000+20min bici post-gym, DELOAD=7000 (todo basado en Wilson 2012).</li>
             <li><strong>Movilidad matutina:</strong> 5 ejercicios de postura (5-8 min). Todos los días, incluidos descanso y natación.</li>
@@ -106,12 +108,12 @@
     <div class="screen">
         <div class="screen-title">Pantalla — Vista mañana (ejemplo: Lunes, fase VOL, bulk)</div>
         <div style="display:flex; gap:20px; flex-wrap:wrap; margin-bottom:14px;">
-            <div><span style="font-size:0.7rem; color:var(--text3);">SUEÑO</span><div style="font-size:1.2rem; color:var(--success);">83 <span style="font-size:0.7rem;">/ 100</span></div></div>
+            <div><span style="font-size:0.7rem; color:var(--text3);">SUEÑO (estimado)</span><div style="font-size:1.2rem; color:var(--success);">≈83 <span style="font-size:0.7rem;">/ 100</span></div></div>
             <div><span style="font-size:0.7rem; color:var(--text3);">FC REPOSO</span><div style="font-size:1.2rem;">53 bpm</div></div>
             <div><span style="font-size:0.7rem; color:var(--text3);">HOY</span><div style="font-size:1.2rem; color:var(--accent);">GYM Push</div></div>
         </div>
         <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:14px;">
-            <div style="background:var(--surface); padding:8px 12px; border-radius:8px;"><span style="font-size:0.7rem; color:var(--text3);">KCAL</span><div style="color:var(--accent);">3280</div></div>
+            <div style="background:var(--surface); padding:8px 12px; border-radius:8px;"><span style="font-size:0.7rem; color:var(--text3);">KCAL</span><div style="color:var(--accent);">3283</div></div>
             <div style="background:var(--surface); padding:8px 12px; border-radius:8px;"><span style="font-size:0.7rem; color:var(--text3);">PROT</span><div>156g</div></div>
             <div style="background:var(--surface); padding:8px 12px; border-radius:8px;"><span style="font-size:0.7rem; color:var(--text3);">CARBOS</span><div>440g</div></div>
             <div style="background:var(--surface); padding:8px 12px; border-radius:8px;"><span style="font-size:0.7rem; color:var(--text3);">GRASA</span><div>78g</div></div>
@@ -139,64 +141,40 @@
     <div class="card">
         <h3>Flujo completo de la sesión</h3>
         <ol>
-            <li><strong>Calentamiento (10-15 min):</strong> Movilidad dinámica (5 min: círculos cadera, gato-vaca, dislocaciones) + Activación específica según sesión (Push: face pulls; Pull: dead hangs; Pierna: glute bridges) + Series de aproximación del primer compuesto (40%→60%→75%→85%).</li>
-            <li><strong>Ejercicios principales:</strong> Lista con peso sugerido (motor), series × reps, RIR objetivo, descanso.</li>
-            <li><strong>Registras cada serie:</strong> Reps + sensación → timer se activa automáticamente.</li>
-            <li><strong>Timer flotante (Hyper Island):</strong> Sales de la app → overlay visible → al terminar vibra.</li>
-            <li><strong>Estiramientos (5 min):</strong> Estáticos 30-60s por grupo trabajado (solo post-entreno, nunca pre).</li>
+            <li><strong>Calentamiento (10-15 min):</strong> Movilidad dinámica (5 min: círculos cadera, gato-vaca, dislocaciones) + Activación específica según sesión (Push: face pulls; Pull: dead hangs; Pierna: glute bridges) + Series de aproximación del primer compuesto (40%→60%→75%→85%). Se ve UN ejercicio a la vez, pantalla completa — desliza a la izquierda para pasar al siguiente.</li>
+            <li><strong>Ejercicios principales:</strong> Uno a uno — nombre, peso sugerido (motor) y reps objetivo, centrado y minimalista. Desliza a la izquierda para pasar a registrar la serie.</li>
+            <li><strong>Registras cada serie:</strong> Pantalla separada — reps hechas + sensación (fácil/bien/duro/fallo) → timer se activa automáticamente.</li>
+            <li><strong>Timer de descanso:</strong> Pantalla completa con cuenta atrás gigante. Puedes deslizar a la izquierda para saltarlo. Fuera de la app usa Hyper Island (o notificación normal si tu móvil no lo soporta).</li>
+            <li><strong>Estiramientos (5 min):</strong> Estáticos 30-60s por grupo trabajado (solo post-entreno, nunca pre) — mismo formato uno a uno que el calentamiento.</li>
             <li><strong>Cardio (si fase DEF/MNT):</strong> 15-20 min bici estática a 60-70% FC máx.</li>
-            <li><strong>Resumen:</strong> Series totales, volumen (kg), RIR medio, impacto en tu plan.</li>
+            <li><strong>Resumen:</strong> Series totales, volumen (kg), RIR medio, impacto en tu plan — y un botón <strong>GUARDAR</strong> para confirmar (ver UC3.5).</li>
         </ol>
     </div>
 
     <div class="card">
-        <h3>¿Qué ves en la pantalla de ejercicios?</h3>
+        <h3>¿Qué ves en la pantalla de ejercicio?</h3>
         <ol>
-            <li><strong>Tipo de sesión:</strong> Push / Pull / Pierna / Hombros+Brazos</li>
-            <li><strong>Fase actual:</strong> Ej. "Hipertrofia I — V-Taper" con color</li>
-            <li><strong>Ajuste del día:</strong> Si dormiste mal o tu FC está alta, verás un aviso: "Sesión reducida (fatiga detectada)"</li>
-            <li><strong>Lista de ejercicios:</strong> Cada uno con peso sugerido, series, reps y RIR objetivo</li>
+            <li><strong>Contador arriba:</strong> "2 / 6" (ejercicio actual / total de la sesión)</li>
+            <li><strong>Centro:</strong> Serie X/Y, nombre del ejercicio, peso sugerido (grande) y reps objetivo</li>
+            <li><strong>Abajo:</strong> "◀ desliza para completar ▶"</li>
         </ol>
+        <p>El detalle del motor (por qué subió/bajó/mantuvo el peso), la fase actual y el ajuste del día se siguen calculando igual que antes — pero ya no ocupan la pantalla principal, para que sea rápida de leer entre series. Se puede consultar en Progresión.</p>
     </div>
 
     <div class="screen">
-        <div class="screen-title">Pantalla — Sesión de hoy (ejemplo: Lunes Push, fase VOL)</div>
-        <div class="exercise-row">
-            <div><div class="ex-name">Press hombro mancuernas</div><div class="ex-detail">4×8-10 · RIR 2 · 150s desc</div></div>
-            <div class="ex-peso">32.5 kg <span class="motor-badge">↑</span></div>
-        </div>
-        <div class="exercise-row">
-            <div><div class="ex-name">Elev. laterales sentado</div><div class="ex-detail">4×12-15 · RIR 2 · 90s desc</div></div>
-            <div class="ex-peso">14 kg <span class="motor-badge">=</span></div>
-        </div>
-        <div class="exercise-row">
-            <div><div class="ex-name">Elev. laterales polea</div><div class="ex-detail">3×12-15 · RIR 2 · 90s desc</div></div>
-            <div class="ex-peso">7.5 kg <span class="motor-badge">=</span></div>
-        </div>
-        <div class="exercise-row">
-            <div><div class="ex-name">Press inclinado mancuernas</div><div class="ex-detail">4×8-10 · RIR 2 · 150s desc</div></div>
-            <div class="ex-peso">30 kg <span class="motor-badge">↑</span></div>
-        </div>
-        <div class="exercise-row">
-            <div><div class="ex-name">Cruces polea alta</div><div class="ex-detail">3×10-12 · RIR 2 · 90s desc</div></div>
-            <div class="ex-peso">15 kg <span class="motor-badge">=</span></div>
-        </div>
-        <div class="exercise-row">
-            <div><div class="ex-name">Press francés 30°</div><div class="ex-detail">3×10-12 · RIR 2 · 120s desc</div></div>
-            <div class="ex-peso">22.5 kg <span class="motor-badge">↓</span></div>
-        </div>
-        <div class="exercise-row">
-            <div><div class="ex-name">Extensión unilateral polea</div><div class="ex-detail">3×12-15 · RIR 2 · 60s desc</div></div>
-            <div class="ex-peso">10 kg <span class="motor-badge">=</span></div>
-        </div>
-        <div class="exercise-row">
-            <div><div class="ex-name">Face pulls</div><div class="ex-detail">3×15-20 · RIR 3 · 60s desc</div></div>
-            <div class="ex-peso">12.5 kg <span class="motor-badge">=</span></div>
+        <div class="screen-title">Pantalla — Ejercicio (ejemplo: Lunes Push, fase VOL)</div>
+        <div style="text-align:center; padding:10px 0;">
+            <div style="font-size:0.75rem; color:var(--text3);">2 / 6</div>
+            <div style="font-size:0.75rem; color:var(--text3); margin-top:16px;">Serie 2 / 4</div>
+            <div style="font-size:1.1rem; font-weight:500; margin-top:6px;">Press hombro mancuernas</div>
+            <div style="font-size:2.4rem; font-weight:500; color:var(--accent); margin-top:10px;">32.5 kg</div>
+            <div style="font-size:0.85rem; color:var(--text2); margin-top:4px;">8-10 reps</div>
+            <div style="font-size:0.75rem; color:var(--text3); margin-top:24px;">◀ desliza para completar ▶</div>
         </div>
     </div>
 
     <div class="info">
-        <strong>↑ ↓ = significan:</strong> El motor comparó tu rendimiento de la última sesión con lo esperado y ajustó el peso. ↑ subió (fuiste mejor de lo esperado), ↓ bajó (fue demasiado pesado), = mantuvo (perfecto).
+        <strong>↑ ↓ = significan:</strong> El motor comparó tu rendimiento de la última sesión con lo esperado y ajustó el peso. ↑ subió (fuiste mejor de lo esperado), ↓ bajó (fue demasiado pesado), = mantuvo (perfecto). Este detalle ya no se muestra en la pantalla principal (para mantenerla minimalista) — se sigue calculando igual y queda accesible en Progresión.
     </div>
 </section>
 
@@ -205,35 +183,23 @@
 <!-- ═══ UC2: REGISTRAR SERIE ═══ -->
 <section id="uc2">
     <h2>2. Registrar una serie</h2>
-    <p class="desc">Después de cada set, introduces 4 datos. Esto alimenta al motor para la próxima sesión.</p>
+    <p class="desc">Desde la pantalla de ejercicio, desliza a la izquierda → pasas a una pantalla completa solo para registrar la serie.</p>
 
     <div class="card">
         <h3>Datos que introduces</h3>
         <ol>
-            <li><strong>Peso usado (kg):</strong> El peso real que pusiste. Puede ser diferente al sugerido.</li>
-            <li><strong>Reps completadas:</strong> Cuántas repeticiones hiciste.</li>
-            <li><strong>RIR percibido:</strong> Cuántas repeticiones MÁS podrías haber hecho (0 = fallo total).</li>
-            <li><strong>Sensación:</strong> fácil / bien / duro / fallo.</li>
+            <li><strong>Reps completadas:</strong> Un selector numérico, empieza ya puesto en el objetivo (ej. 10) — solo lo tocas si hiciste otra cantidad.</li>
+            <li><strong>Sensación:</strong> Un botón — fácil (RIR 3+) / bien (RIR 2) / duro (RIR 1) / fallo (RIR 0). Al tocarlo se guarda la serie al momento y vuelves a la pantalla de ejercicio (o al timer, si tocaba descanso).</li>
         </ol>
+        <p>El peso usado es el que ya viste en la pantalla de ejercicio — si un día pones un peso distinto al sugerido, el motor usa igualmente lo que tú hayas hecho como referencia para la próxima vez.</p>
     </div>
 
     <div class="screen">
-        <div class="screen-title">Pantalla — Registro de serie</div>
-        <p style="color:var(--text2); font-size:0.85rem; margin-bottom:12px;">Press hombro mancuernas — Serie 2/4</p>
-        <div style="display:flex; gap:16px; margin-bottom:12px;">
-            <div><span style="font-size:0.75rem; color:var(--text3);">PESO</span><div style="font-size:1.4rem; font-weight:300;">32.5 kg</div></div>
-            <div><span style="font-size:0.75rem; color:var(--text3);">REPS</span><div style="font-size:1.4rem; font-weight:300;">9</div></div>
-        </div>
-        <p style="font-size:0.75rem; color:var(--text3); margin-bottom:6px;">RIR — ¿Cuántas más podrías?</p>
-        <div class="rir-buttons">
-            <div class="rir-btn">0</div>
-            <div class="rir-btn">1</div>
-            <div class="rir-btn selected">2</div>
-            <div class="rir-btn">3</div>
-            <div class="rir-btn">4</div>
-        </div>
-        <p style="font-size:0.75rem; color:var(--text3); margin-bottom:6px;">¿Cómo se sintió?</p>
-        <div class="sens-buttons">
+        <div class="screen-title">Pantalla — Registro RPE (llegas aquí deslizando desde Ejercicio)</div>
+        <p style="color:var(--text2); font-size:0.85rem; margin-bottom:12px; text-align:center;">¿Cuántas reps hiciste?</p>
+        <div style="text-align:center; margin-bottom:16px;"><span style="font-size:1.4rem; font-weight:300;">9</span></div>
+        <p style="font-size:0.75rem; color:var(--text3); margin-bottom:6px; text-align:center;">¿Cómo fue la sensación?</p>
+        <div class="sens-buttons" style="justify-content:center;">
             <div class="sens-btn">fácil</div>
             <div class="sens-btn selected">bien</div>
             <div class="sens-btn">duro</div>
@@ -242,14 +208,13 @@
     </div>
 
     <div class="info">
-        <strong>¿Qué es RIR?</strong> "Repetitions In Reserve" — cuántas repeticiones te quedaban en el tanque.<br>
-        RIR 0 = fallaste (no podías hacer ni una más). RIR 2 = podrías haber hecho 2 más. RIR 4+ = demasiado fácil.<br><br>
-        <strong>Tip:</strong> Si pones RIR 3 pero marcas "fallo", el motor te cree el "fallo" (es más fiable que estimar un número cuando empiezas).
+        <strong>¿Qué es RIR?</strong> "Repetitions In Reserve" — cuántas repeticiones te quedaban en el tanque. La app lo pide como sensación cualitativa (fácil/bien/duro/fallo) en vez de un número, para que sea un solo toque entre series.<br><br>
+        <strong>Tip:</strong> Si marcas "fallo", el motor lo trata siempre como RIR 0 (es más fiable que estimar un número cuando empiezas).
     </div>
 
     <div class="card">
         <h3>¿Qué pasa con estos datos?</h3>
-        <p>Se guardan en <code>ejercicios_log</code> (retención: 30 días). La próxima vez que tengas este ejercicio, el motor lee tu ÚLTIMO set y calcula: "¿le subimos, le bajamos, o mantenemos?"</p>
+        <p>Se guardan en <code>ejercicios_log</code> al momento (no hace falta esperar al resumen final). La próxima vez que tengas este ejercicio, el motor lee tu ÚLTIMO set y calcula: "¿le subimos, le bajamos, o mantenemos?"</p>
     </div>
 </section>
 
@@ -269,10 +234,11 @@
     <div class="card">
         <h3>Cómo funciona</h3>
         <ol>
-            <li>Al guardar una serie, se activa automáticamente el timer con el descanso del ejercicio (60s–270s según tipo).</li>
-            <li><strong>Notificación compacta:</strong> Chronometer nativo visible en barra de notificaciones — puedes mirar Twitter/Instagram mientras.</li>
-            <li><strong>Al terminar:</strong> Vibración [0,200,100,200] + la notificación se expande con texto grande "¡VAMOS!" para que lo veas de reojo.</li>
-            <li>Se usa fullScreenIntent para que aparezca como heads-up incluso con pantalla bloqueada.</li>
+            <li>Al registrar una serie, si toca descanso, se activa automáticamente el timer con el tiempo del ejercicio (60s–270s según tipo) y pasas a una pantalla de cuenta atrás a pantalla completa.</li>
+            <li><strong>Dentro de la app:</strong> Cuenta atrás gigante centrada + qué toca a continuación (próxima serie, peso). Puedes deslizar a la izquierda para saltarte el resto del descanso.</li>
+            <li><strong>Notificación mientras cuenta:</strong> Chronometer nativo visible en la barra de notificaciones (y como Hyper Island si tu móvil es Xiaomi/Redmi/POCO con HyperOS 3) — puedes mirar otra app mientras.</li>
+            <li><strong>Al terminar, fuera de la app:</strong> el aviso NO desaparece solo — se queda ahí (como una alarma), vibrando en bucle, con un botón "Detener". En HyperOS 3 la cápsula se agranda ocupando parte de la pantalla con "¡Descanso terminado!"; en el resto de móviles es una notificación normal con el mismo comportamiento.</li>
+            <li><strong>Dentro de la app:</strong> silencio total — la pantalla pasa sola al siguiente ejercicio/serie.</li>
         </ol>
     </div>
 
@@ -282,6 +248,50 @@
         Compuestos secundarios (remo, RDL): 2-2.5 min<br>
         Aislamiento (laterales, curls): 1-1.5 min<br>
         Postura/correctivos (face pull, band pull): 45-60s
+    </div>
+</section>
+
+<hr class="divider">
+
+<!-- ═══ UC3.5: RESUMEN Y GUARDAR ═══ -->
+<section id="uc35">
+    <h2>3.5. Fin de sesión — resumen y guardar</h2>
+    <p class="desc">Al terminar (estiramientos, y cardio si toca), ves un resumen antes de que se marque nada como completado.</p>
+
+    <div class="card">
+        <h3>Qué ves primero (solo lectura)</h3>
+        <ol>
+            <li><strong>Series totales</strong>, <strong>volumen total (kg)</strong> y <strong>RIR medio</strong> de la sesión — calculados al momento a partir de las series que ya registraste.</li>
+            <li><strong>Intensidad percibida</strong> (Helms 2016: RIR medio ≤1 = muy alta, 2-2.5 = zona óptima hipertrofia, etc.)</li>
+        </ol>
+        <p>En este punto la sesión TODAVÍA no está marcada como completada — solo estás viendo un resumen de lo que ya se guardó serie a serie.</p>
+    </div>
+
+    <div class="card">
+        <h3>Botón GUARDAR</h3>
+        <p>Al pulsarlo, se marca la sesión como completada en la BBDD. A partir de ahí el motor de 6 capas usa estos datos para decidir el peso de tu próxima sesión de este mismo tipo (Push/Pull/Pierna/Hombros+Brazos). El botón se deshabilita y muestra "Guardando..." hasta que el backend confirma, y entonces cierra la pantalla solo.</p>
+    </div>
+
+    <div class="info">
+        <strong>¿Por qué separar "ver resumen" de "guardar"?</strong> Así puedes revisar cómo te fue antes de confirmar. Cada serie individual ya se guardó al momento en <code>ejercicios_log</code> — lo único que hace "Guardar" es marcar la sesión completa, así que no se pierde nada si cierras la app sin pulsarlo (solo se retrasa el ajuste de la siguiente sesión).
+    </div>
+</section>
+
+<hr class="divider">
+
+<!-- ═══ UC3.6: DIÁLOGO NOCTURNO ═══ -->
+<section id="uc36">
+    <h2>3.6. Energía y estrés (diálogo nocturno)</h2>
+    <p class="desc">Una vez al día, después de las 22:00, la app te pregunta cómo ha ido el día — no en la sesión de gym, es independiente.</p>
+
+    <div class="card">
+        <h3>Cómo funciona</h3>
+        <ol>
+            <li><strong>Selector de 5 niveles</strong> (nada de estrellas) para energía y para estrés — tocas un nivel y se rellenan los segmentos hasta ahí, como un indicador de batería.</li>
+            <li><strong>Notas opcionales</strong> — campo de texto libre por si quieres apuntar algo del día.</li>
+            <li>Solo se pregunta una vez al día. Si no respondes, no vuelve a insistir hasta el día siguiente.</li>
+        </ol>
+        <p>Esto alimenta la Capa 6 del motor de cargas (ajuste diario): estrés alto (4-5/5) reduce el factor del día siguiente. También aparece en Progresión, junto a energía/estrés de días anteriores.</p>
     </div>
 </section>
 
@@ -382,7 +392,7 @@
 <!-- ═══ UC5: PLAN ANUAL ═══ -->
 <section id="uc5">
     <h2>5. Plan anual y fases</h2>
-    <p class="desc">10 fases en 11 meses. El plan define QUÉ hacer (estructura). Los PESOS son siempre dinámicos.</p>
+    <p class="desc">14 fases en 11 meses (48 semanas). El plan define QUÉ hacer (estructura). Los PESOS son siempre dinámicos.</p>
 
     <div class="card">
         <h3>Lo que el plan almacena (fijo, pre-generado)</h3>
@@ -421,9 +431,10 @@
         <p>
             BMR (Mifflin-St Jeor) × Factor actividad 1.55 = TDEE (~2855 kcal)<br>
             Luego según fase:<br>
-            • <strong>Bulk (VOL/FZA):</strong> TDEE × 1.15 = ~3280 kcal (superávit +15%)<br>
-            • <strong>Cut (DEF):</strong> TDEE × 0.80 = ~2282 kcal (déficit −20%)<br>
-            • <strong>Mantener (MNT/DELOAD):</strong> TDEE × 1.0 = ~2855 kcal (isocalórico)
+            • <strong>Bulk (VOL/FZA):</strong> TDEE × 1.15 = ~3283 kcal (superávit +15%)<br>
+            • <strong>Cut (DEF):</strong> TDEE × 0.80 = ~2284 kcal (déficit −20%)<br>
+            • <strong>Mantener (MNT/DELOAD):</strong> TDEE × 1.0 = ~2855 kcal (isocalórico)<br>
+            • <strong>+175 kcal extra</strong> si diste más de 12.000 pasos (NEAT no capturado por el factor de actividad fijo)
         </p>
     </div>
 
@@ -431,10 +442,14 @@
         <h3>Macros</h3>
         <p>
             <strong>Proteína:</strong> 2.0 g/kg (bulk/mantener) o 2.4 g/kg (cut — preservar músculo, Helms 2014)<br>
-            <strong>Grasa:</strong> 1.0 g/kg (salud hormonal)<br>
-            <strong>Carbos:</strong> Resto de calorías ÷ 4<br>
+            <strong>Grasa:</strong> 1.0 g/kg (salud hormonal), 25% de las kcal en cut<br>
+            <strong>Carbos:</strong> Resto de calorías ÷ 4 (aquí absorbe el bonus de pasos)<br>
             <strong>Agua:</strong> peso × 35ml + 500ml si entrenas
         </p>
+    </div>
+
+    <div class="warn">
+        <strong>Ramadán:</strong> Las calorías/macros NO cambian (el ayuno no cambia lo que necesitas) — lo que cambia es el reparto: Iftar + Cena + Suhur en vez de comidas repartidas por el día. Ver UC8.
     </div>
 </section>
 
@@ -463,7 +478,15 @@
     </div>
 
     <div class="info">
-        <strong>Modalidad:</strong> Siempre bici estática o elíptica (Wilson 2012: NO interfiere con hipertrofia). NUNCA correr (interfiere -31%). La natación 2x/sem ya cuenta como cardio bajo impacto.
+        <strong>Modalidad:</strong> Siempre bici estática o elíptica (Wilson 2012: NO interfiere con hipertrofia). NUNCA correr (interfiere -31%). La natación 2x/sem ya cuenta como cardio bajo impacto (por eso se anula ahí, no solo en días sin gym).
+    </div>
+
+    <div class="info">
+        <strong>El cardio de DEF/MNT también aplica en domingo (descanso)</strong> — no hace falta ir al gym para que se prescriba, solo estar en la fase correcta.
+    </div>
+
+    <div class="warn">
+        <strong>Ramadán:</strong> cardio extra anulado siempre, sea cual sea la fase (sin agua/comida durante el ayuno, no tiene sentido añadir más gasto). Ver UC8.
     </div>
 
     <div class="warn">
@@ -476,7 +499,7 @@
 <!-- ═══ UC8: EXCEPCIONES ═══ -->
 <section id="uc8">
     <h2>8. Excepciones</h2>
-    <p class="desc">4 situaciones que la app maneja automáticamente.</p>
+    <p class="desc">6 situaciones que la app maneja automáticamente.</p>
 
     <div class="card">
         <h3>❌ Día perdido (no abriste la app)</h3>
@@ -505,8 +528,20 @@
     <div class="card">
         <h3>😴 Día de descanso (Domingo)</h3>
         <p>
-            Sin entrenar. Opciones: movilidad matutina completa + cardio suave (caminar/bici 30 min) si pasos están por debajo del objetivo.<br>
+            Sin entrenar. Movilidad matutina completa siempre + cardio suave (bici/elíptica) SOLO si la fase actual es DEF o MNT (no depende de tus pasos, depende de la fase).<br>
             Objetivo = recuperación activa, sin intensidad.
+        </p>
+    </div>
+    <div class="card">
+        <h3>🌙 Ramadán (08 feb – 10 mar 2027)</h3>
+        <p>
+            Volumen de la sesión de gym reducido -30% automáticamente (intensidad/peso igual). Cardio extra anulado siempre. Macros iguales pero reencuadradas a Iftar + Cena + Suhur. Banner en Home con día de ayuno, horario aproximado, timing recomendado de entreno (30-60 min antes de Iftar) e hidratación (todo entre Iftar y Suhur).
+        </p>
+    </div>
+    <div class="card">
+        <h3>🎉 Eid al-Fitr (11 mar 2027)</h3>
+        <p>
+            Día de excepción — la app muestra "no trackear estrictamente, disfruta" en vez de objetivos normales. Al día siguiente vuelve la rutina normal.
         </p>
     </div>
 </section>
@@ -561,16 +596,16 @@
     </div>
     <div class="card">
         <h3>¿Qué es un deload?</h3>
-        <p>1 semana cada 4-6 donde reduces volumen (-40%) e intensidad (-12.5%). El plan tiene 3 deloads programados. El motor aplica automáticamente la reducción sin que hagas nada.</p>
+        <p>1 semana cada 4-6 donde reduces volumen (-40%) e intensidad (-12.5%). El plan tiene 6 deloads programados (se revisó y se añadieron 3 más para no dejar huecos de más de 6 semanas sin descarga). El motor aplica automáticamente la reducción sin que hagas nada.</p>
     </div>
     <div class="card">
         <h3>¿Qué datos necesita el reloj (Amazfit)?</h3>
-        <p>Sleep score, FC reposo, pasos, VO2max. Fluyen: Amazfit → Zepp app → Health Connect → FitBase. Debes activar la conexión en Zepp → Perfil → Apps terceros.</p>
+        <p>Sueño (para el sleep score estimado), FC reposo, pasos, peso y % grasa (báscula). Fluyen: Amazfit → Zepp app → Health Connect → FitBase. Sueño/FC/peso/grasa se sincronizan 1 vez al día (ya están "cerrados" al despertar); los pasos se actualizan cada vez que abres/vuelves a la app, porque se acumulan durante el día. HRV y estrés no los expone Health Connect — el estrés se pide como entrada manual (selector de 5 niveles por la noche), HRV no se usa (se usa FC reposo como proxy, Kiviniemi 2007 adaptado).</p>
     </div>
 </section>
 
 <div class="footer">
-    FitBase Manual v2 · 02/07/2026 · Motor de 6 capas · 31 papers · 10 fases · ~192 sesiones
+    FitBase Manual v4 · 05/07/2026 · Motor de 6 capas · 31 papers · 14 fases · ~192 sesiones
 </div>
 
 </body>

@@ -137,10 +137,13 @@ COCINA_FAMILIAR:
 ### Variables del Sistema
 ```yaml
 RAMADAN:
-  activo: false  # Cambiar a true durante el mes
-  año_actual: 2026
-  fecha_inicio: "2026-02-XX"  # Actualizar según calendario lunar
-  fecha_fin: "2026-03-XX"
+  # 2027 confirmado por el usuario (04/07/2026) — implementado en Codigo.gs
+  # como RAMADAN_FECHAS (esRamadan_/esEidFitr_). Actualizar cada año — el
+  # calendario islámico es lunar, no se calcula, se confirma y se hardcodea.
+  año: 2027
+  fecha_inicio: "2027-02-08"
+  fecha_fin: "2027-03-10"
+  eid_al_fitr: "2027-03-11"  # día siguiente al fin — ampliar si se celebra más días
 ```
 
 ### Estructura de Comidas en Ramadán

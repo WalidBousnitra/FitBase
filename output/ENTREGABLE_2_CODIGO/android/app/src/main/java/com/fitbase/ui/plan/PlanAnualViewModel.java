@@ -7,6 +7,7 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
 import com.fitbase.data.api.ApiClient;
+import com.fitbase.data.cache.AppDataCache;
 import com.fitbase.data.model.PlanAnualResponse;
 
 import retrofit2.Call;
@@ -30,6 +31,16 @@ public class PlanAnualViewModel extends ViewModel {
     public LiveData<String> getError() { return error; }
 
     public void cargarPlan() {
+        // Si SplashActivity ya precargó el plan anual, usarlo al instante (sin spinner)
+        PlanAnualResponse cache = AppDataCache.getPlanAnual();
+        if (cache != null && cache.fases != null && !cache.fases.isEmpty()) {
+            Log.d(TAG, "Plan anual servido desde cache de Splash");
+            error.setValue(null);
+            planAnual.setValue(cache);
+            cargando.setValue(false);
+            return;
+        }
+
         cargando.setValue(true);
         error.setValue(null);
         ApiClient.getApi().getPlanAnual("plan_anual").enqueue(new Callback<PlanAnualResponse>() {

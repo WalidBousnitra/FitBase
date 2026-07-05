@@ -14,11 +14,12 @@
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <!-- Health Connect -->
     <uses-permission android:name="android.permission.health.READ_SLEEP" />
-    <uses-permission android:name="android.permission.health.READ_HEART_RATE" />
+    <uses-permission android:name="android.permission.health.READ_RESTING_HEART_RATE" />
     <uses-permission android:name="android.permission.health.READ_STEPS" />
     <uses-permission android:name="android.permission.health.READ_NUTRITION" />
-    <uses-permission android:name="android.permission.health.READ_BODY_MEASUREMENTS" />
     <uses-permission android:name="android.permission.health.READ_WEIGHT" />
+    <uses-permission android:name="android.permission.health.READ_BODY_FAT" />
+    <uses-permission android:name="android.permission.health.READ_BODY_WATER_MASS" />
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
 
     <application
@@ -28,18 +29,25 @@
         android:label="@string/app_name"
         android:theme="@style/Theme.FitBase"
         android:supportsRtl="true"
-        tools:targetApi="34">
+        tools:targetApi="36">
 
-        <!-- Pantalla principal (Mañana) -->
+        <!-- Pantalla de carga inicial: precarga datos en segundo plano antes de Home -->
         <activity
-            android:name=".ui.home.HomeActivity"
+            android:name=".ui.splash.SplashActivity"
             android:exported="true"
-            android:screenOrientation="portrait">
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.FitBase">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Pantalla principal (Mañana) -->
+        <activity
+            android:name=".ui.home.HomeActivity"
+            android:exported="true"
+            android:screenOrientation="portrait" />
 
         <!-- Pantalla de entrenamiento (Gym) -->
         <activity
@@ -57,9 +65,14 @@
             android:name=".ui.plan.PlanAnualActivity"
             android:screenOrientation="portrait" />
 
-        <!-- Pantalla Plan Semanal -->
+        <!-- Horario semanal (qué tipo de sesión le toca a cada día) -->
         <activity
-            android:name=".ui.plan.PlanSemanalActivity"
+            android:name=".ui.plan.HorarioSemanalActivity"
+            android:screenOrientation="portrait" />
+
+        <!-- Cierre de fase anterior + presentación de fase nueva -->
+        <activity
+            android:name=".ui.plan.CambioFaseActivity"
             android:screenOrientation="portrait" />
 
         <!-- Pantalla Progresion Metricas -->
@@ -77,6 +90,23 @@
             android:name=".service.TimerService"
             android:foregroundServiceType="shortService"
             android:exported="false" />
+
+        <!-- Botón "Detener" de la alarma de fin de descanso — receptor estático,
+             no depende de que TimerService (ni la app) esté vivo. -->
+        <receiver
+            android:name=".service.TimerDetenerReceiver"
+            android:exported="false" />
+
+        <!-- FileProvider: para compartir el log de test (Test Runner → Compartir) -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
         <!-- Health Connect -->
         <activity-alias

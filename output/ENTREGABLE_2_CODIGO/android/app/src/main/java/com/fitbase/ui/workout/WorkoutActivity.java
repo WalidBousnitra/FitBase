@@ -2,9 +2,12 @@ package com.fitbase.ui.workout;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.SystemClock;
 import android.view.View;
 import android.widget.Button;
-import android.widget.LinearLayout;
+import android.widget.Chronometer;
 import android.widget.NumberPicker;
 import android.widget.TextView;
 
@@ -14,6 +17,7 @@ import androidx.lifecycle.ViewModelProvider;
 import com.fitbase.R;
 import com.fitbase.data.model.Ejercicio;
 import com.fitbase.data.model.ResumenSesionResponse;
+import com.fitbase.data.model.SesionResponse;
 import com.fitbase.service.TimerService;
 import com.fitbase.ui.summary.SummaryActivity;
 import com.fitbase.util.FeedbackHelper;
@@ -39,22 +43,21 @@ public class WorkoutActivity extends AppCompatActivity {
 
     // ─── Layouts por fase ───
     private View layoutCargando;
-    private View layoutCalentamiento;
+    private View layoutRutina;
     private View layoutEjercicio;
     private View layoutRegistro;
     private View layoutTimer;
-    private View layoutEstiramientos;
     private View layoutCardio;
     private View layoutResumen;
 
-    // ─── Calentamiento ───
-    private TextView tvCalentamientoTitulo;
-    private LinearLayout listCalentamiento;
-    private Button btnIniciarEjercicios;
+    // ─── Rutina (calentamiento/estiramientos) ───
+    private TextView tvRutinaProgreso, tvRutinaTitulo, tvRutinaNombre, tvRutinaValor;
 
     // ─── Ejercicio activo ───
     private TextView tvNombreEjercicio, tvPesoSugerido, tvMotorDetalle;
     private TextView tvRepsObjetivo, tvRirObjetivo, tvSerieInfo, tvProgreso;
+    private TextView tvNotaEjercicio;
+    private TextView tvSuperserie;
 
     // ─── Registro RIR ───
     private NumberPicker pickerReps;
@@ -62,11 +65,25 @@ public class WorkoutActivity extends AppCompatActivity {
     private Button btnSensacionFacil, btnSensacionBien, btnSensacionDuro, btnSensacionFallo;
 
     // ─── Timer ───
-    private TextView tvTimerCountdown, tvProximaSerie;
-
-    // ─── Estiramientos ───
-    private LinearLayout listEstiramientos;
-    private Button btnFinEstiramientos;
+    private Chronometer tvTimerCountdown;
+    private TextView tvProximaSerie, tvProximaInfo;
+    // Avanza a la siguiente serie en el instante EXACTO en que el Chronometer
+    // en pantalla llega a 0, sin esperar al broadcast de TimerService (que
+    // corre en su propio Handler de 1s y puede llegar con hasta ~1s de
+    // retraso respecto a lo que el usuario ve en pantalla). El broadcast
+    // sigue siendo necesario para fuera de la app, así que ambos caminos
+    // comparten timerYaAvanzado para no vibrar/avanzar dos veces.
+    private final Handler timerLocalHandler = new Handler(Looper.getMainLooper());
+    private boolean timerYaAvanzado = false;
+    // Instante objetivo (elapsedRealtime) del descanso actual — leído por el
+    // OnChronometerTickListener (ver vincularVistas) como segundo camino de
+    // avance automático. -1 = no hay descanso activo.
+    private long timerFinishElapsedMs = -1;
+    // Ver reanudarTimerSiAplica(): true justo antes de forzar timerActivo=true
+    // por un descanso retomado, para que el observer no lo pise con una
+    // cuenta atrás nueva de duración completa.
+    private boolean suprimirProximoMostrarTimer = false;
+    private static final String PREFS_TIMER = "fitbase_timer_activo";
 
     // ─── Cardio ───
     private TextView tvCardioInfo;
@@ -80,6 +97,7 @@ public class WorkoutActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_workout);
+        com.fitbase.util.InsetsHelper.aplicarInsetsSistema(this);
 
         feedback = FeedbackHelper.getInstance(this);
         vincularVistas();
@@ -93,6 +111,10 @@ public class WorkoutActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         TimerService.setAppEnPrimerPlano(true);
+        // Si volvemos a la app (por el motivo que sea, no solo tocando la
+        // notificación), la alarma de "descanso terminado" se calla sola —
+        // no hace falta que el usuario busque el botón "Detener".
+        com.fitbase.service.TimerDetenerReceiver.detenerAlarma(this);
     }
 
     @Override
@@ -103,21 +125,28 @@ public class WorkoutActivity extends AppCompatActivity {
 
     private void vincularVistas() {
         layoutCargando = findViewById(R.id.layoutCargando);
-        layoutCalentamiento = findViewById(R.id.layoutCalentamiento);
+        layoutRutina = findViewById(R.id.layoutRutina);
         layoutEjercicio = findViewById(R.id.layoutEjercicio);
         layoutRegistro = findViewById(R.id.layoutRegistro);
         layoutTimer = findViewById(R.id.layoutTimer);
-        layoutEstiramientos = findViewById(R.id.layoutEstiramientos);
         layoutCardio = findViewById(R.id.layoutCardio);
         layoutResumen = findViewById(R.id.layoutResumen);
 
-        // Calentamiento
-        tvCalentamientoTitulo = findViewById(R.id.tvCalentamientoTitulo);
-        listCalentamiento = findViewById(R.id.listCalentamiento);
-        btnIniciarEjercicios = findViewById(R.id.btnIniciarEjercicios);
-        btnIniciarEjercicios.setOnClickListener(v -> {
-            feedback.vibrateLight();
-            viewModel.iniciarEjercicios();
+        // Rutina (calentamiento/estiramientos) — pantalla minimalista, un item
+        // cada vez, swipe para avanzar (igual que Ejercicio).
+        tvRutinaProgreso = findViewById(R.id.tvRutinaProgreso);
+        tvRutinaTitulo = findViewById(R.id.tvRutinaTitulo);
+        tvRutinaNombre = findViewById(R.id.tvRutinaNombre);
+        tvRutinaValor = findViewById(R.id.tvRutinaValor);
+        layoutRutina.setOnTouchListener(new SwipeListener(this) {
+            @Override public void onSwipeLeft() {
+                feedback.vibrateLight();
+                viewModel.siguienteItemRutina();
+            }
+            @Override public void onSwipeRight() {
+                feedback.vibrateLight();
+                viewModel.itemAnteriorRutina();
+            }
         });
 
         // Ejercicio
@@ -126,6 +155,8 @@ public class WorkoutActivity extends AppCompatActivity {
         tvMotorDetalle = findViewById(R.id.tvMotorDetalle);
         tvRepsObjetivo = findViewById(R.id.tvRepsObjetivo);
         tvRirObjetivo = findViewById(R.id.tvRirObjetivo);
+        tvNotaEjercicio = findViewById(R.id.tvNotaEjercicio);
+        tvSuperserie = findViewById(R.id.tvSuperserie);
         tvSerieInfo = findViewById(R.id.tvSerieInfo);
         tvProgreso = findViewById(R.id.tvProgreso);
 
@@ -145,14 +176,47 @@ public class WorkoutActivity extends AppCompatActivity {
         btnSensacionDuro.setOnClickListener(v -> registrarConSensacion("duro", 1));
         btnSensacionFallo.setOnClickListener(v -> registrarConSensacion("fallo", 0));
 
+        // Swipe derecha = volver al ejercicio sin registrar (cancelar), por si
+        // se entra aquí sin querer o el usuario cambia de opinión.
+        layoutRegistro.setOnTouchListener(new SwipeListener(this) {
+            @Override public void onSwipeLeft() { }
+            @Override public void onSwipeRight() {
+                feedback.vibrateLight();
+                viewModel.cancelarRegistroRpe();
+            }
+        });
+
         // Timer
         tvTimerCountdown = findViewById(R.id.tvTimerCountdown);
         tvProximaSerie = findViewById(R.id.tvProximaSerie);
+        tvProximaInfo = findViewById(R.id.tvProximaInfo);
+        // Segundo camino, atado DIRECTAMENTE al Chronometer que el usuario ve
+        // en pantalla (tick nativo ~1/seg) — si por lo que sea el Handler
+        // programado en mostrarTimer() no llega a disparar (o llega tarde),
+        // esto igual detecta "ya pasó de 0" y avanza. Antes solo había un
+        // camino (Handler + broadcast); si ninguno de los dos disparaba, el
+        // Chronometer se quedaba contando en negativo sin que nada avanzara.
+        tvTimerCountdown.setOnChronometerTickListener(c -> {
+            if (timerFinishElapsedMs > 0 && SystemClock.elapsedRealtime() >= timerFinishElapsedMs) {
+                avanzarSiguienteSerieAutomatico();
+            }
+        });
 
-        // Estiramientos
-        listEstiramientos = findViewById(R.id.listEstiramientos);
-        btnFinEstiramientos = findViewById(R.id.btnFinEstiramientos);
-        btnFinEstiramientos.setOnClickListener(v -> viewModel.iniciarCardioOResumen());
+        // Gestos: swipe izquierda para avanzar (ui.md REG-DEV-01 §4.2/§4.4)
+        layoutEjercicio.setOnTouchListener(new SwipeListener(this) {
+            @Override public void onSwipeLeft() {
+                feedback.vibrateLight();
+                viewModel.mostrarRegistroRpe();
+            }
+            @Override public void onSwipeRight() { }
+        });
+        layoutTimer.setOnTouchListener(new SwipeListener(this) {
+            @Override public void onSwipeLeft() {
+                feedback.vibrateLight();
+                saltarDescanso();
+            }
+            @Override public void onSwipeRight() { }
+        });
 
         // Cardio
         tvCardioInfo = findViewById(R.id.tvCardioInfo);
@@ -176,16 +240,64 @@ public class WorkoutActivity extends AppCompatActivity {
 
         viewModel.getEjercicioActualIdx().observe(this, idx -> mostrarEjercicio());
         viewModel.getSerieActual().observe(this, serie -> mostrarEjercicio());
+        viewModel.getRutinaIdx().observe(this, idx -> mostrarItemRutina());
 
         viewModel.getTimerActivo().observe(this, activo -> {
             if (Boolean.TRUE.equals(activo)) {
-                mostrarTimer();
+                // Al reanudar un descanso tras un cierre/apagón (ver
+                // reanudarTimerSiAplica), este flag evita que este observer
+                // reinicie la cuenta atrás completa justo después de que ya
+                // se haya mostrado con el tiempo restante correcto.
+                if (suprimirProximoMostrarTimer) {
+                    suprimirProximoMostrarTimer = false;
+                } else {
+                    mostrarTimer();
+                }
             } else {
                 ocultarTimer();
             }
         });
 
+        // Ejercicio y Registro RPE son pantallas completas y excluyentes
+        // (ui.md §4.2/§4.3) — nunca las dos a la vez.
+        viewModel.getMostrandoRegistro().observe(this, mostrando -> {
+            if (Boolean.TRUE.equals(mostrando)) {
+                layoutEjercicio.setVisibility(View.GONE);
+                layoutRegistro.setVisibility(View.VISIBLE);
+            } else {
+                layoutRegistro.setVisibility(View.GONE);
+                if (viewModel.getFaseWorkout().getValue() == WorkoutViewModel.FaseWorkout.EJERCICIOS
+                        && Boolean.FALSE.equals(viewModel.getTimerActivo().getValue())) {
+                    layoutEjercicio.setVisibility(View.VISIBLE);
+                }
+            }
+        });
+
         viewModel.getResumen().observe(this, this::mostrarResumen);
+
+        // Ramadán (cultura.md §5): aviso una vez al empezar la sesión — el
+        // volumen ya viene recalculado -30% desde el backend, esto es solo
+        // el recordatorio de timing/intensidad.
+        viewModel.getSesionData().observe(this, data -> {
+            if (data != null && data.isRamadanActivo() && data.getRamadanNota() != null) {
+                new androidx.appcompat.app.AlertDialog.Builder(this)
+                        .setTitle("Ramadán")
+                        .setMessage(data.getRamadanNota())
+                        .setPositiveButton("Entendido", null)
+                        .show();
+            }
+        });
+
+        viewModel.getError().observe(this, error -> {
+            if (error != null) {
+                new androidx.appcompat.app.AlertDialog.Builder(this)
+                        .setTitle("Error")
+                        .setMessage(error)
+                        .setPositiveButton("OK", (dialog, which) -> finish())
+                        .setCancelable(false)
+                        .show();
+            }
+        });
     }
 
     // ─── Cambio de fase ───────────────────────────────────
@@ -197,17 +309,23 @@ public class WorkoutActivity extends AppCompatActivity {
                 layoutCargando.setVisibility(View.VISIBLE);
                 break;
             case CALENTAMIENTO:
-                layoutCalentamiento.setVisibility(View.VISIBLE);
-                mostrarCalentamiento();
+                layoutRutina.setVisibility(View.VISIBLE);
+                tvRutinaTitulo.setText("Calentamiento");
+                mostrarItemRutina();
                 break;
             case EJERCICIOS:
+                // Empieza mostrando el ejercicio (registro RPE llega por swipe).
+                // Si había un descanso en curso al cerrarse la app, esto lo
+                // retoma (o lo da por terminado si ya venció) — ver
+                // reanudarTimerSiAplica().
                 layoutEjercicio.setVisibility(View.VISIBLE);
-                layoutRegistro.setVisibility(View.VISIBLE);
                 mostrarEjercicio();
+                reanudarTimerSiAplica();
                 break;
             case ESTIRAMIENTOS:
-                layoutEstiramientos.setVisibility(View.VISIBLE);
-                mostrarEstiramientos();
+                layoutRutina.setVisibility(View.VISIBLE);
+                tvRutinaTitulo.setText("Estiramientos");
+                mostrarItemRutina();
                 break;
             case CARDIO:
                 layoutCardio.setVisibility(View.VISIBLE);
@@ -224,69 +342,32 @@ public class WorkoutActivity extends AppCompatActivity {
 
     private void ocultarTodos() {
         layoutCargando.setVisibility(View.GONE);
-        layoutCalentamiento.setVisibility(View.GONE);
+        layoutRutina.setVisibility(View.GONE);
         layoutEjercicio.setVisibility(View.GONE);
         layoutRegistro.setVisibility(View.GONE);
         layoutTimer.setVisibility(View.GONE);
-        layoutEstiramientos.setVisibility(View.GONE);
         layoutCardio.setVisibility(View.GONE);
         layoutResumen.setVisibility(View.GONE);
     }
 
-    // ─── Calentamiento ────────────────────────────────────
+    // ─── Rutina (Calentamiento / Estiramientos) ───────────
 
     /**
-     * Calentamiento basado en evidencia:
-     *   - Rodrigues 2020: prevención lesiones (no mejora fuerza aguda)
-     *   - Page 2012: NO estático pre-entreno (reduce fuerza)
-     *   - calentamiento.md §3: Movilidad dinámica + Activación específica + Series aproximación
+     * Un item cada vez, igual de minimalista que la pantalla de Ejercicio —
+     * ambas rutinas vienen del backend (getCalentamiento_/getEstiramientos_
+     * en Codigo.gs), nunca hardcodeadas aquí. Swipe izquierda → siguiente
+     * item (o siguiente fase si era el último).
      */
-    private void mostrarCalentamiento() {
-        tvCalentamientoTitulo.setText("🔥 Calentamiento (10-15 min)");
-        listCalentamiento.removeAllViews();
+    private void mostrarItemRutina() {
+        SesionResponse.ItemRutina item = viewModel.getItemRutinaActual();
+        int total = viewModel.getTotalItemsRutina();
+        if (item == null || total == 0) return;
 
-        // Fase 2: Movilidad dinámica (calentamiento.md §3, 5 min)
-        addCalentamientoItem("Círculos de cadera", "10/lado");
-        addCalentamientoItem("Gato-vaca", "10 reps");
-        addCalentamientoItem("Dislocaciones con banda", "10 reps");
-
-        // Fase 3: Activación específica según tipo sesión (calentamiento.md §3)
-        if (viewModel.getSesionData().getValue() != null &&
-            viewModel.getSesionData().getValue().getSesion() != null) {
-            String tipo = viewModel.getSesionData().getValue().getSesion().getTipo();
-            if (tipo != null) {
-                switch (tipo.toLowerCase()) {
-                    case "push":
-                        addCalentamientoItem("Face pulls ligeros", "15 reps");
-                        addCalentamientoItem("Rotación externa banda", "10/lado");
-                        break;
-                    case "pull":
-                        addCalentamientoItem("Dead hangs", "20s");
-                        addCalentamientoItem("Retracción escapular", "15 reps");
-                        break;
-                    case "pierna":
-                        addCalentamientoItem("Glute bridges", "15 reps");
-                        addCalentamientoItem("Sentadillas sin peso", "10 reps");
-                        break;
-                    default: // Hombros+Brazos
-                        addCalentamientoItem("Rotación externa banda", "10/lado");
-                        addCalentamientoItem("Face pulls ligeros", "15 reps");
-                        break;
-                }
-            }
-        }
-
-        // Fase 4: Series de aproximación (calentamiento.md §3)
-        // 40% x10 → 60% x6 → 75% x3 → 85% x1-2 para compuesto pesado
-        addCalentamientoItem("Series aproximación 1er compuesto", "40% → 60% → 75% → 85%");
-    }
-
-    private void addCalentamientoItem(String nombre, String reps) {
-        TextView tv = new TextView(this);
-        tv.setText("• " + nombre + " — " + reps);
-        tv.setTextSize(15);
-        tv.setPadding(0, 8, 0, 8);
-        listCalentamiento.addView(tv);
+        Integer idx = viewModel.getRutinaIdx().getValue();
+        tvRutinaNombre.setText(item.nombre);
+        tvRutinaValor.setText(item.reps);
+        tvRutinaProgreso.setText(String.format(Locale.getDefault(),
+                "%d / %d", (idx != null ? idx : 0) + 1, total));
     }
 
     // ─── Ejercicio actual ─────────────────────────────────
@@ -304,6 +385,16 @@ public class WorkoutActivity extends AppCompatActivity {
         tvMotorDetalle.setText(ej.getMotorDetalle() != null ? ej.getMotorDetalle() : "");
         tvRepsObjetivo.setText("Reps: " + ej.getRepsPlan());
         tvRirObjetivo.setText("RIR objetivo: " + ej.getRirObjetivo());
+        // Solo avisos de seguridad (⚠️, ej. dolor codo) — el resto de notas
+        // (P1/P2/"Compuesto"...) son metadata interna, no para el usuario.
+        if (ej.getNotas() != null && ej.getNotas().startsWith("⚠️")) {
+            tvNotaEjercicio.setText(ej.getNotas());
+            tvNotaEjercicio.setVisibility(View.VISIBLE);
+        } else {
+            tvNotaEjercicio.setVisibility(View.GONE);
+        }
+        tvSuperserie.setVisibility(
+                ej.getSupersetGrupo() != null && !ej.getSupersetGrupo().isEmpty() ? View.VISIBLE : View.GONE);
         tvSerieInfo.setText(String.format(Locale.getDefault(),
                 "Serie %d / %d", serie != null ? serie : 1, ej.getSeriesPlan()));
         tvProgreso.setText(String.format(Locale.getDefault(),
@@ -330,6 +421,19 @@ public class WorkoutActivity extends AppCompatActivity {
     // ─── Timer ────────────────────────────────────────────
 
     private void mostrarTimer() {
+        mostrarTimer(null);
+    }
+
+    /**
+     * @param finishWhenMsForzado si viene de {@link #reanudarTimerSiAplica()}
+     *                            (descanso retomado tras cierre/apagón), el
+     *                            instante de fin YA guardado — se usa el
+     *                            tiempo restante real en vez de reiniciar la
+     *                            duración completa del descanso. Null en el
+     *                            caso normal (descanso recién empezado).
+     */
+    private void mostrarTimer(Long finishWhenMsForzado) {
+        layoutEjercicio.setVisibility(View.GONE);
         layoutRegistro.setVisibility(View.GONE);
         layoutTimer.setVisibility(View.VISIBLE);
 
@@ -337,74 +441,125 @@ public class WorkoutActivity extends AppCompatActivity {
         int segundos = ej != null ? ej.getDescansoSeg() : 120;
 
         tvProximaSerie.setText("Descanso — próxima serie en:");
+        // ejercicioActualIdx/serieActual ya reflejan la PRÓXIMA serie/ejercicio
+        // en este punto (se actualizan antes de activar el timer).
+        Integer serie = viewModel.getSerieActual().getValue();
+        if (ej != null) {
+            tvProximaInfo.setText(String.format(Locale.getDefault(),
+                    "Próximo: Serie %d / %d — %s", serie != null ? serie : 1,
+                    ej.getSeriesPlan(), ej.getPesoTexto()));
+        } else {
+            tvProximaInfo.setText("");
+        }
 
-        // Iniciar TimerService (foreground + overlay flotante)
+        // Un único instante para los tres relojes (pantalla, notificación,
+        // Hyper Island) — así cuentan exactamente lo mismo, sin desfases.
+        long ahoraMs = System.currentTimeMillis();
+        long finishWhenMs = finishWhenMsForzado != null ? finishWhenMsForzado : ahoraMs + (segundos * 1000L);
+        long finishElapsedMs = SystemClock.elapsedRealtime() + (finishWhenMs - ahoraMs);
+
+        // Iniciar TimerService (foreground + notificación/Hyper Island)
         Intent timerIntent = new Intent(this, TimerService.class);
         timerIntent.putExtra("segundos", segundos);
         timerIntent.putExtra("ejercicio", ej != null ? ej.getNombreCorto() : "");
+        timerIntent.putExtra("finish_elapsed_ms", finishElapsedMs);
+        timerIntent.putExtra("finish_when_ms", finishWhenMs);
         startForegroundService(timerIntent);
+
+        // Cronómetro nativo EN PANTALLA — mismo instante que el de arriba, así
+        // no depende de que lleguen broadcasts de tick para actualizarse.
+        timerFinishElapsedMs = finishElapsedMs;
+        tvTimerCountdown.setCountDown(true);
+        tvTimerCountdown.setBase(finishElapsedMs);
+        tvTimerCountdown.start();
+
+        // Avance automático en el instante EXACTO en que este Chronometer
+        // llega a 0 — no espera al broadcast de TimerService (ver campo
+        // timerLocalHandler). El OnChronometerTickListener (vincularVistas)
+        // es el segundo camino, atado al propio Chronometer visible.
+        timerLocalHandler.removeCallbacksAndMessages(null);
+        timerYaAvanzado = false;
+        long retrasoMs = finishElapsedMs - SystemClock.elapsedRealtime();
+        timerLocalHandler.postDelayed(this::avanzarSiguienteSerieAutomatico, Math.max(retrasoMs, 0));
+
+        // Persistir el instante de fin (SharedPreferences, sobrevive a que
+        // maten el proceso o se apague el móvil) — al reabrir, si el
+        // descanso seguía en curso, reanudarTimerSiAplica() retoma el tiempo
+        // restante en vez de perder la cuenta atrás. Va con el sesionId para
+        // que un descanso de OTRA sesión (de ayer, de una prueba anterior)
+        // nunca se confunda con uno de hoy.
+        getSharedPreferences(PREFS_TIMER, MODE_PRIVATE).edit()
+                .putLong("finish_when_ms", finishWhenMs)
+                .putString("sesion_id", viewModel.getSesionId())
+                .apply();
+    }
+
+    /** Llamado UNA vez, por el primero de los dos caminos (local o broadcast) que llegue. */
+    private void avanzarSiguienteSerieAutomatico() {
+        if (timerYaAvanzado) return;
+        timerYaAvanzado = true;
+        limpiarTimerGuardado();
+        feedback.vibrateStrong();
+        viewModel.timerCompletado();
     }
 
     private void ocultarTimer() {
+        tvTimerCountdown.stop();
+        timerFinishElapsedMs = -1;
         layoutTimer.setVisibility(View.GONE);
-        layoutRegistro.setVisibility(View.VISIBLE);
-    }
-
-    // ─── Estiramientos ────────────────────────────────────
-
-    /**
-     * Estiramientos post-entreno BASADOS EN SESIÓN ACTUAL.
-     * Evidencia: Page 2012 — estático 30s por grupo TRABAJADO.
-     * Bandy 1997 — 30s = 60s (no hay beneficio adicional al estirar más).
-     * Los ejercicios se seleccionan según el tipo de sesión (Push/Pull/Pierna/Hombros).
-     */
-    private void mostrarEstiramientos() {
-        listEstiramientos.removeAllViews();
-
-        SesionResponse data = viewModel.getSesionData().getValue();
-        String tipo = (data != null && data.getSesion() != null) ?
-                data.getSesion().getTipo().toUpperCase() : "PUSH";
-
-        // Page 2012: "músculos principales trabajados" → depende del split
-        switch (tipo) {
-            case "PUSH":
-                addEstiramientoItem("Pectoral en marco de puerta", "30s/lado");
-                addEstiramientoItem("Estiramiento deltoides (brazo cruzado)", "30s/lado");
-                addEstiramientoItem("Extensión tríceps overhead", "30s/brazo");
-                break;
-            case "PULL":
-            case "ESPALDA":
-                addEstiramientoItem("Estiramiento dorsal en barra", "30s");
-                addEstiramientoItem("Estiramiento bíceps en pared", "30s/brazo");
-                addEstiramientoItem("Rotación torácica tumbado", "30s/lado");
-                break;
-            case "PIERNA":
-                addEstiramientoItem("Cuádriceps de pie", "30s/pierna");
-                addEstiramientoItem("Isquios de pie (pierna en banco)", "30s/pierna");
-                addEstiramientoItem("Estiramiento psoas/flexor cadera", "30s/lado");
-                addEstiramientoItem("Aductores en mariposa", "30s");
-                break;
-            case "HOMBROS":
-            case "HOMBROS+BRAZOS":
-                addEstiramientoItem("Deltoides posterior (brazo cruzado)", "30s/lado");
-                addEstiramientoItem("Extensión tríceps overhead", "30s/brazo");
-                addEstiramientoItem("Estiramiento bíceps en pared", "30s/brazo");
-                addEstiramientoItem("Rotación externa pasiva", "30s/lado");
-                break;
-            default:
-                addEstiramientoItem("Pectoral en marco de puerta", "30s/lado");
-                addEstiramientoItem("Estiramiento dorsal", "30s");
-                addEstiramientoItem("Cuádriceps de pie", "30s/pierna");
-                break;
+        // Siempre se vuelve al ejercicio (próxima serie/ejercicio), nunca
+        // directo al registro — el registro solo llega por swipe explícito.
+        if (viewModel.getFaseWorkout().getValue() == WorkoutViewModel.FaseWorkout.EJERCICIOS) {
+            layoutEjercicio.setVisibility(View.VISIBLE);
         }
     }
 
-    private void addEstiramientoItem(String nombre, String duracion) {
-        TextView tv = new TextView(this);
-        tv.setText("• " + nombre + " — " + duracion);
-        tv.setTextSize(15);
-        tv.setPadding(0, 8, 0, 8);
-        listEstiramientos.addView(tv);
+    /**
+     * Se llama al entrar en fase EJERCICIOS (recién empezada o retomada tras
+     * cierre/apagón). Si había un descanso en curso guardado:
+     *   - si aún le queda tiempo → lo retoma con el tiempo restante real;
+     *   - si ya venció mientras la app no estaba activa → se da por
+     *     terminado sin más espera (el motor ya asume que el descanso pasó).
+     * Si no había nada guardado, no hace nada (caso normal).
+     */
+    private void reanudarTimerSiAplica() {
+        android.content.SharedPreferences prefs = getSharedPreferences(PREFS_TIMER, MODE_PRIVATE);
+        long finishWhenMs = prefs.getLong("finish_when_ms", -1);
+        if (finishWhenMs <= 0) return;
+
+        // Descarta un descanso guardado de OTRA sesión (p.ej. de ayer, o de
+        // una prueba anterior con la app) — solo se retoma el de HOY.
+        String sesionGuardada = prefs.getString("sesion_id", null);
+        if (sesionGuardada == null || !sesionGuardada.equals(viewModel.getSesionId())) {
+            limpiarTimerGuardado();
+            return;
+        }
+
+        if (finishWhenMs <= System.currentTimeMillis()) {
+            limpiarTimerGuardado();
+            feedback.vibrateStrong();
+            viewModel.timerCompletado();
+            return;
+        }
+
+        suprimirProximoMostrarTimer = true;
+        viewModel.reanudarTimerActivo();
+        mostrarTimer(finishWhenMs);
+    }
+
+    private void limpiarTimerGuardado() {
+        getSharedPreferences(PREFS_TIMER, MODE_PRIVATE).edit().clear().apply();
+    }
+
+    /** Swipe izquierda en el timer → para el descanso antes de tiempo. */
+    private void saltarDescanso() {
+        // Cancela el avance automático programado — si no, dispararía tarde
+        // (al cumplirse la duración original) sobre la serie que ya se saltó.
+        timerLocalHandler.removeCallbacksAndMessages(null);
+        timerYaAvanzado = true;
+        limpiarTimerGuardado();
+        stopService(new Intent(this, TimerService.class));
+        viewModel.saltarDescanso();
     }
 
     // ─── Cardio ───────────────────────────────────────────
@@ -420,11 +575,11 @@ public class WorkoutActivity extends AppCompatActivity {
 
         String texto;
         if ("DEF".equals(fase)) {
-            texto = "🚴 15-20 min bici estática\n60-70% FC máx (LISS)\n\n" +
+            texto = "15-20 min bici estática\n60-70% FC máx (LISS)\n\n" +
                     "¿Por qué? Fase DEFINICIÓN → Viana 2019: LISS post-gym\n" +
                     "aumenta déficit calórico sin interferir (Wilson 2012)";
         } else {
-            texto = "🚴 10 min bici estática\n60-70% FC máx (LISS)\n\n" +
+            texto = "10 min bici estática\n60-70% FC máx (LISS)\n\n" +
                     "¿Por qué? Fase MANTENIMIENTO → mantener\n" +
                     "capacidad aeróbica (Wilson 2012: bici no interfiere)";
         }
@@ -447,25 +602,33 @@ public class WorkoutActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        // Register for timer finished broadcasts
-        androidx.localbroadcastmanager.content.LocalBroadcastManager.getInstance(this)
-                .registerReceiver(timerFinishedReceiver,
-                        new android.content.IntentFilter(TimerService.ACTION_TIMER_FINISHED));
+        // TimerService manda el aviso con sendBroadcast() normal (no
+        // LocalBroadcastManager) — hay que registrar el receptor igual,
+        // si no, este receiver nunca se entera y el timer nunca "termina"
+        // para la UI (aunque el Chronometer siga contando en negativo).
+        androidx.core.content.ContextCompat.registerReceiver(this, timerFinishedReceiver,
+                new android.content.IntentFilter(TimerService.ACTION_TIMER_FINISHED),
+                androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED);
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        androidx.localbroadcastmanager.content.LocalBroadcastManager.getInstance(this)
-                .unregisterReceiver(timerFinishedReceiver);
+        unregisterReceiver(timerFinishedReceiver);
+        // Fuera de la app manda el camino del broadcast (TimerService ya
+        // gestiona vibración/heads-up ahí) — se cancela el local para no
+        // vibrar por duplicado si el Handler disparase justo al salir.
+        timerLocalHandler.removeCallbacksAndMessages(null);
     }
 
     private final android.content.BroadcastReceiver timerFinishedReceiver =
             new android.content.BroadcastReceiver() {
                 @Override
                 public void onReceive(android.content.Context context, Intent intent) {
-                    feedback.vibrateStrong();
-                    viewModel.timerCompletado();
+                    // Camino "fuera de la app" (o si el local llega tarde) —
+                    // comparte guard con avanzarSiguienteSerieAutomatico para
+                    // no vibrar/avanzar dos veces.
+                    avanzarSiguienteSerieAutomatico();
                 }
             };
 }

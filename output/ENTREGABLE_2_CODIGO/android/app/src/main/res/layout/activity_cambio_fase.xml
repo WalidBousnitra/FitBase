@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Pantalla de cambio de fase: cierre de la fase anterior + presentación de
+     la nueva. Se muestra 1 vez por transición real (HomeActivity la lanza al
+     detectar que fase_id cambió), y también en modo demo desde el botón de
+     previsualización junto al de test. -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="28dp">
+
+        <!-- ═══ BLOQUE 1: fase anterior (aparece primero) ═══ -->
+        <LinearLayout
+            android:id="@+id/bloqueAnterior"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:alpha="0">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="FASE COMPLETADA"
+                android:textSize="12sp"
+                android:letterSpacing="0.1"
+                android:textColor="@color/text_tertiary" />
+
+            <TextView
+                android:id="@+id/tvFaseAnteriorNombre"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Adaptación + Postura"
+                android:textSize="22sp"
+                android:fontFamily="sans-serif-medium"
+                android:textColor="@color/text_primary"
+                android:layout_marginTop="6dp"
+                android:gravity="center" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:background="@drawable/bg_card_flat"
+                android:padding="16dp"
+                android:layout_marginTop="16dp">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:gravity="center">
+                    <TextView android:id="@+id/tvAdherencia" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="18/20" android:textSize="20sp" android:textColor="@color/success" android:fontFamily="sans-serif-medium" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="sesiones" android:textSize="11sp" android:textColor="@color/text_tertiary" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:gravity="center">
+                    <TextView android:id="@+id/tvCambioPeso" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="+0.9 kg" android:textSize="20sp" android:textColor="@color/text_primary" android:fontFamily="sans-serif-medium" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="peso" android:textSize="11sp" android:textColor="@color/text_tertiary" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:gravity="center">
+                    <TextView android:id="@+id/tvSleepMedia" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="81" android:textSize="20sp" android:textColor="@color/text_primary" android:fontFamily="sans-serif-medium" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="sueño medio" android:textSize="11sp" android:textColor="@color/text_tertiary" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Separador -->
+        <TextView
+            android:id="@+id/tvFlecha"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="↓"
+            android:textSize="24sp"
+            android:textColor="@color/text_tertiary"
+            android:layout_marginVertical="20dp"
+            android:alpha="0" />
+
+        <!-- ═══ BLOQUE 2: fase nueva (aparece después) ═══ -->
+        <LinearLayout
+            android:id="@+id/bloqueNueva"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:alpha="0">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="EMPIEZA AHORA"
+                android:textSize="12sp"
+                android:letterSpacing="0.1"
+                android:textColor="@color/colorAccentPrimary" />
+
+            <TextView
+                android:id="@+id/tvFaseNuevaNombre"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Hipertrofia I — V-Taper"
+                android:textSize="26sp"
+                android:fontFamily="sans-serif-medium"
+                android:textColor="@color/text_primary"
+                android:layout_marginTop="6dp"
+                android:gravity="center" />
+
+            <TextView
+                android:id="@+id/tvFaseNuevaFoco"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Hombros + Espalda (V-taper)"
+                android:textSize="15sp"
+                android:textColor="@color/text_secondary"
+                android:layout_marginTop="8dp"
+                android:gravity="center" />
+
+            <TextView
+                android:id="@+id/tvFaseNuevaDetalle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="6 semanas · RIR 2-3 · bulk"
+                android:textSize="13sp"
+                android:textColor="@color/text_tertiary"
+                android:layout_marginTop="4dp"
+                android:gravity="center" />
+
+            <Button
+                android:id="@+id/btnContinuar"
+                android:layout_width="200dp"
+                android:layout_height="48dp"
+                android:text="CONTINUAR"
+                android:background="@drawable/gradient_primary_button"
+                android:textColor="@color/white"
+                android:layout_marginTop="32dp" />
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>

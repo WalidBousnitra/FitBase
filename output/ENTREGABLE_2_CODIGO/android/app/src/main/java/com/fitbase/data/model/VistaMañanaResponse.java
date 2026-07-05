@@ -34,9 +34,20 @@ public class VistaMañanaResponse {
     @SerializedName("aviso_ausencia")
     private AvisoAusencia avisoAusencia;
 
+    @SerializedName("sesion_completada")
+    private boolean sesionCompletada;
+
+    @SerializedName("resumen_hoy")
+    private ResumenSesionResponse.Resumen resumenHoy;
+
+    @SerializedName("ramadan")
+    private Ramadan ramadan;
+
     // ─── Inner classes ────────────────────────────────────
 
     public static class FaseInfo {
+        @SerializedName("fase_id")
+        public String faseId;
         @SerializedName("nombre")
         public String nombre;
         @SerializedName("tipo")
@@ -72,6 +83,10 @@ public class VistaMañanaResponse {
         public int pasosObjetivo;
         @SerializedName("cardio_post_gym_min")
         public int cardioPostGymMin;
+        // "post-gym" o "dia_descanso" — en descanso también se prescribe
+        // cardio si la fase es DEF/MNT (programacion.md §12 FLUJO_DESCANSO).
+        @SerializedName("contexto")
+        public String contexto;
         @SerializedName("modalidad")
         public String modalidad;
         @SerializedName("intensidad")
@@ -111,6 +126,33 @@ public class VistaMañanaResponse {
         public String mensaje;
     }
 
+    /** Ramadán/Eid (cultura.md §5-6). Las calorías/macros de arriba NO cambian
+     *  — este objeto solo dice CUÁNDO/CÓMO repartirlas y qué esperar del día. */
+    public static class Ramadan {
+        @SerializedName("activo")
+        public boolean activo;
+        @SerializedName("es_eid")
+        public boolean esEid;
+        @SerializedName("dia_ayuno")
+        public Integer diaAyuno;
+        @SerializedName("horario_aproximado")
+        public String horarioAproximado;
+        @SerializedName("timing_entreno")
+        public String timingEntreno;
+        @SerializedName("hidratacion")
+        public String hidratacion;
+        @SerializedName("nutricion")
+        public String nutricion;
+        @SerializedName("iftar_orden")
+        public String iftarOrden;
+        @SerializedName("suhur_incluir")
+        public String suhurIncluir;
+        @SerializedName("entreno_prohibido")
+        public String entrenoProhibido;
+        @SerializedName("nota")
+        public String nota; // Solo presente en es_eid
+    }
+
     // ─── Getters ──────────────────────────────────────────
 
     public String getFecha() { return fecha; }
@@ -121,6 +163,9 @@ public class VistaMañanaResponse {
     public CardioObjetivo getCardio() { return cardio; }
     public MovilidadMatutina getMovilidadMatutina() { return movilidadMatutina; }
     public AvisoAusencia getAvisoAusencia() { return avisoAusencia; }
+    public boolean isSesionCompletada() { return sesionCompletada; }
+    public ResumenSesionResponse.Resumen getResumenHoy() { return resumenHoy; }
+    public Ramadan getRamadan() { return ramadan; }
 
     // Helpers
     public boolean esGym() { return "gym".equals(tipoDia); }

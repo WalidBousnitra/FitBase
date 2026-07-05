@@ -89,6 +89,14 @@ public final class FeedbackHelper {
         vibrate(10, AMP_LIGHT);
     }
 
+    public void vibrateLight() {
+        vibrate(10, AMP_LIGHT);
+    }
+
+    public void vibrateStrong() {
+        vibrate(50, AMP_STRONG);
+    }
+
     /** Confirmación — serie registrada, acción completada. 25ms, amplitud media. */
     public void confirm() {
         vibrate(25, AMP_MEDIUM);

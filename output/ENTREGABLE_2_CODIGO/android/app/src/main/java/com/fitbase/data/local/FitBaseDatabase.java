@@ -26,7 +26,15 @@ public abstract class FitBaseDatabase extends RoomDatabase {
                             context.getApplicationContext(),
                             FitBaseDatabase.class,
                             "fitbase_local.db"
-                    ).build();
+                    )
+                            // Sin esto, subir `version` en un futuro cambio de
+                            // esquema haría CRASHEAR la app al abrir (Room exige
+                            // una migración explícita o esto). La cola es solo
+                            // datos de sincronización transitorios — perderla en
+                            // una actualización de esquema es aceptable, crashear
+                            // no lo es.
+                            .fallbackToDestructiveMigration()
+                            .build();
                 }
             }
         }

@@ -9,10 +9,9 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
 import com.fitbase.data.api.ApiClient;
-import com.fitbase.data.health.HealthConnectReader;
+import com.fitbase.data.cache.AppDataCache;
 import com.fitbase.data.model.MetricasProgresionResponse;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import retrofit2.Call;
@@ -23,10 +22,11 @@ import retrofit2.Response;
  * ViewModel para la pantalla de progresión de métricas.
  * Carga datos históricos: peso, sueño, FC reposo, volumen.
  *
- * Flujo:
- *   1. Intenta backend (datos persistidos en Sheets).
- *   2. Si backend vacío/error → lee DIRECTAMENTE de Health Connect.
- *   3. Muestra lo que haya disponible (nunca "sin datos" si HC tiene algo).
+ * Fuente ÚNICA: la BBDD (backend/Google Sheets). Health Connect NO se lee
+ * aquí — {@link com.fitbase.data.health.DailySyncManager} ya se encarga de
+ * copiar Health Connect → BBDD una vez al día desde SplashActivity, así que
+ * la BBDD siempre tiene lo último. Si no hay datos, es porque aún no se ha
+ * sincronizado ningún día (p.ej. antes de empezar a usar la app de verdad).
  */
 public class ProgressionViewModel extends AndroidViewModel {
 
@@ -45,126 +45,51 @@ public class ProgressionViewModel extends AndroidViewModel {
     public LiveData<String> getError() { return error; }
 
     public void cargar(int dias) {
+        // Si SplashActivity ya precargó los 7 días por defecto, usarlo al instante
+        // (sin spinner) en vez de repetir la llamada de red.
+        if (dias == 7 && AppDataCache.getProgresion7d() != null && tieneData(AppDataCache.getProgresion7d())) {
+            Log.d(TAG, "Progresión 7d servida desde cache de Splash");
+            error.postValue(null);
+            datos.postValue(AppDataCache.getProgresion7d());
+            cargando.postValue(false);
+            return;
+        }
+
         cargando.setValue(true);
 
-        // Primero intentar backend
         ApiClient.getApi().getProgresionMetricas("progresion_metricas", dias)
                 .enqueue(new Callback<MetricasProgresionResponse>() {
                     @Override
                     public void onResponse(Call<MetricasProgresionResponse> call,
                                            Response<MetricasProgresionResponse> response) {
+                        cargando.postValue(false);
                         if (response.isSuccessful() && response.body() != null && tieneData(response.body())) {
                             MetricasProgresionResponse body = response.body();
-                            Log.d(TAG, "Backend OK: peso=" + size(body.peso) + " zepp=" + size(body.zepp) + " vol=" + size(body.volumenEntreno));
+                            Log.d(TAG, "Backend OK: zepp=" + size(body.zepp) + " vol=" + size(body.volumenEntreno));
                             error.postValue(null);
                             datos.postValue(body);
-                            cargando.postValue(false);
                         } else {
-                            // Backend vacío o no disponible → intentar Health Connect
-                            Log.w(TAG, "Backend vacío/error, intentando Health Connect");
-                            cargarDesdeHealthConnect(dias);
+                            Log.w(TAG, "Backend sin datos para " + dias + " días");
+                            error.postValue("Aún no hay histórico en la base de datos para este rango.\n\n" +
+                                    "Los datos de Health Connect (Zepp/Mi Fitness) se sincronizan a la BBDD " +
+                                    "una vez al día al abrir la app. Si acabas de empezar, dale unos días, o " +
+                                    "usa rellenarDatosFicticios() en Apps Script para probar con datos de prueba.");
+                            datos.postValue(null);
                         }
                     }
 
                     @Override
                     public void onFailure(Call<MetricasProgresionResponse> call, Throwable t) {
-                        Log.w(TAG, "Backend falló: " + t.getMessage() + " → intentando HC");
-                        cargarDesdeHealthConnect(dias);
+                        cargando.postValue(false);
+                        Log.w(TAG, "Backend falló: " + t.getMessage());
+                        error.postValue("No se pudo conectar con la base de datos: " + t.getMessage());
+                        datos.postValue(null);
                     }
                 });
     }
 
-    /**
-     * Carga progresión directamente de Health Connect.
-     * Esto funciona aunque el backend esté caído o sin datos.
-     */
-    private void cargarDesdeHealthConnect(int dias) {
-        if (!HealthConnectReader.isAvailable(getApplication())) {
-            cargando.postValue(false);
-            error.postValue("Health Connect no está instalado en este dispositivo.\n" +
-                    "Instálalo desde Google Play para ver datos de Zepp y FatSecret.");
-            Log.e(TAG, "HC SDK not available");
-            return;
-        }
-
-        HealthConnectReader reader = new HealthConnectReader(getApplication());
-        reader.leerDatosRecuperacion(dias, datosHC -> {
-            MetricasProgresionResponse resp = new MetricasProgresionResponse();
-            resp.diasSolicitados = dias;
-
-            // Convertir pesos HC → formato progresión
-            resp.peso = new ArrayList<>();
-            for (HealthConnectReader.PesoEntry pe : datosHC.pesos) {
-                MetricasProgresionResponse.PesoEntry pd = new MetricasProgresionResponse.PesoEntry();
-                pd.fecha = pe.fecha;
-                pd.pesoKg = (float) pe.kg;
-                resp.peso.add(pd);
-            }
-
-            // Convertir sueño HC → formato zepp
-            resp.zepp = new ArrayList<>();
-            for (HealthConnectReader.SleepEntry se : datosHC.suenos) {
-                MetricasProgresionResponse.ZeppEntry zd = new MetricasProgresionResponse.ZeppEntry();
-                zd.fecha = se.fecha;
-                zd.sleepScore = se.score;
-                zd.sleepHoras = se.duracionMin / 60.0f;
-                resp.zepp.add(zd);
-            }
-
-            // FC reposo desde HC
-            for (HealthConnectReader.HrEntry hr : datosHC.fcReposo) {
-                // Buscar o crear el ZeppEntry de ese día
-                MetricasProgresionResponse.ZeppEntry existente = null;
-                for (MetricasProgresionResponse.ZeppEntry z : resp.zepp) {
-                    if (hr.fecha.equals(z.fecha)) { existente = z; break; }
-                }
-                if (existente != null) {
-                    existente.hrReposo = hr.bpm;
-                } else {
-                    MetricasProgresionResponse.ZeppEntry zd = new MetricasProgresionResponse.ZeppEntry();
-                    zd.fecha = hr.fecha;
-                    zd.hrReposo = hr.bpm;
-                    resp.zepp.add(zd);
-                }
-            }
-
-            // Resumen
-            resp.resumen = new MetricasProgresionResponse.Resumen();
-            if (!datosHC.pesos.isEmpty()) {
-                HealthConnectReader.PesoEntry ultimo = datosHC.pesos.get(datosHC.pesos.size() - 1);
-                HealthConnectReader.PesoEntry primero = datosHC.pesos.get(0);
-                resp.resumen.pesoActual = (float) ultimo.kg;
-                resp.resumen.pesoInicio = (float) primero.kg;
-            }
-            if (!datosHC.suenos.isEmpty()) {
-                int totalScore = 0;
-                for (HealthConnectReader.SleepEntry s : datosHC.suenos) totalScore += s.score;
-                resp.resumen.sleepMedia = totalScore / datosHC.suenos.size();
-            }
-
-            int totalEntries = size(resp.peso) + size(resp.zepp);
-            if (totalEntries > 0) {
-                Log.d(TAG, "HC OK: peso=" + size(resp.peso) + " zepp=" + size(resp.zepp));
-                error.postValue(null);
-                datos.postValue(resp);
-            } else {
-                Log.w(TAG, "HC devolvió 0 registros de recuperación");
-                StringBuilder msg = new StringBuilder();
-                msg.append("Health Connect no tiene datos de peso/sueño/FC.\n\n");
-                msg.append("Verifica:\n");
-                msg.append("• Zepp/Mi Fitness → Perfil → Apps terceros → Health Connect → ACTIVAR\n");
-                msg.append("• Ajustes → Health Connect → Permisos de apps → FitBase → Peso ✓ Sueño ✓ FC ✓\n");
-                msg.append("• Tras activar, pésate una vez para que Zepp sincronice el historial");
-                error.postValue(msg.toString());
-                datos.postValue(null);
-            }
-            cargando.postValue(false);
-        });
-    }
-
     private boolean tieneData(MetricasProgresionResponse r) {
-        return (r.peso != null && !r.peso.isEmpty())
-                || (r.zepp != null && !r.zepp.isEmpty())
+        return (r.zepp != null && !r.zepp.isEmpty())
                 || (r.volumenEntreno != null && !r.volumenEntreno.isEmpty());
     }
 

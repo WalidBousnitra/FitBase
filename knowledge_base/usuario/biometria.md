@@ -20,7 +20,7 @@ tags: ["biometria", "medidas", "tracking"]
 | Fecha nacimiento | 20/07/2001 | — |
 | Sexo | Hombre | — |
 | Altura | 188 cm | — |
-| Envergadura | XXX cm | Medir: brazos extendidos |
+| Envergadura | 190 cm | Medir: brazos extendidos |
 | Talla calzado | 45 EU | — |
 
 ---
@@ -59,18 +59,18 @@ tags: ["biometria", "medidas", "tracking"]
 
 | Zona | Cómo Medir | Valor (cm) |
 |------|------------|------------|
-| Hombros | Punto más ancho deltoides | XXX |
-| Pecho | Línea de pezones | XXX |
-| Cintura | A nivel del ombligo | XXX |
-| Cadera | Punto más ancho glúteos | XXX |
-| Bíceps (D) | Flexionado, pico | XXX |
-| Bíceps (I) | Flexionado, pico | XXX |
-| Antebrazo (D) | Punto más grueso | XXX |
-| Antebrazo (I) | Punto más grueso | XXX |
-| Muslo (D) | Punto más grueso | XXX |
-| Muslo (I) | Punto más grueso | XXX |
-| Pantorrilla (D) | Punto más grueso | XXX |
-| Pantorrilla (I) | Punto más grueso | XXX |
+| Hombros | Punto más ancho deltoides | 114 |
+| Pecho | Línea de pezones | 94 |
+| Cintura | A nivel del ombligo | 86 |
+| Cadera | Punto más ancho glúteos | 100 |
+| Bíceps (D) | Flexionado, pico | 36 |
+| Bíceps (I) | Flexionado, pico | 35 |
+| Antebrazo (D) | Punto más grueso | 27 |
+| Antebrazo (I) | Punto más grueso | 27 |
+| Muslo (D) | Punto más grueso | 57 |
+| Muslo (I) | Punto más grueso | 57 |
+| Pantorrilla (D) | Punto más grueso | 36 |
+| Pantorrilla (I) | Punto más grueso | 36 |
 
 ---
 

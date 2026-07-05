@@ -23,6 +23,7 @@ public class PlanAnualActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_plan_anual);
+        com.fitbase.util.InsetsHelper.aplicarInsetsSistema(this);
 
         viewModel = new ViewModelProvider(this).get(PlanAnualViewModel.class);
 
@@ -70,5 +71,11 @@ public class PlanAnualActivity extends AppCompatActivity {
 
         // Botón volver
         findViewById(R.id.btnVolver).setOnClickListener(v -> finish());
+
+        // Horario semanal (qué tipo de sesión le toca a cada día) — editable
+        // porque natación depende del horario de la piscina del curso/
+        // cuatrimestre, no es fijo como el resto del split.
+        findViewById(R.id.btnHorario).setOnClickListener(v ->
+                startActivity(new android.content.Intent(this, HorarioSemanalActivity.class)));
     }
 }

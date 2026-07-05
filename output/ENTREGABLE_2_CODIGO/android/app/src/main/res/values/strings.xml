@@ -1,41 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">FitBase</string>
-
-    <!-- Pantalla Mañana -->
-    <string name="titulo_calorias">kcal</string>
-    <string name="titulo_pasos">pasos</string>
-    <string name="titulo_agua">agua</string>
-    <string name="btn_empezar_entreno">▶  EMPEZAR ENTRENO</string>
-    <string name="btn_plan_anual">📅  Ver Plan Anual</string>
-    <string name="dia_descanso">Día de descanso</string>
-
-    <!-- Pantalla Gym -->
-    <string name="swipe_completar">◀ swipe para completar ▶</string>
-    <string name="swipe_saltar">◀ swipe para saltar ▶</string>
-    <string name="pregunta_reps">¿Cuántas hiciste?</string>
-    <string name="pregunta_rir">¿Cuántas te quedaban? (RIR)</string>
-
-    <!-- Pantalla Resumen -->
-    <string name="completado">completado ✓</string>
-    <string name="btn_cerrar">✓ CERRAR</string>
-
-    <!-- Plan Anual -->
-    <string name="titulo_plan">PLAN 2026–2027</string>
-    <string name="fecha_programa">31/08/2026 → 31/07/2027 (11 meses)</string>
-
-    <!-- Fases -->
-    <string name="fase_vol">Volumen (Hipertrofia)</string>
-    <string name="fase_fza">Fuerza</string>
-    <string name="fase_def">Definición</string>
-    <string name="fase_mnt">Mantenimiento</string>
-    <string name="fase_deload">Deload</string>
-    <string name="fase_aa">Adaptación Anatómica</string>
-
-    <!-- Timer -->
-    <string name="notif_timer_titulo">🏋️ FitBase — Descanso</string>
-    <string name="notif_fin_titulo">🏋️ ¡VAMOS!</string>
-
-    <!-- Demo -->
-    <string name="banner_demo">🎮 MODO DEMO — Comienza el 31/08/2026</string>
 </resources>

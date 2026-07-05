@@ -49,15 +49,27 @@ public class HealthConnectReader {
     public static class PesoEntry {
         public String fecha;
         public double kg;
-        public PesoEntry(String fecha, double kg) { this.fecha = fecha; this.kg = kg; }
+        /** % grasa corporal (BodyFatRecord) — null si HC no tiene dato ese día. */
+        public Double grasaPct;
+        /** % hidratación, calculada como masa de agua / peso — null si falta alguno. */
+        public Double hidratacionPct;
+        public PesoEntry(String fecha, double kg, Double grasaPct, Double hidratacionPct) {
+            this.fecha = fecha; this.kg = kg;
+            this.grasaPct = grasaPct; this.hidratacionPct = hidratacionPct;
+        }
     }
 
     public static class SleepEntry {
         public String fecha;
         public int duracionMin;
+        /** Score ESTIMADO 0-100 (no el de Zepp — Health Connect no lo tiene). */
         public int score;
-        public SleepEntry(String fecha, int duracionMin, int score) {
+        public int deepMin;
+        public int remMin;
+        public int lightMin;
+        public SleepEntry(String fecha, int duracionMin, int score, int deepMin, int remMin, int lightMin) {
             this.fecha = fecha; this.duracionMin = duracionMin; this.score = score;
+            this.deepMin = deepMin; this.remMin = remMin; this.lightMin = lightMin;
         }
     }
 
@@ -103,10 +115,11 @@ public class HealthConnectReader {
                 HealthConnectBridge.RecoveryData recovery = HealthConnectBridge.readRecoveryData(context, diasAtras);
 
                 for (HealthConnectBridge.PesoEntry pe : recovery.pesosKg) {
-                    datos.pesos.add(new PesoEntry(pe.fecha, pe.kg));
+                    datos.pesos.add(new PesoEntry(pe.fecha, pe.kg, pe.grasaPct, pe.hidratacionPct));
                 }
                 for (HealthConnectBridge.SleepEntry se : recovery.suenos) {
-                    datos.suenos.add(new SleepEntry(se.fecha, se.duracionMin, se.score));
+                    datos.suenos.add(new SleepEntry(se.fecha, se.duracionMin, se.score,
+                            se.deepMin, se.remMin, se.lightMin));
                 }
                 for (HealthConnectBridge.HrEntry hr : recovery.fcReposo) {
                     datos.fcReposo.add(new HrEntry(hr.fecha, hr.bpm));

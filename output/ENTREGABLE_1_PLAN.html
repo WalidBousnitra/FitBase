@@ -9,7 +9,7 @@
         :root {
             --bg: #0F1419; --surface: #1B2028; --surface2: #2A3040;
             --text: #E8EAED; --text2: #9AA0A6; --text3: #5F6368;
-            --accent: #FF6D3B; --success: #81C784; --warning: #FFB74D;
+            --accent: #7B86E3; --success: #81C784; --warning: #FFB74D;
             --error: #EF5350; --chart: #4FC3F7; --purple: #CE93D8;
             --radius: 12px;
         }
@@ -92,7 +92,7 @@
     <div class="dates">
         <span class="pill"><strong>Inicio</strong> 31/08/2026</span>
         <span style="color:var(--text3)">→</span>
-        <span class="pill"><strong>Fin</strong> 31/07/2027</span>
+        <span class="pill"><strong>Fin</strong> 01/08/2027</span>
     </div>
 </div>
 
@@ -106,7 +106,7 @@
             <div class="uc-num">☀️</div>
             <div class="uc-content">
                 <h4>Mañana: te pesas y abres la app</h4>
-                <p>GET <code>vista_manana</code> → Ves: cómo dormiste (sleep score), macros del día (cambian por fase), objetivo de pasos/cardio, rutina de movilidad matutina (5-8 min postura), y tipo de día (gym/natación/descanso).</p>
+                <p>GET <code>vista_manana</code> → Ves: cómo dormiste (sleep score ESTIMADO por la app, marcado "≈"; FC reposo literal), macros del día (cambian por fase), objetivo de pasos/cardio, rutina de movilidad matutina (5-8 min postura), y tipo de día (gym/natación/descanso). Todo esto se precarga en una pantalla de carga antes de que abras Home, así nunca esperas.</p>
             </div>
         </div>
         <div class="uc-arrow">▼</div>
@@ -122,7 +122,7 @@
             <div class="uc-num">🏋️</div>
             <div class="uc-content">
                 <h4>Gym: Empiezas entreno</h4>
-                <p>GET <code>sesion_hoy</code> → Calentamiento (5 min movilidad dinámica + activación) → Ejercicios con peso sugerido (motor 6 capas) → Serie a serie con timer flotante → Estiramientos → Cardio post-gym si fase DEF/MNT.</p>
+                <p>GET <code>sesion_hoy</code> → Calentamiento → Ejercicios con peso sugerido (motor 6 capas) → Estiramientos → Cardio post-gym si fase DEF/MNT. Cada fase se ve una pantalla minimalista a la vez (un ejercicio, centrado), navegando con swipe.</p>
             </div>
         </div>
         <div class="uc-arrow">▼</div>
@@ -130,7 +130,7 @@
             <div class="uc-num">📊</div>
             <div class="uc-content">
                 <h4>Registras cada serie</h4>
-                <p>Reps completadas + sensación (fácil/bien/duro/fallo). POST <code>guardar_log</code> → O(1) append. Timer de descanso se activa automáticamente con overlay flotante (Hyper Island).</p>
+                <p>Desliza a la izquierda desde el ejercicio → pantalla de registro: reps completadas + sensación (fácil/bien/duro/fallo). POST <code>guardar_log</code> → O(1) append, al momento. Si toca descanso, se activa el timer (pantalla completa + Hyper Island fuera de la app).</p>
             </div>
         </div>
         <div class="uc-arrow">▼</div>
@@ -138,7 +138,7 @@
             <div class="uc-num">✅</div>
             <div class="uc-content">
                 <h4>Terminas: resumen + impacto</h4>
-                <p>POST <code>completar_sesion</code> → Series totales, volumen (kg), RIR medio, intensidad percibida. "El motor usará estos datos para ajustar tu próxima sesión."</p>
+                <p>GET <code>resumen_sesion</code> → Series totales, volumen (kg), RIR medio, intensidad percibida (solo lectura, ya guardado serie a serie). Pulsas <strong>GUARDAR</strong> → POST <code>completar_sesion</code> marca la sesión como completada: "El motor usará estos datos para ajustar tu próxima sesión."</p>
             </div>
         </div>
         <div class="uc-arrow">▼</div>
@@ -154,7 +154,7 @@
 
 <!-- ═══ EXCEPCIONES ═══ -->
 <section>
-    <h2>Excepciones (4 casos)</h2>
+    <h2>Excepciones (6 casos)</h2>
     <p class="desc">La app detecta y se adapta automáticamente a situaciones no estándar.</p>
     <div class="cards-row" style="grid-template-columns: repeat(2, 1fr);">
         <div class="card">
@@ -163,7 +163,7 @@
         </div>
         <div class="card">
             <h3>😴 Día Descanso</h3>
-            <p>Domingo: movilidad matutina + cardio suave opcional (caminar/bici). Sin intensidad — objetivo = recuperación activa.</p>
+            <p>Domingo: movilidad matutina + cardio suave si la fase es DEF/MNT (Wilson 2012 + Viana 2019). Sin intensidad — objetivo = recuperación activa.</p>
         </div>
         <div class="card">
             <h3>🏖️ Vacaciones</h3>
@@ -172,6 +172,14 @@
         <div class="card">
             <h3>❌ Día Perdido</h3>
             <p>Si no abriste la app ayer, la detecta. Aviso neutral: "Ayer no entrenaste — hoy retomas normal." Sin penalización extra.</p>
+        </div>
+        <div class="card">
+            <h3>🌙 Ramadán (08 feb – 10 mar 2027)</h3>
+            <p>Volumen de entreno -30% (intensidad igual), cardio extra anulado, macros iguales pero reencuadrados a Iftar/Suhur, aviso de timing óptimo de entreno (30-60 min antes de Iftar). Banner dedicado en Home con día de ayuno.</p>
+        </div>
+        <div class="card">
+            <h3>🎉 Eid al-Fitr (11 mar 2027)</h3>
+            <p>Día de excepción: la app avisa "no trackear estrictamente, disfruta" en vez de mostrar objetivos normales de macros/entreno.</p>
         </div>
     </div>
 </section>
@@ -194,15 +202,15 @@
             <div class="uc-num">2</div>
             <div class="uc-content">
                 <h4>Ejercicios principales</h4>
-                <p>Para cada ejercicio ves: nombre, peso sugerido (motor), reps × series, RIR objetivo, descanso. Haces la serie → registras reps + sensación → timer se activa.</p>
+                <p>Pantalla minimalista, un ejercicio a la vez: nombre, peso sugerido (motor), reps objetivo, serie X/Y. Deslizas a la izquierda → pantalla de registro (reps + sensación) → confirmas → timer se activa si toca descanso.</p>
             </div>
         </div>
         <div class="uc-arrow">▼</div>
         <div class="uc-step">
             <div class="uc-num">3</div>
             <div class="uc-content">
-                <h4>Timer flotante (Hyper Island)</h4>
-                <p>Sales de la app → overlay flotante muestra tiempo restante. Puedes usar el móvil normalmente. Al terminar: vibración + notificación visual para empezar siguiente serie.</p>
+                <h4>Timer de descanso</h4>
+                <p>Pantalla completa con cuenta atrás gigante + qué toca después (puedes deslizar para saltarlo). Si sales de la app: notificación con Chronometer nativo, y en HyperOS 3 (Xiaomi/Redmi/POCO) como Hyper Island. Al terminar, el aviso persiste (no desaparece solo), vibra en bucle y tiene botón "Detener" — en HyperOS 3 la isla se agranda ocupando parte de la pantalla.</p>
             </div>
         </div>
         <div class="uc-arrow">▼</div>
@@ -317,7 +325,7 @@
         <div class="vol-item"><span class="vol-label">Bíceps</span><div class="vol-bar-bg"><div class="vol-bar" style="width:48%; background:var(--chart);"></div></div><span class="vol-val">12 ser</span></div>
         <div class="vol-item"><span class="vol-label">Tríceps</span><div class="vol-bar-bg"><div class="vol-bar" style="width:36%; background:var(--purple);"></div></div><span class="vol-val">9 ser</span></div>
         <div class="vol-item"><span class="vol-label">Pecho</span><div class="vol-bar-bg"><div class="vol-bar" style="width:28%; background:var(--warning);"></div></div><span class="vol-val">7 ser</span></div>
-        <div class="vol-item"><span class="vol-label">Cuádriceps</span><div class="vol-bar-bg"><div class="vol-bar" style="width:28%; background:var(--success);"></div></div><span class="vol-val">7 ser</span></div>
+        <div class="vol-item"><span class="vol-label">Cuádriceps</span><div class="vol-bar-bg"><div class="vol-bar" style="width:40%; background:var(--success);"></div></div><span class="vol-val">10 ser</span></div>
         <div class="vol-item"><span class="vol-label">Isquios</span><div class="vol-bar-bg"><div class="vol-bar" style="width:28%; background:var(--success);"></div></div><span class="vol-val">7 ser</span></div>
         <div class="vol-item"><span class="vol-label">Core</span><div class="vol-bar-bg"><div class="vol-bar" style="width:24%; background:var(--text3);"></div></div><span class="vol-val">6 ser</span></div>
         <div class="vol-item"><span class="vol-label">Glúteos</span><div class="vol-bar-bg"><div class="vol-bar" style="width:12%; background:var(--text3);"></div></div><span class="vol-val">3 ser</span></div>
@@ -334,7 +342,7 @@
     <p class="desc">Calculada dinámicamente por fase — getMacrosHoy_() en backend</p>
 
     <div class="macros-grid">
-        <div class="macro-card cal"><div class="mn">Calorías</div><div class="mv">3280</div><div class="mn">kcal (bulk)</div></div>
+        <div class="macro-card cal"><div class="mn">Calorías</div><div class="mv">3283</div><div class="mn">kcal (bulk)</div></div>
         <div class="macro-card pro"><div class="mn">Proteína</div><div class="mv">156g</div><div class="mn">2.0 g/kg</div></div>
         <div class="macro-card car"><div class="mn">Carbos</div><div class="mv">~440g</div><div class="mn">resto</div></div>
         <div class="macro-card fat"><div class="mn">Grasa</div><div class="mv">78g</div><div class="mn">1.0 g/kg</div></div>
@@ -344,17 +352,22 @@
     <div class="card">
         <h3>Ajuste por fase (automático)</h3>
         <p>
-            <strong>Bulk (VOL/FZA):</strong> TDEE × 1.15 = 3280 kcal · Proteína 2.0g/kg<br>
-            <strong>Cutting (DEF):</strong> TDEE × 0.80 = 2282 kcal · Proteína 2.4g/kg (preservar músculo, Helms 2014)<br>
+            <strong>Bulk (VOL/FZA):</strong> TDEE × 1.15 = 3283 kcal · Proteína 2.0g/kg<br>
+            <strong>Cutting (DEF):</strong> TDEE × 0.80 = 2284 kcal · Proteína 2.4g/kg (preservar músculo, Helms 2014)<br>
             <strong>Mantener (MNT/DELOAD):</strong> TDEE × 1.0 = 2855 kcal · Proteína 2.0g/kg
         </p>
+    </div>
+
+    <div class="card">
+        <h3>Ajuste por actividad diaria</h3>
+        <p>Si superas 12.000 pasos en el día: +175 kcal (motor_dieta.md §6, absorbidas como carbos extra) — el NEAT extra no está capturado por el factor de actividad fijo (1.55).</p>
     </div>
 </section>
 
 <!-- ═══ PERIODIZACIÓN ═══ -->
 <section>
-    <h2>Plan Anual — 10 Fases</h2>
-    <p class="desc">Nombres y fechas exactas del código (rellenarPlanCompleto)</p>
+    <h2>Plan Anual — 14 Fases</h2>
+    <p class="desc">Nombres y fechas exactas del código (rellenarPlanCompleto). Revisado con evidencia (periodizacion.md §7: deload cada 4-6 semanas) — el diseño original de 10 fases tenía dos huecos de 12 y 17 semanas seguidas sin deload; se añadieron 3 deloads extra y se partió "Peak Estético" en dos para respetar la cadencia, manteniendo el total en 48 semanas.</p>
 
     <div class="timeline">
         <div class="tl-item active">
@@ -396,35 +409,63 @@
             <div class="tl-dot"></div>
             <div class="tl-phase">6. Fuerza — Compuestos</div>
             <div class="tl-dates">4 ene – 14 feb 2027 (6 sem)</div>
-            <div class="tl-desc">Press militar, dominadas lastradas, sentadilla. RIR 1-2. Descansos 3-5 min.</div>
+            <div class="tl-desc">Press militar, dominadas lastradas, sentadilla. RIR 1-2. Descansos 3-5 min. Ramadán empieza el 8 feb, a mitad de esta fase.</div>
             <div class="tl-meta"><span class="tl-tag fza">FZA</span><span class="tl-tag">bulk</span><span class="tl-tag">Press+Domin+Squat</span></div>
         </div>
         <div class="tl-item">
             <div class="tl-dot"></div>
-            <div class="tl-phase">7. Hipertrofia III — Balance</div>
-            <div class="tl-dates">15 feb – 28 mar 2027 (6 sem)</div>
-            <div class="tl-desc">Piernas+Core + mantener V-taper. RIR 2-3.</div>
+            <div class="tl-phase">7. Deload 3 <span style="color:var(--warning); font-size:0.75em;">(nuevo)</span></div>
+            <div class="tl-dates">15 feb – 21 feb 2027 (1 sem)</div>
+            <div class="tl-desc">Descarga tras el bloque de Fuerza (el RIR más bajo del año) — antes no existía, esta fase pasaba directa a Hipertrofia III sin deload.</div>
+            <div class="tl-meta"><span class="tl-tag del">DELOAD</span><span class="tl-tag">mantener</span></div>
+        </div>
+        <div class="tl-item">
+            <div class="tl-dot"></div>
+            <div class="tl-phase">8. Hipertrofia III — Balance</div>
+            <div class="tl-dates">22 feb – 4 abr 2027 (6 sem)</div>
+            <div class="tl-desc">Piernas+Core + mantener V-taper. RIR 2-3. Ramadán termina 10 mar, a mitad de esta fase.</div>
             <div class="tl-meta"><span class="tl-tag vol">VOL</span><span class="tl-tag">bulk</span><span class="tl-tag">Piernas+Core</span></div>
         </div>
         <div class="tl-item">
             <div class="tl-dot"></div>
-            <div class="tl-phase">8. Deload 3</div>
-            <div class="tl-dates">29 mar – 4 abr 2027 (1 sem)</div>
+            <div class="tl-phase">9. Deload 4</div>
+            <div class="tl-dates">5 abr – 11 abr 2027 (1 sem)</div>
             <div class="tl-desc">Test postural final + prepara definición.</div>
             <div class="tl-meta"><span class="tl-tag del">DELOAD</span><span class="tl-tag">mantener</span></div>
         </div>
         <div class="tl-item">
             <div class="tl-dot"></div>
-            <div class="tl-phase">9. Definición</div>
-            <div class="tl-dates">5 abr – 16 may 2027 (6 sem)</div>
+            <div class="tl-phase">10. Definición</div>
+            <div class="tl-dates">12 abr – 23 may 2027 (6 sem)</div>
             <div class="tl-desc">Déficit -20% kcal. Mantener masa. Progresión limitada (cut). RIR 2-3.</div>
             <div class="tl-meta"><span class="tl-tag def">DEF</span><span class="tl-tag">cut</span><span class="tl-tag">Preservar músculo</span></div>
         </div>
         <div class="tl-item">
             <div class="tl-dot"></div>
-            <div class="tl-phase">10. Peak Estético + Mant.</div>
-            <div class="tl-dates">17 may – 31 jul 2027 (11 sem)</div>
-            <div class="tl-desc">Ratio cintura/hombros + simetría. Superávit mínimo. Disfrutar resultado.</div>
+            <div class="tl-phase">11. Deload 5 <span style="color:var(--warning); font-size:0.75em;">(nuevo)</span></div>
+            <div class="tl-dates">24 may – 30 may 2027 (1 sem)</div>
+            <div class="tl-desc">Transición cut→mantenimiento — salir de un déficit calórico directo a 11 semanas sin deload era el hueco más largo del plan original (17 semanas seguidas).</div>
+            <div class="tl-meta"><span class="tl-tag del">DELOAD</span><span class="tl-tag">mantener</span></div>
+        </div>
+        <div class="tl-item">
+            <div class="tl-dot"></div>
+            <div class="tl-phase">12. Peak Estético I</div>
+            <div class="tl-dates">31 may – 27 jun 2027 (4 sem)</div>
+            <div class="tl-desc">Ratio cintura/hombros + simetría. Superávit mínimo.</div>
+            <div class="tl-meta"><span class="tl-tag mnt">MNT</span><span class="tl-tag">mantener</span><span class="tl-tag">Ratio + Simetría</span></div>
+        </div>
+        <div class="tl-item">
+            <div class="tl-dot"></div>
+            <div class="tl-phase">13. Deload 6 <span style="color:var(--warning); font-size:0.75em;">(nuevo)</span></div>
+            <div class="tl-dates">28 jun – 4 jul 2027 (1 sem)</div>
+            <div class="tl-desc">Descarga a mitad del bloque Peak — antes "Peak Estético" duraba 11 semanas seguidas sin descarga.</div>
+            <div class="tl-meta"><span class="tl-tag del">DELOAD</span><span class="tl-tag">mantener</span></div>
+        </div>
+        <div class="tl-item">
+            <div class="tl-dot"></div>
+            <div class="tl-phase">14. Peak Estético II + Mant.</div>
+            <div class="tl-dates">5 jul – 1 ago 2027 (4 sem)</div>
+            <div class="tl-desc">Cierre del año. Ratio cintura/hombros + simetría. Disfrutar resultado.</div>
             <div class="tl-meta"><span class="tl-tag mnt">MNT</span><span class="tl-tag">mantener</span><span class="tl-tag">Ratio + Simetría</span></div>
         </div>
     </div>
@@ -437,15 +478,15 @@
 
     <div class="card">
         <h3>UC2: Ver Plan Anual</h3>
-        <p>GET <code>plan_anual</code> → Lista de 10 fases con fecha inicio/fin, tipo (VOL/FZA/DEF/MNT/DELOAD), RIR rango, foco muscular, objetivo nutricional. Fase actual destacada con color + badge "ACTUAL".</p>
+        <p>GET <code>plan_anual</code> → Lista de 14 fases con fecha inicio/fin, tipo (VOL/FZA/DEF/MNT/DELOAD), RIR rango, foco muscular, objetivo nutricional. Fase actual destacada con color + badge "ACTUAL".</p>
     </div>
     <div class="card">
         <h3>UC3: Progresión de Métricas</h3>
-        <p>GET <code>progresion_metricas</code> con días=30/60/90 → Gráficos de peso corporal, sleep score, volumen de entrenamiento. Datos de Health Connect (Zepp → HC → App). Si no hay permisos → flujo de solicitud explicando cómo activar.</p>
+        <p>GET <code>progresion_metricas</code> con días=7/30/90 → Gráficos de peso (con indicador de cambio desde el inicio del rango), % grasa (mismo indicador), sleep score, pasos, volumen de entrenamiento. La pantalla lee SOLO de la BBDD (nunca directo de Health Connect) — sueño/FC/peso/grasa se sincronizan 1 vez al día, pasos se actualizan cada vez que abres/vuelves a la app (se acumulan durante el día).</p>
     </div>
     <div class="card">
         <h3>UC4: Nutrición del Día</h3>
-        <p>GET <code>macros_hoy</code> → Calorías objetivo, macros (prot/carbs/grasa), agua, pasos. Ajustado por fase actual automáticamente. App muestra barras de progreso vs consumo.</p>
+        <p>GET <code>macros_hoy</code> → Calorías objetivo, macros (prot/carbs/grasa), agua, pasos. Ajustado por fase actual automáticamente. App muestra barras de progreso vs consumo, y se refresca sola sin tener que reabrir la app.</p>
     </div>
     <div class="card">
         <h3>UC5: Ausencia / Sesión Perdida</h3>
@@ -453,7 +494,7 @@
     </div>
     <div class="card">
         <h3>UC6: Timer de Descanso</h3>
-        <p>Notificación con Chronometer nativo (RemoteViews custom). Countdown visible aunque estés en otra app. Al terminar: vibración [0,200,100,200] + notificación expandida con "¡VAMOS!". fullScreenIntent para heads-up.</p>
+        <p>Pantalla completa dentro de la app (Chronometer nativo, mismo instante que la notificación) + notificación/Hyper Island fuera. Al terminar: el aviso NO se autodescarta — vibra en bucle y tiene botón "Detener"; en HyperOS 3 (Xiaomi/Redmi/POCO) la isla se agranda ocupando parte de la pantalla en vez de una notificación tradicional. Swipe izquierda para saltar el descanso restante.</p>
     </div>
 </section>
 
@@ -465,7 +506,7 @@
     <div class="cards-row">
         <div class="stat"><div class="val" style="font-size:1rem;">Android</div><div class="lab">Java + Views/XML</div></div>
         <div class="stat"><div class="val" style="font-size:1rem;">Apps Script</div><div class="lab">Backend REST</div></div>
-        <div class="stat"><div class="val" style="font-size:1rem;">Sheets</div><div class="lab">9 hojas</div></div>
+        <div class="stat"><div class="val" style="font-size:1rem;">Sheets</div><div class="lab">7 hojas</div></div>
         <div class="stat"><div class="val" style="font-size:1rem;">Health Connect</div><div class="lab">Zepp → HC → App</div></div>
     </div>
 
@@ -480,16 +521,16 @@
     </div>
 
     <div class="card">
-        <h3>Base de datos: 9 hojas</h3>
+        <h3>Base de datos: 7 hojas</h3>
         <p>
-            metricas_zepp · metricas_subjetivas · peso_log · plan_anual · plan_semanal · sesiones_plan · ejercicios_plan · ejercicios_log · ejercicios_catalogo<br><br>
-            <strong>Clave:</strong> ejercicios_plan NO almacena pesos. Son dinámicos.
+            metricas_zepp · metricas_subjetivas · plan_anual · sesiones_plan · ejercicios_plan · ejercicios_log · ejercicios_catalogo<br><br>
+            <strong>Clave:</strong> ejercicios_plan NO almacena pesos. Son dinámicos. metricas_zepp centraliza TODO lo de Health Connect (antes peso vivía aparte en peso_log). ejercicios_log solo guarda los últimos 7 días (autolimpieza) — únicamente alimenta el reajuste del motor de cargas.
         </p>
     </div>
 </section>
 
 <div class="footer">
-    FitBase · Generado 02/07/2026 · 31 papers · 10 fases · ~1300 ejercicios pre-generados · Motor de 6 capas
+    FitBase · Generado 02/07/2026 · Actualizado 05/07/2026 · 31 papers · 14 fases · ~1350 ejercicios pre-generados · Motor de 6 capas
 </div>
 
 </body>

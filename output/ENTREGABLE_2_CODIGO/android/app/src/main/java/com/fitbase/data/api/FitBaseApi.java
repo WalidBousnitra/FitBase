@@ -1,11 +1,13 @@
 package com.fitbase.data.api;
 
+import com.fitbase.data.model.ActualizarHorarioResponse;
 import com.fitbase.data.model.AusenciaResponse;
+import com.fitbase.data.model.CambioFaseResponse;
 import com.fitbase.data.model.GenericResponse;
+import com.fitbase.data.model.HorarioSemanalResponse;
 import com.fitbase.data.model.MacrosResponse;
 import com.fitbase.data.model.MetricasProgresionResponse;
 import com.fitbase.data.model.PlanAnualResponse;
-import com.fitbase.data.model.PlanSemanalResponse;
 import com.fitbase.data.model.ResumenSesionResponse;
 import com.fitbase.data.model.SesionResponse;
 import com.fitbase.data.model.VistaMañanaResponse;
@@ -36,9 +38,6 @@ public interface FitBaseApi {
     Call<PlanAnualResponse> getPlanAnual(@Query("accion") String accion);
 
     @GET("exec")
-    Call<PlanSemanalResponse> getPlanSemanal(@Query("accion") String accion, @Query("semana") int semana);
-
-    @GET("exec")
     Call<MacrosResponse> getMacrosHoy(@Query("accion") String accion);
 
     @GET("exec")
@@ -47,20 +46,32 @@ public interface FitBaseApi {
     @GET("exec")
     Call<MetricasProgresionResponse> getProgresionMetricas(@Query("accion") String accion, @Query("dias") int dias);
 
+    @GET("exec")
+    Call<CambioFaseResponse> getCambioFase(@Query("accion") String accion);
+
+    @GET("exec")
+    Call<HorarioSemanalResponse> getHorarioSemanal(@Query("accion") String accion);
+
     // ─── POST ─────────────────────────────────────────────
 
     @POST("exec")
     Call<GenericResponse> guardarLog(@Body Map<String, Object> datos);
 
     @POST("exec")
-    Call<GenericResponse> guardarPeso(@Body Map<String, Object> datos);
+    Call<GenericResponse> guardarMetricas(@Body Map<String, Object> datos);
 
     @POST("exec")
-    Call<GenericResponse> guardarMetricas(@Body Map<String, Object> datos);
+    Call<GenericResponse> guardarMetricasSubjetivas(@Body Map<String, Object> datos);
 
     @POST("exec")
     Call<ResumenSesionResponse> completarSesion(@Body Map<String, Object> datos);
 
     @POST("exec")
     Call<GenericResponse> registrarAusencia(@Body Map<String, Object> datos);
+
+    @POST("exec")
+    Call<GenericResponse> enviarDatos(@Body Map<String, Object> datos);
+
+    @POST("exec")
+    Call<ActualizarHorarioResponse> actualizarHorario(@Body Map<String, Object> datos);
 }

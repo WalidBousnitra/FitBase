@@ -15,13 +15,12 @@ import java.util.List;
 
 /**
  * Adapter generico para mostrar filas de metricas en la pantalla de progresion.
- * Soporta 3 tipos: PESO, SUENO, VOLUMEN.
+ * Peso, Grasa, Sueno y Pasos ahora se muestran en ProgresionChartView (una
+ * sola grafica); este adapter solo cubre SUBJETIVA (energia/estres/notas).
  */
 public class MetricaAdapter extends RecyclerView.Adapter<MetricaAdapter.ViewHolder> {
 
-    public static final int TIPO_PESO = 0;
-    public static final int TIPO_SUENO = 1;
-    public static final int TIPO_VOLUMEN = 2;
+    public static final int TIPO_SUBJETIVA = 3;
 
     private final List<?> items;
     private final int tipo;
@@ -42,38 +41,16 @@ public class MetricaAdapter extends RecyclerView.Adapter<MetricaAdapter.ViewHold
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         switch (tipo) {
-            case TIPO_PESO:
-                MetricasProgresionResponse.PesoEntry peso =
-                        (MetricasProgresionResponse.PesoEntry) items.get(position);
-                holder.tvFecha.setText(peso.fecha);
-                holder.tvValorPrincipal.setText(String.format("%.1f kg", peso.pesoKg));
-                if (peso.grasaPct != null || peso.hidratacionPct != null || peso.grasaVisceral != null) {
-                    String grasa = peso.grasaPct != null ? String.format("%.1f%% grasa", peso.grasaPct) : "grasa --";
-                    String hidrat = peso.hidratacionPct != null ? String.format("%.1f%% hidrat", peso.hidratacionPct) : "hidrat --";
-                    String visceral = peso.grasaVisceral != null ? String.format("GV %.1f", peso.grasaVisceral) : "GV --";
-                    holder.tvValorSecundario.setText(String.format("%s | %s | %s", grasa, hidrat, visceral));
-                    holder.tvValorSecundario.setVisibility(View.VISIBLE);
-                } else {
-                    holder.tvValorSecundario.setVisibility(View.GONE);
-                }
-                break;
-
-            case TIPO_SUENO:
-                MetricasProgresionResponse.ZeppEntry zepp =
-                        (MetricasProgresionResponse.ZeppEntry) items.get(position);
-                holder.tvFecha.setText(zepp.fecha);
-                holder.tvValorPrincipal.setText(String.format("Score: %d", zepp.sleepScore));
-                holder.tvValorSecundario.setText(String.format("Pasos %d | FC %d | VO2 %.1f",
-                    zepp.pasos, zepp.hrReposo, zepp.vo2max));
+            case TIPO_SUBJETIVA:
+                MetricasProgresionResponse.SubjetivaEntry subj =
+                        (MetricasProgresionResponse.SubjetivaEntry) items.get(position);
+                holder.tvFecha.setText(subj.fecha);
+                holder.tvValorPrincipal.setText(subj.energia != null
+                        ? String.format("Energía %d/5", subj.energia) : "Energía —");
+                String estres = subj.estres != null ? String.format("Estrés %d/5", subj.estres) : "Estrés —";
+                holder.tvValorSecundario.setText(
+                        subj.notas != null && !subj.notas.isEmpty() ? estres + " · " + subj.notas : estres);
                 holder.tvValorSecundario.setVisibility(View.VISIBLE);
-                break;
-
-            case TIPO_VOLUMEN:
-                MetricasProgresionResponse.VolumenEntry vol =
-                        (MetricasProgresionResponse.VolumenEntry) items.get(position);
-                holder.tvFecha.setText(vol.fecha);
-                holder.tvValorPrincipal.setText(String.format("%,d kg", vol.volumenKg));
-                holder.tvValorSecundario.setVisibility(View.GONE);
                 break;
         }
     }

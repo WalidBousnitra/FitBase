@@ -9,7 +9,7 @@
         :root {
             --bg: #121212; --surface: #1E1E1E; --surface2: #2C2C2C;
             --text: #E8EAED; --text2: #9AA0A6; --text3: #5F6368;
-            --accent: #FF5722; --success: #81C784; --warning: #FFB74D;
+            --accent: #5E6AD2; --success: #81C784; --warning: #FFB74D;
             --error: #EF5350; --chart: #78909C;
             --radius: 12px;
         }
@@ -127,7 +127,7 @@
             <span class="arch-arrow">→</span>
             <div class="arch-box">Apps Script (Web App)</div>
             <span class="arch-arrow">→</span>
-            <div class="arch-box">Google Sheets (9 hojas)</div>
+            <div class="arch-box">Google Sheets (7 hojas)</div>
         </div>
         <div class="arch-row" style="margin-top:12px;">
             <div class="arch-box">Health Connect</div>
@@ -197,24 +197,25 @@
             <div class="step-time">~2 min</div>
         </div>
         <div class="step-body">
-            <p>Esto crea las 9 hojas con cabeceras correctas.</p>
+            <p>Esto crea las 7 hojas con cabeceras correctas.</p>
             <ol>
                 <li>En el editor Apps Script, en el dropdown de funciones selecciona: <strong>inicializarHojas</strong></li>
                 <li>Clic en <strong>▶ Ejecutar</strong></li>
                 <li>Acepta permisos (tu cuenta de Google)</li>
-                <li>Vuelve a la Sheet → verifica que hay 9 pestañas nuevas</li>
+                <li>Vuelve a la Sheet → verifica que hay 7 pestañas nuevas</li>
             </ol>
             <div class="tip-box"><strong>Permisos:</strong> Google te pide autorizar. Como tú eres el owner, clic "Avanzado → Ir a FitBase (no seguro)" → Permitir.</div>
-            <p>Las 9 hojas que se crean:</p>
+            <p>Las 7 hojas que se crean:</p>
             <div class="code-block">
                 <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
-                <code>metricas_zepp, metricas_subjetivas, peso_log,
-plan_anual, plan_semanal, sesiones_plan,
+                <code>metricas_zepp, metricas_subjetivas,
+plan_anual, sesiones_plan,
 ejercicios_plan, ejercicios_log, ejercicios_catalogo</code>
             </div>
+            <div class="info-box"><strong>Antes había 9 hojas.</strong> <code>peso_log</code> se fusionó dentro de <code>metricas_zepp</code> (centraliza TODO lo de Health Connect: sueño, pasos, FC reposo, peso y % grasa en una sola fila/día). <code>plan_semanal</code> se eliminó — se generaba pero no la usaba ninguna pantalla de la app.</div>
             <label class="check-item" onclick="updateProgress()">
                 <input type="checkbox"><div class="check-box"></div>
-                <span class="check-label">9 hojas creadas con cabeceras (verificar en la Sheet)</span>
+                <span class="check-label">7 hojas creadas con cabeceras (verificar en la Sheet)</span>
             </label>
         </div>
     </div>
@@ -235,21 +236,21 @@ ejercicios_plan, ejercicios_log, ejercicios_catalogo</code>
                 <li>Vuelve a la Sheet → verifica:</li>
             </ol>
             <ul>
-                <li><strong>plan_anual</strong>: 10 filas (10 fases con fechas)</li>
-                <li><strong>plan_semanal</strong>: ~48 filas (una por semana)</li>
+                <li><strong>plan_anual</strong>: 14 filas (14 fases con fechas — ver nota abajo)</li>
                 <li><strong>sesiones_plan</strong>: ~192 filas (4 sesiones/semana × 48 semanas)</li>
                 <li><strong>ejercicios_plan</strong>: ~1300 filas (ejercicios de cada sesión)</li>
-                <li><strong>ejercicios_catalogo</strong>: ~27 filas (ejercicios únicos)</li>
+                <li><strong>ejercicios_catalogo</strong>: 31 filas (ejercicios únicos)</li>
             </ul>
+            <div class="info-box"><strong>¿Por qué 14 fases y no 10?</strong> Revisión evidence-based (periodizacion.md §7: deload cada 4-6 semanas). El plan original tenía dos huecos de 12 y 17 semanas seguidas sin deload — se añadieron 3 deloads extra y se partió "Peak Estético" en dos bloques para no exceder esa cadencia, manteniendo el total en 48 semanas.</div>
             <div class="info-box"><strong>Los ejercicios concretos están en:</strong><br><code>ENTREGABLE_5_PLAN_EJERCICIOS.html</code> → todos los templates, macros por fase y CSV copiable. La función <code>rellenarPlanCompleto()</code> usa estos templates internamente.</div>
-            <div class="tip-box"><strong>¿Por qué pre-generar?</strong> Así no dependes de ningún trigger diario. El 31 de agosto de 2026 abres la app y ya tienes tu sesión de Adaptación con todos los ejercicios. El 15 de enero de 2027 abres y tienes tu sesión de Fuerza. Sin internet, sin IA, sin nada extra.</div>
+            <div class="tip-box"><strong>¿Por qué pre-generar?</strong> Así no dependes de ningún trigger diario. El 31 de agosto de 2026 abres la app y ya tienes tu sesión de Adaptación con todos los ejercicios. El 4 de enero de 2027 abres y tienes tu sesión de Fuerza. Sin internet, sin IA, sin nada extra.</div>
             <label class="check-item" onclick="updateProgress()">
                 <input type="checkbox"><div class="check-box"></div>
-                <span class="check-label">plan_anual tiene 10 fases con fechas correctas</span>
+                <span class="check-label">plan_anual tiene 14 fases con fechas correctas (31/08/2026 → 01/08/2027)</span>
             </label>
             <label class="check-item" onclick="updateProgress()">
                 <input type="checkbox"><div class="check-box"></div>
-                <span class="check-label">sesiones_plan tiene ~192 sesiones (31/08/2026 → 31/07/2027)</span>
+                <span class="check-label">sesiones_plan tiene ~192 sesiones (31/08/2026 → 01/08/2027)</span>
             </label>
             <label class="check-item" onclick="updateProgress()">
                 <input type="checkbox"><div class="check-box"></div>
@@ -257,7 +258,7 @@ ejercicios_plan, ejercicios_log, ejercicios_catalogo</code>
             </label>
             <label class="check-item" onclick="updateProgress()">
                 <input type="checkbox"><div class="check-box"></div>
-                <span class="check-label">ejercicios_catalogo tiene ~27 ejercicios</span>
+                <span class="check-label">ejercicios_catalogo tiene 31 ejercicios</span>
             </label>
         </div>
     </div>
@@ -314,14 +315,17 @@ ejercicios_plan, ejercicios_log, ejercicios_catalogo</code>
             </ol>
             <div class="code-block">
                 <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
-                <code>compileSdk = 34
-minSdk = 26
-targetSdk = 34
+                <code>compileSdk = 36
+minSdk = 35
+targetSdk = 36
+AGP 8.9.1 · Gradle 8.11.1 · Kotlin 2.2.0
 Java 17
 Room 2.6.1 (cache offline)
 Retrofit 2.9.0
-Health Connect 1.1.0-alpha07</code>
+Health Connect 1.1.0-alpha07
+io.github.d4viddf:hyperisland_kit:0.4.0</code>
             </div>
+            <div class="tip-box"><strong>¿Por qué minSdk 35 (Android 15+)?</strong> El timer de descanso usa Hyper Island (HyperOS 3, Xiaomi/Redmi/POCO) para avisar sin notificaciones tradicionales — la librería que lo soporta exige compileSdk 36 + AGP 8.9.1+. Como es una app de un único usuario con móvil Android 15+, se asumió el coste. En móviles sin HyperOS 3 el timer sigue funcionando igual, solo sin la cápsula flotante.</div>
             <label class="check-item" onclick="updateProgress()">
                 <input type="checkbox"><div class="check-box"></div>
                 <span class="check-label">URL configurada en Constants.java</span>
@@ -345,12 +349,16 @@ Health Connect 1.1.0-alpha07</code>
             <ol>
                 <li><strong>Zepp/Mi Fitness</strong> (reloj Amazfit): Ya lo tienes. Verifica que sincroniza sueño/pasos/FC a Health Connect:<br>Mi Fitness → Perfil → Aplicaciones de terceros → Health Connect → ACTIVAR TODO.</li>
                 <li><strong>FatSecret</strong>: Instala → Ajustes → Apps conectadas → Health Connect → Activar escritura de Nutrición.</li>
-                <li><strong>Health Connect</strong>: Dale a FitBase permiso de LECTURA de: <strong>Pasos, Frecuencia cardíaca, Sueño, Nutrición, Peso corporal</strong>.</li>
+                <li><strong>Health Connect</strong>: Dale a FitBase permiso de LECTURA de: <strong>Pasos, Frecuencia cardíaca en reposo, Sueño, Nutrición, Peso corporal, Grasa corporal</strong>.</li>
             </ol>
             <div class="info-box"><strong>Flujo de datos:</strong><br>
                 • <strong>Pasos + Sueño + FC reposo</strong>: Amazfit GTS 4 → Zepp → Health Connect → FitBase<br>
-                • <strong>Nutrición (calorías, macros)</strong>: Registras en FatSecret → Health Connect → FitBase<br>
-                • <strong>Peso corporal</strong>: Te pesas en báscula → registras en Mi Fitness o HC manual → FitBase</div>
+                • <strong>Nutrición (calorías, macros)</strong>: Registras en FatSecret → Health Connect → FitBase (esto se lee en vivo cada vez que abres Home, no se guarda en la BBDD de FitBase)<br>
+                • <strong>Peso, % grasa</strong>: Báscula Xiaomi/Amazfit → Zepp/Mi Fitness → Health Connect → FitBase, todo centralizado en <code>metricas_zepp</code> (una fila por día)<br>
+                • <strong>Sueño/FC/peso/grasa</strong> se sincronizan a la BBDD 1 vez al día (al abrir la app) — estos datos ya están "cerrados" cuando te despiertas. <strong>Los pasos</strong> se actualizan cada vez que abres/vuelves a la app (se acumulan durante el día, así que no tiene sentido congelarlos a la primera apertura).<br>
+                • La pantalla de Progresión solo lee de la BBDD, nunca directo de Health Connect.</div>
+            <div class="tip-box"><strong>Orden importante al pesarte:</strong> si te pesas y abres FitBase inmediatamente, puede que Zepp/Mi Fitness todavía no haya sincronizado la báscula a Health Connect — en ese caso FitBase simplemente no actualiza el peso de hoy (nunca usa un peso de otro día haciéndolo pasar por el de hoy). Espera 1-2 minutos tras pesarte, o abre un instante Zepp/Mi Fitness antes de abrir FitBase.</div>
+            <div class="tip-box"><strong>Grasa visceral e hidratación NO se sincronizan</strong> — Health Connect no expone visceral, e hidratación se quitó del esquema (no se usaba en ningún cálculo real). No hay hueco para "inventarlos".</div>
             <label class="check-item" onclick="updateProgress()">
                 <input type="checkbox"><div class="check-box"></div>
                 <span class="check-label">FatSecret + Zepp conectados a Health Connect</span>
@@ -370,11 +378,15 @@ Health Connect 1.1.0-alpha07</code>
                 <li>Conecta tu móvil por USB (USB Debugging activado)</li>
                 <li>En Android Studio: <strong>▶ Run 'app'</strong></li>
                 <li>La app se instala y abre</li>
+                <li>Pantalla de carga (splash) precarga BBDD + Health Connect en segundo plano, luego se abre Home directo, sin esperas</li>
                 <li>Debería mostrar la pantalla Home con banner "Preinicio"</li>
-                <li><strong>Prueba:</strong> Toca "Empezar entreno" → haz una serie → registra RIR</li>
+                <li><strong>Prueba:</strong> Toca "Empezar entreno" → desliza a la izquierda para completar la serie → registra RIR → confirma</li>
                 <li>Ve a tu Google Sheet → hoja <strong>ejercicios_log</strong> → debería haber una fila nueva</li>
+                <li>Al terminar la sesión, en el Resumen pulsa <strong>GUARDAR</strong> — ahí es cuando se marca la sesión como completada (antes solo se ve el resumen, en modo lectura)</li>
             </ol>
             <div class="info-box"><strong>La demo ESCRIBE en la BBDD real.</strong> Puedes verificar que todo funciona. Antes del inicio real (31/08/2026) ejecutas <code>limpiarDatosTest()</code> en Apps Script para limpiar.</div>
+            <div class="tip-box"><strong>Botón 🧪 (arriba a la derecha de Home):</strong> Solo para pruebas — flotante, no afecta al resto de la pantalla. Abre un log detallado de cada petición a BBDD y Health Connect, y permite compartir el log como fichero. Si quieres BBDD con datos falsos para probar sin generar el plan real, ejecuta <code>rellenarDatosFicticios()</code> en Apps Script (marca todo con <code>date_sync='FICTICIO'</code>, y el motor lo ignora al calcular peso/progresión reales).</div>
+            <div class="tip-box"><strong>Si tu móvil es Xiaomi/Redmi/POCO con HyperOS 3:</strong> al terminar el descanso, en vez de una notificación tradicional debería verse la Hyper Island (cápsula flotante) agrandándose con "¡Descanso terminado!" y un botón "Detener" — vibra en bucle hasta que lo pulsas. En cualquier otro móvil, cae automáticamente a una notificación normal con el mismo comportamiento (persiste + botón Detener + vibración en bucle).</div>
 
             <p style="margin-top:16px; font-weight:500; color:var(--text);">Checklist de verificación:</p>
             <label class="check-item" onclick="updateProgress()">
@@ -383,7 +395,7 @@ Health Connect 1.1.0-alpha07</code>
             </label>
             <label class="check-item" onclick="updateProgress()">
                 <input type="checkbox"><div class="check-box"></div>
-                <span class="check-label">Home muestra macros (3280 kcal objetivo)</span>
+                <span class="check-label">Home muestra macros (~3283 kcal objetivo con tu peso base de 78.2kg, fase bulk)</span>
             </label>
             <label class="check-item" onclick="updateProgress()">
                 <input type="checkbox"><div class="check-box"></div>
@@ -395,11 +407,15 @@ Health Connect 1.1.0-alpha07</code>
             </label>
             <label class="check-item" onclick="updateProgress()">
                 <input type="checkbox"><div class="check-box"></div>
-                <span class="check-label">Timer muestra cuenta atrás en la notificación (Chronometer nativo)</span>
+                <span class="check-label">Timer muestra cuenta atrás en pantalla y notificación (Chronometer nativo, mismo instante en ambos)</span>
             </label>
             <label class="check-item" onclick="updateProgress()">
                 <input type="checkbox"><div class="check-box"></div>
                 <span class="check-label">Timer dentro de la app = silencio total</span>
+            </label>
+            <label class="check-item" onclick="updateProgress()">
+                <input type="checkbox"><div class="check-box"></div>
+                <span class="check-label">Al acabar el descanso fuera de la app: aviso persiste + botón Detener + vibra en bucle hasta pararlo</span>
             </label>
             <label class="check-item" onclick="updateProgress()">
                 <input type="checkbox"><div class="check-box"></div>
@@ -424,18 +440,16 @@ Health Connect 1.1.0-alpha07</code>
                 <li>Esto borra SOLO los logs de prueba pero conserva:</li>
             </ol>
             <ul>
-                <li>✅ <strong>ejercicios_catalogo</strong> (tus 27 ejercicios)</li>
-                <li>✅ <strong>plan_anual</strong> (10 fases con fechas)</li>
-                <li>✅ <strong>plan_semanal</strong> (~48 microciclos)</li>
+                <li>✅ <strong>ejercicios_catalogo</strong> (tus 31 ejercicios)</li>
+                <li>✅ <strong>plan_anual</strong> (14 fases con fechas)</li>
                 <li>✅ <strong>sesiones_plan</strong> (~192 sesiones pre-generadas)</li>
                 <li>✅ <strong>ejercicios_plan</strong> (~1300 ejercicios con peso=0)</li>
                 <li>❌ <strong>ejercicios_log</strong> se vacía (registros de series de prueba)</li>
-                <li>❌ <strong>metricas_zepp</strong> se vacía (datos de sueño/FC de prueba)</li>
+                <li>❌ <strong>metricas_zepp</strong> se vacía (sueño/FC/pasos/peso/grasa de prueba — todo centralizado aquí)</li>
                 <li>❌ <strong>metricas_subjetivas</strong> se vacía</li>
-                <li>❌ <strong>peso_log</strong> se vacía (pesadas de prueba)</li>
             </ul>
             <div class="error-box"><strong>IRREVERSIBLE.</strong> Solo ejecútalo cuando estés listo para empezar "de verdad" el 31/08/2026. Los datos de prueba se pierden.</div>
-            <div class="tip-box"><strong>Tras limpiar:</strong> Los pesos de ejercicios_plan se resetean a 0. El motor de cargas (APRE Mann 2010) los calculará dinámicamente desde tu primera sesión real basándose en tu rendimiento.</div>
+            <div class="tip-box"><strong>Tras limpiar:</strong> Los pesos de ejercicios_plan se resetean a 0. El motor de cargas (APRE Mann 2010) los calculará dinámicamente desde tu primera sesión real basándose en tu rendimiento. Recuerda: <code>ejercicios_log</code> solo conserva los últimos 7 días automáticamente (se autolimpia con cada serie que registras) — no es un fallo, es a propósito, solo alimenta el reajuste de cargas.</div>
             <label class="check-item" onclick="updateProgress()">
                 <input type="checkbox"><div class="check-box"></div>
                 <span class="check-label">Entendido — ejecutaré limpiarDatosTest cuando empiece</span>
@@ -448,12 +462,13 @@ Health Connect 1.1.0-alpha07</code>
         <h3 style="font-size:1rem; margin-bottom:16px;">Resumen de lo que tienes desplegado:</h3>
         <table style="width:100%; font-size:0.85rem; color:var(--text2);">
             <tr><td style="padding:8px 0; color:var(--text); font-weight:500;">Backend</td><td>Google Apps Script (Web App)</td></tr>
-            <tr><td style="padding:8px 0; color:var(--text); font-weight:500;">Base de datos</td><td>Google Sheets (9 hojas simplificadas)</td></tr>
-            <tr><td style="padding:8px 0; color:var(--text); font-weight:500;">Frontend</td><td>Android nativo (Java 17, minSdk 26)</td></tr>
+            <tr><td style="padding:8px 0; color:var(--text); font-weight:500;">Base de datos</td><td>Google Sheets (7 hojas simplificadas)</td></tr>
+            <tr><td style="padding:8px 0; color:var(--text); font-weight:500;">Frontend</td><td>Android nativo (Java 17, minSdk 35 — Android 15+)</td></tr>
             <tr><td style="padding:8px 0; color:var(--text); font-weight:500;">Cache offline</td><td>Room (SQLite) — cola de reintentos si cae la red</td></tr>
-            <tr><td style="padding:8px 0; color:var(--text); font-weight:500;">Métricas</td><td>Health Connect ← Zepp + FatSecret</td></tr>
-            <tr><td style="padding:8px 0; color:var(--text); font-weight:500;">Notificaciones</td><td>Timer con Chronometer nativo + vibración reloj (Zepp)</td></tr>
-            <tr><td style="padding:8px 0; color:var(--text); font-weight:500;">Pantallas</td><td>Home, Entreno, Timer, Resumen, Plan Anual, Progresión</td></tr>
+            <tr><td style="padding:8px 0; color:var(--text); font-weight:500;">Sincronización</td><td>Sueño/FC/peso/grasa: 1x/día al abrir la app (metricas_zepp). Pasos: cada vez que abres/vuelves a la app (se acumulan durante el día)</td></tr>
+            <tr><td style="padding:8px 0; color:var(--text); font-weight:500;">Ramadán</td><td>Fechas 2027 confirmadas (08/02–10/03), -30% volumen, cardio anulado, macros reencuadrados a Iftar/Suhur — ver Codigo.gs RAMADAN_FECHAS</td></tr>
+            <tr><td style="padding:8px 0; color:var(--text); font-weight:500;">Timer</td><td>Chronometer nativo (pantalla+notificación) + Hyper Island (HyperOS 3) con fallback a notificación normal</td></tr>
+            <tr><td style="padding:8px 0; color:var(--text); font-weight:500;">Pantallas</td><td>Splash (precarga), Home, Entreno (calentamiento/ejercicio/registro/timer/estiramientos/cardio/resumen — minimalistas, swipe), Plan Anual, Progresión, Test Runner</td></tr>
         </table>
     </div>
 
@@ -469,11 +484,13 @@ Health Connect 1.1.0-alpha07</code>
 
             <div style="margin-top:16px; font-weight:500; color:var(--text);">Recordatorios a poner en el reloj/móvil:</div>
             <ul>
-                <li><strong>Pesarte cada mañana</strong> — Alarma/recordatorio diario a las <strong>7:30 AM</strong> (antes de comer, después de ir al baño). La báscula Zepp sincroniza automático, pero tienes que acordarte de subirte.</li>
+                <li><strong>Pesarte cada mañana</strong> — Alarma/recordatorio diario a las <strong>7:30 AM</strong> (antes de comer, después de ir al baño). La báscula sincroniza a Zepp/Mi Fitness automático, pero tienes que acordarte de subirte.</li>
+                <li><strong>Abre Zepp/Mi Fitness un momento ANTES que FitBase</strong> — Si abres FitBase justo después de pesarte, puede que Health Connect aún no tenga el dato de hoy (retraso de sincronización de Zepp/Mi Fitness). FitBase nunca inventa ni usa un peso de otro día como si fuera de hoy — simplemente ese día no actualizaría el peso. Deja 1-2 min entre pesarte y abrir FitBase, o abre antes Zepp/Mi Fitness.</li>
                 <li><strong>Registrar comidas en FatSecret</strong> — Ponlo justo después de cada comida. Si no puedes, al menos 1 vez al día antes de dormir como repaso.</li>
                 <li><strong>Cargar el reloj</strong> — Cada 4-5 días. Pon un recordatorio recurrente (p.ej. "Cargar Amazfit" cada jueves noche).</li>
                 <li><strong>Fotos de progreso mensuales</strong> — El día 1 de cada mes, mismo espejo, misma luz, mañana en ayunas.</li>
                 <li><strong>Mediciones con cinta</strong> — Solo al inicio del plan (31/08/2026) y al final de cada fase. Pon recordatorio en el calendario para esas fechas.</li>
+                <li><strong>Ramadán 2027 (08/02–10/03)</strong> — Ya está configurado en Codigo.gs (RAMADAN_FECHAS): -30% volumen, cardio anulado, macros reencuadrados a Iftar/Suhur. Si el plan sigue activo el año que viene, tendrás que actualizar las fechas de 2028 a mano (calendario lunar, no se calcula solo) antes de que empiece.</li>
             </ul>
 
             <div style="margin-top:20px; font-weight:500; color:var(--text);">Material que necesitas tener listo:</div>
@@ -493,7 +510,7 @@ Health Connect 1.1.0-alpha07</code>
             </ul>
 
             <div class="tip-box"><strong>Truco para el peso:</strong> Deja la báscula al lado del baño. Rutina: levantarte → baño → báscula → ducha. Así nunca se te olvida.</div>
-            <div class="info-box"><strong>El dato más importante es el PESO diario.</strong> Todo lo demás (grasa, HRV, pasos) se recoge automáticamente del reloj. Pero si no te pesas, la app no puede calcular tendencias ni ajustar macros.</div>
+            <div class="info-box"><strong>El dato más importante es el PESO diario.</strong> Todo lo demás (grasa, sueño, FC reposo, pasos) se recoge automáticamente del reloj. Pero si no te pesas, la app no puede calcular tendencias ni ajustar macros. (HRV no se recoge nunca — Zepp no lo exporta a Health Connect; el motor usa FC en reposo como proxy, ver motor_pesos.md).</div>
 
             <label class="check-item" onclick="updateProgress()">
                 <input type="checkbox"><div class="check-box"></div>
@@ -529,7 +546,7 @@ Health Connect 1.1.0-alpha07</code>
 </section>
 
 <div class="footer">
-    FitBase © 2026 · Guía de Despliegue v3.0 · Actualizado 01/07/2026
+    FitBase © 2026 · Guía de Despliegue v5.0 · Actualizado 05/07/2026
 </div>
 
 <script>

@@ -1,23 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Logo FitBase: mancuerna minimalista, misma familia de azul que el accent
+     principal de la app (colorAccentPrimary #3B82F6). Discos en azul vivo,
+     collarines en azul oscuro (profundidad plana, sin gradiente), barra en
+     azul claro (agarre) — coherente con colors.xml. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Simple dumbbell icon for FitBase -->
+    <!-- Discos (izq/der) -->
     <path
-        android:fillColor="#FF2D55"
-        android:pathData="M34,48 L34,60 L38,60 L38,48 Z"/>
+        android:fillColor="#3B82F6"
+        android:pathData="M24,30 L40,30 L40,78 L24,78 Z"/>
     <path
-        android:fillColor="#FF2D55"
-        android:pathData="M70,48 L70,60 L74,60 L74,48 Z"/>
+        android:fillColor="#3B82F6"
+        android:pathData="M68,30 L84,30 L84,78 L68,78 Z"/>
+    <!-- Collarines (contraste oscuro, dan profundidad plana) -->
     <path
-        android:fillColor="#FF2D55"
-        android:pathData="M38,51 L70,51 L70,57 L38,57 Z"/>
+        android:fillColor="#1E3A6E"
+        android:pathData="M20,40 L24,40 L24,68 L20,68 Z"/>
     <path
-        android:fillColor="#FF2D55"
-        android:pathData="M30,44 L30,64 L34,64 L34,44 Z"/>
+        android:fillColor="#1E3A6E"
+        android:pathData="M84,40 L88,40 L88,68 L84,68 Z"/>
+    <!-- Barra / agarre (tono más claro, mismo accent que el resto de la app) -->
     <path
-        android:fillColor="#FF2D55"
-        android:pathData="M74,44 L74,64 L78,64 L78,44 Z"/>
+        android:fillColor="#60A5FA"
+        android:pathData="M40,49 L68,49 L68,59 L40,59 Z"/>
 </vector>

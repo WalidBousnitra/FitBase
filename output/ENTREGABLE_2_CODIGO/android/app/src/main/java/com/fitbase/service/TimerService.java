@@ -15,6 +15,9 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.SystemClock;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
+import android.os.VibratorManager;
 import android.widget.RemoteViews;
 
 import androidx.core.app.NotificationCompat;
@@ -47,10 +50,13 @@ import com.fitbase.ui.workout.WorkoutActivity;
 public class TimerService extends Service {
 
     private static final int NOTIFICACION_ID = 1001;
-    private static final int NOTIF_FIN_ID = 1002;
+    static final int NOTIF_FIN_ID = 1002; // package-private: TimerDetenerReceiver también lo usa
     public static final String ACTION_TIMER_FINISHED = "com.fitbase.TIMER_FINISHED";
     public static final String ACTION_TIMER_TICK = "com.fitbase.TIMER_TICK";
     public static final String EXTRA_SEGUNDOS_RESTANTES = "segundos_restantes";
+    public static final String ACTION_TIMER_DETENER = "com.fitbase.TIMER_DETENER";
+
+    private Vibrator vibrator;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private long finishElapsedMs; // SystemClock.elapsedRealtime() cuando debe acabar
@@ -70,6 +76,13 @@ public class TimerService extends Service {
     }
 
     @Override
+    public void onCreate() {
+        super.onCreate();
+        VibratorManager vm = (VibratorManager) getSystemService(Context.VIBRATOR_MANAGER_SERVICE);
+        vibrator = vm != null ? vm.getDefaultVibrator() : null;
+    }
+
+    @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (intent == null) {
             stopSelf();
@@ -78,11 +91,20 @@ public class TimerService extends Service {
 
         int segundos = intent.getIntExtra("segundos", 120);
         if (segundos <= 0) segundos = 1;
-        ejercicioNombre = intent.getStringExtra("ejercicio_nombre");
+        ejercicioNombre = intent.getStringExtra("ejercicio");
         if (ejercicioNombre == null) ejercicioNombre = "";
 
-        // Tiempo absoluto de finalización (inmune a delays del SO)
-        finishElapsedMs = SystemClock.elapsedRealtime() + (segundos * 1000L);
+        // Tiempo absoluto de finalización — SIEMPRE el mismo instante que usa la
+        // pantalla (WorkoutActivity.mostrarTimer calcula esto UNA vez y lo manda
+        // aquí), para que Chronometer de la pantalla, notificación e Hyper Island
+        // cuenten exactamente lo mismo. Si no viene (llamada externa), se calcula
+        // aquí como respaldo.
+        long finishElapsedExtra = intent.getLongExtra("finish_elapsed_ms", -1);
+        long finishWhenExtra = intent.getLongExtra("finish_when_ms", -1);
+        finishElapsedMs = finishElapsedExtra > 0
+                ? finishElapsedExtra : SystemClock.elapsedRealtime() + (segundos * 1000L);
+        long whenMs = finishWhenExtra > 0
+                ? finishWhenExtra : System.currentTimeMillis() + (segundos * 1000L);
         finishHandled = false;
 
         // Intent para volver a la app
@@ -92,7 +114,7 @@ public class TimerService extends Service {
                 this, 0, volverIntent, PendingIntent.FLAG_IMMUTABLE);
 
         // Notificación con Chronometer nativo (cuenta atrás sin depender del proceso)
-        Notification notificacion = crearNotificacion(segundos, pendingIntent);
+        Notification notificacion = crearNotificacion(whenMs, pendingIntent);
         try {
             startForeground(NOTIFICACION_ID, notificacion);
         } catch (Exception e) {
@@ -149,17 +171,21 @@ public class TimerService extends Service {
      * Notificación con layout custom — estilo "Live Activity" de iOS.
      * Compact: icono + nombre ejercicio + cronómetro countdown naranja.
      * El Chronometer del sistema funciona independientemente del proceso.
+     *
+     * En dispositivos Xiaomi con HyperOS (Redmi Note 14 Pro 5G incluido) esta
+     * misma notificación además se muestra como Hyper Island (cápsula +
+     * expandida) con cuenta atrás nativa — ver HyperIslandTimerBridge.
      */
-    private Notification crearNotificacion(int segundos, PendingIntent pi) {
-        long whenMs = System.currentTimeMillis() + (segundos * 1000L);
-
-        // Custom compact view con cronómetro naranja
+    private Notification crearNotificacion(long whenMs, PendingIntent pi) {
+        // Custom compact view con cronómetro naranja — usa finishElapsedMs (mismo
+        // instante que el tick loop y que el Chronometer de la pantalla) en vez de
+        // recalcularlo, para que los tres cuenten exactamente lo mismo.
         RemoteViews compactView = new RemoteViews(getPackageName(), R.layout.notification_timer_compact);
         compactView.setTextViewText(R.id.tvNotifExercise, ejercicioNombre);
         compactView.setChronometerCountDown(R.id.chrono, true);
-        compactView.setChronometer(R.id.chrono, SystemClock.elapsedRealtime() + (segundos * 1000L), null, true);
+        compactView.setChronometer(R.id.chrono, finishElapsedMs, null, true);
 
-        return new NotificationCompat.Builder(this, FitBaseApp.CANAL_TIMER)
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, FitBaseApp.CANAL_TIMER)
                 .setSmallIcon(R.drawable.ic_timer)
                 .setContentTitle("Descanso")
                 .setContentText(ejercicioNombre)
@@ -175,14 +201,32 @@ public class TimerService extends Service {
                 .setShowWhen(true)
                 .setCategory(NotificationCompat.CATEGORY_STOPWATCH)
                 .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
-                .setPriority(NotificationCompat.PRIORITY_LOW)
-                .build();
+                .setPriority(NotificationCompat.PRIORITY_LOW);
+
+        // Hyper Island (solo si el dispositivo lo soporta — si no, la notificación
+        // normal de arriba funciona exactamente igual que antes, sin cambios).
+        HyperIslandTimerBridge.IslandPayload island = null;
+        if (HyperIslandTimerBridge.isSupported(this)) {
+            island = HyperIslandTimerBridge.buildCountdownPayload(this, ejercicioNombre, whenMs, R.drawable.ic_timer);
+        }
+        if (island == null) {
+            return builder.build();
+        }
+
+        builder.addExtras(island.resourceBundle);
+        Notification notificacion = builder.build();
+        notificacion.extras.putString("miui.focus.param", island.jsonParam);
+        return notificacion;
     }
 
     /**
      * Lógica al terminar el timer.
      * Dentro de la app → SILENCIO (UI observa LiveData y transiciona sola).
-     * Fuera → notificación expandida + sonido auriculares + vibrar reloj.
+     * Fuera → UNA sola notificación (antes eran 2): en dispositivos con Hyper
+     * Island, la cápsula flota/se expande mostrando "¡Descanso terminado!" en
+     * vez de un popup tradicional a pantalla completa; en el resto de
+     * dispositivos se mantiene el comportamiento anterior (heads-up). La
+     * vibración para el reloj (vía Zepp) va en esa misma notificación.
      */
     private void onTimerFinish() {
         try {
@@ -196,9 +240,7 @@ public class TimerService extends Service {
                 android.app.NotificationManager nm = getSystemService(android.app.NotificationManager.class);
                 if (nm != null) nm.cancel(NOTIFICACION_ID);
             } else {
-                // FUERA de la app → Expandir notificación + sonido auriculares
-                mostrarNotificacionFin(pi);
-                enviarVibracionReloj(pi);
+                mostrarFinDescanso(pi);
                 if (hayAuricularesConectados()) {
                     reproducirSonidoSutil();
                 }
@@ -215,57 +257,58 @@ public class TimerService extends Service {
     }
 
     /**
-     * Notificación expandida al terminar — se agranda tipo "Live Activity fin".
-     * Usa layout custom grande con título naranja vibrante, nombre ejercicio y CTA.
-     * fullScreenIntent hace que aparezca como heads-up incluso en pantalla bloqueada.
+     * Única notificación de fin de descanso — heads-up "de verdad" (el
+     * rectángulo grande que se superpone a lo que tengas abierto, igual que
+     * WhatsApp con un mensaje entrante), NO la cápsula de Hyper Island: una
+     * isla, por grande que se haga, sigue siendo una píldora flotante, no un
+     * banner a todo el ancho — para ESTE aviso concreto (a diferencia de la
+     * cuenta atrás en curso, que sigue usando Hyper Island sin cambios) se
+     * usa siempre la notificación expandida clásica de Android. Persiste
+     * hasta que se detiene (sin auto-cancelar) y vibra en bucle hasta pararla.
      */
-    private void mostrarNotificacionFin(PendingIntent pi) {
-        // Vista expandida custom
+    private void mostrarFinDescanso(PendingIntent pi) {
+        // Broadcast, NO Service: onTimerFinish() para el Service justo después
+        // de esto (stopSelf()), así que para cuando el usuario pulse "Detener"
+        // ya no habría Service que reiniciar — y reiniciarlo desde un
+        // PendingIntent puede fallar en MIUI con la app cerrada. Un
+        // BroadcastReceiver estático no depende de que nada esté vivo.
+        Intent detenerIntent = new Intent(ACTION_TIMER_DETENER);
+        detenerIntent.setClass(this, TimerDetenerReceiver.class);
+        PendingIntent piDetener = PendingIntent.getBroadcast(
+                this, 1, detenerIntent, PendingIntent.FLAG_IMMUTABLE);
+
         RemoteViews expandedView = new RemoteViews(getPackageName(), R.layout.notification_timer_expanded);
         expandedView.setTextViewText(R.id.tvFinExercise, ejercicioNombre);
 
-        Notification expandida = new NotificationCompat.Builder(this, FitBaseApp.CANAL_TIMER_RELOJ)
+        Notification notificacion = new NotificationCompat.Builder(this, FitBaseApp.CANAL_TIMER_RELOJ)
                 .setSmallIcon(R.drawable.ic_timer)
                 .setContentTitle("¡Siguiente serie!")
                 .setContentText(ejercicioNombre)
                 .setContentIntent(pi)
-                .setCustomBigContentView(expandedView)
-                .setStyle(new NotificationCompat.DecoratedCustomViewStyle())
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setCategory(NotificationCompat.CATEGORY_ALARM)
-                .setAutoCancel(true)
-                .setFullScreenIntent(pi, true) // Aparece como popup/heads-up
-                .setVibrate(new long[]{0, 200, 100, 200}) // Patrón corto
+                .setOngoing(true) // Persiste — como una alarma, no se descarta solo
+                .addAction(R.drawable.ic_timer, "Detener", piDetener)
                 .setSound(null)
+                .setCustomBigContentView(expandedView)
+                .setStyle(new NotificationCompat.DecoratedCustomViewStyle())
+                .setFullScreenIntent(pi, true) // Máxima urgencia → heads-up garantizado
                 .build();
 
         android.app.NotificationManager nm = getSystemService(android.app.NotificationManager.class);
         if (nm != null) {
             nm.cancel(NOTIFICACION_ID);
-            nm.notify(NOTIF_FIN_ID, expandida);
+            nm.notify(NOTIF_FIN_ID, notificacion);
+        }
+
+        // Vibración en bucle (como una alarma) hasta que se pulse "Detener".
+        // Zepp la replica en el reloj mientras la notificación esté activa.
+        if (vibrator != null) {
+            long[] patron = {0, 400, 300};
+            vibrator.vibrate(VibrationEffect.createWaveform(patron, 0));
         }
     }
 
-    /**
-     * Notificación que Zepp replica al Amazfit GTS 4 → vibración en muñeca.
-     */
-    private void enviarVibracionReloj(PendingIntent pi) {
-        Notification notifReloj = new NotificationCompat.Builder(this, FitBaseApp.CANAL_TIMER_RELOJ)
-                .setSmallIcon(R.drawable.ic_timer)
-                .setContentTitle("VAMOS!")
-                .setContentText("Siguiente serie: " + ejercicioNombre)
-                .setContentIntent(pi)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setAutoCancel(true)
-                .setVibrate(null)
-                .setSound(null)
-                .build();
-
-        android.app.NotificationManager nm = getSystemService(android.app.NotificationManager.class);
-        if (nm != null) {
-            nm.notify(NOTIF_FIN_ID + 1, notifReloj);
-        }
-    }
 
     /**
      * Detecta auriculares (cable, BT A2DP, BLE headset, USB).
@@ -315,5 +358,35 @@ public class TimerService extends Service {
     public void onDestroy() {
         super.onDestroy();
         handler.removeCallbacksAndMessages(null);
+        // OJO: NO cancelar el vibrator aquí. onTimerFinish() llama a stopSelf()
+        // justo después de lanzar la vibración en bucle (mostrarFinDescanso) —
+        // si se cancelase aquí, la vibración se pararía casi al instante en vez
+        // de seguir hasta que el usuario pulse "Detener". El Vibrator es un
+        // servicio del sistema — la vibración sigue activa aunque este Service
+        // se destruya; detenerAlarmaFin() la para explícitamente.
+    }
+
+    /**
+     * El usuario cerró la app de verdad (swipe en Recientes) — a diferencia
+     * de cambiar a otra app un momento, que debe seguir contando/avisando en
+     * segundo plano (ese es el comportamiento normal ya implementado). Cerrar
+     * la tarea entera se interpreta como "abandono el descanso": se para todo
+     * — Handler, vibración (aquí SÍ, a diferencia de onDestroy) y notificación
+     * (que se lleva la isla de Hyper Island con ella, ya que vive dentro de la
+     * misma notificación, no aparte).
+     */
+    @Override
+    public void onTaskRemoved(Intent rootIntent) {
+        handler.removeCallbacksAndMessages(null);
+        if (vibrator != null) vibrator.cancel();
+
+        android.app.NotificationManager nm = getSystemService(android.app.NotificationManager.class);
+        if (nm != null) {
+            nm.cancel(NOTIFICACION_ID);
+            nm.cancel(NOTIF_FIN_ID);
+        }
+
+        stopSelf();
+        super.onTaskRemoved(rootIntent);
     }
 }

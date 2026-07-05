@@ -5,75 +5,53 @@ import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import androidx.activity.result.ActivityResultLauncher;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.fitbase.R;
-import com.fitbase.data.health.HealthConnectBridge;
 import com.fitbase.data.model.MetricasProgresionResponse;
 
 import java.util.Collections;
-import java.util.Set;
+import java.util.List;
 
 /**
  * Pantalla de progresion de metricas clave.
  * Muestra historico de: Peso, Grasa%, Sueno, HRV, FC reposo, Volumen entreno.
  *
- * Si Health Connect no tiene permisos, los solicita antes de cargar.
+ * Lee ÚNICAMENTE de la BBDD (backend) — no toca Health Connect directamente.
+ * La sincronización Health Connect → BBDD ocurre una vez al día en
+ * SplashActivity (ver DailySyncManager), antes de que se pueda llegar aquí.
  */
 public class ProgressionActivity extends AppCompatActivity {
 
     private ProgressionViewModel viewModel;
     private ProgressBar progressBar;
     private TextView tvError;
-    private int diasSeleccionados = 30;
+    private int diasSeleccionados = 7;
 
     // Cards de resumen
     private TextView tvPesoActual, tvPesoCambio;
-    private TextView tvGrasaActual;
+    private TextView tvGrasaActual, tvGrasaCambio;
     private TextView tvSleepMedia;
     private TextView tvPasosMedia;
 
     // Listas de datos
-    private RecyclerView rvPeso, rvSueno, rvVolumen;
-
-    // HC permission launcher
-    @SuppressWarnings("unchecked")
-    private final ActivityResultLauncher<Set<String>> hcPermLauncher =
-            registerForActivityResult(HealthConnectBridge.getPermissionContract(),
-                    granted -> {
-                        if (granted != null && !granted.isEmpty()) {
-                            // Permisos concedidos → recargar
-                            viewModel.cargar(diasSeleccionados);
-                        } else {
-                            tvError.setText("Permisos de Health Connect denegados. " +
-                                    "Ve a Ajustes → Apps → Health Connect → Permisos → FitBase y actívalos.");
-                            tvError.setVisibility(View.VISIBLE);
-                        }
-                    });
+    private RecyclerView rvSubjetiva;
+    private ProgresionChartView chartProgresion;
+    private TextView tvEstadoEmoji;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_progression);
+        com.fitbase.util.InsetsHelper.aplicarInsetsSistema(this);
 
         vincularVistas();
         viewModel = new ViewModelProvider(this).get(ProgressionViewModel.class);
         observar();
-
-        // Solicitar permisos HC si no los tiene, luego cargar
-        if (HealthConnectBridge.isAvailable(this) && !HealthConnectBridge.hasPermissions(this)) {
-            try {
-                hcPermLauncher.launch(HealthConnectBridge.getRequiredPermissions());
-            } catch (Exception e) {
-                viewModel.cargar(diasSeleccionados);
-            }
-        } else {
-            viewModel.cargar(diasSeleccionados);
-        }
+        viewModel.cargar(diasSeleccionados);
     }
 
     private void vincularVistas() {
@@ -83,16 +61,15 @@ public class ProgressionActivity extends AppCompatActivity {
         tvPesoActual = findViewById(R.id.tvPesoActual);
         tvPesoCambio = findViewById(R.id.tvPesoCambio);
         tvGrasaActual = findViewById(R.id.tvGrasaActual);
+        tvGrasaCambio = findViewById(R.id.tvGrasaCambio);
         tvSleepMedia = findViewById(R.id.tvSleepMedia);
         tvPasosMedia = findViewById(R.id.tvPasosMedia);
 
-        rvPeso = findViewById(R.id.rvPeso);
-        rvSueno = findViewById(R.id.rvSueno);
-        rvVolumen = findViewById(R.id.rvVolumen);
+        chartProgresion = findViewById(R.id.chartProgresion);
+        tvEstadoEmoji = findViewById(R.id.tvEstadoEmoji);
+        rvSubjetiva = findViewById(R.id.rvSubjetiva);
 
-        rvPeso.setLayoutManager(new LinearLayoutManager(this));
-        rvSueno.setLayoutManager(new LinearLayoutManager(this));
-        rvVolumen.setLayoutManager(new LinearLayoutManager(this));
+        rvSubjetiva.setLayoutManager(new LinearLayoutManager(this));
 
         // Boton 7d / 30d / 90d
         findViewById(R.id.btn7d).setOnClickListener(v -> { diasSeleccionados = 7; viewModel.cargar(7); });
@@ -120,11 +97,12 @@ public class ProgressionActivity extends AppCompatActivity {
             tvPesoActual.setText("— kg");
             tvPesoCambio.setText("Sin datos");
             tvGrasaActual.setText("—%");
+            tvGrasaCambio.setText("Sin datos");
             tvSleepMedia.setText("—");
             tvPasosMedia.setText("—");
-            rvPeso.setAdapter(new MetricaAdapter(Collections.emptyList(), MetricaAdapter.TIPO_PESO));
-            rvSueno.setAdapter(new MetricaAdapter(Collections.emptyList(), MetricaAdapter.TIPO_SUENO));
-            rvVolumen.setAdapter(new MetricaAdapter(Collections.emptyList(), MetricaAdapter.TIPO_VOLUMEN));
+            chartProgresion.setDatos(null);
+            tvEstadoEmoji.setText("—");
+            rvSubjetiva.setAdapter(new MetricaAdapter(Collections.emptyList(), MetricaAdapter.TIPO_SUBJETIVA));
             return;
         }
         tvError.setVisibility(View.GONE);
@@ -147,8 +125,20 @@ public class ProgressionActivity extends AppCompatActivity {
 
             if (data.resumen.grasaActual != null) {
                 tvGrasaActual.setText(String.format("%.1f%%", data.resumen.grasaActual));
+                if (data.resumen.grasaInicio != null) {
+                    float diffGrasa = data.resumen.grasaActual - data.resumen.grasaInicio;
+                    String signoGrasa = diffGrasa >= 0 ? "+" : "";
+                    tvGrasaCambio.setText(String.format("%s%.1f%%", signoGrasa, diffGrasa));
+                    // Al revés que el peso: bajar % de grasa es lo deseable
+                    // (independientemente de si estás en bulk o cut).
+                    tvGrasaCambio.setTextColor(getColor(
+                            diffGrasa <= 0 ? R.color.success : R.color.warning));
+                } else {
+                    tvGrasaCambio.setText("Sin datos");
+                }
             } else {
                 tvGrasaActual.setText("—%");
+                tvGrasaCambio.setText("Sin datos");
             }
 
             if (data.resumen.sleepMedia != null) {
@@ -164,15 +154,34 @@ public class ProgressionActivity extends AppCompatActivity {
             }
         }
 
-        // Listas detalladas
-        if (data.peso != null && !data.peso.isEmpty()) {
-            rvPeso.setAdapter(new MetricaAdapter(data.peso, MetricaAdapter.TIPO_PESO));
+        // Grafica: Peso, Grasa, Sueno y Pasos — las 4 metricas de las cards de arriba,
+        // todas salen de metricas_zepp (centralizado).
+        chartProgresion.setDatos(data.zepp);
+
+        // Energia/estres: emoji del registro subjetivo mas reciente (lista en
+        // orden ascendente por fecha, igual que zepp — el ultimo es el actual).
+        if (data.subjetiva != null && !data.subjetiva.isEmpty()) {
+            rvSubjetiva.setAdapter(new MetricaAdapter(data.subjetiva, MetricaAdapter.TIPO_SUBJETIVA));
+            MetricasProgresionResponse.SubjetivaEntry ultimo = data.subjetiva.get(data.subjetiva.size() - 1);
+            tvEstadoEmoji.setText(emojiEstado(ultimo.energia, ultimo.estres));
+        } else {
+            tvEstadoEmoji.setText("—");
         }
-        if (data.zepp != null && !data.zepp.isEmpty()) {
-            rvSueno.setAdapter(new MetricaAdapter(data.zepp, MetricaAdapter.TIPO_SUENO));
-        }
-        if (data.volumenEntreno != null && !data.volumenEntreno.isEmpty()) {
-            rvVolumen.setAdapter(new MetricaAdapter(data.volumenEntreno, MetricaAdapter.TIPO_VOLUMEN));
-        }
+    }
+
+    /**
+     * Un unico emoji resumen del ultimo registro subjetivo (energia/estres,
+     * escala 1-5 cada uno). Score = energia - estres, rango -4..+4.
+     */
+    private String emojiEstado(Integer energia, Integer estres) {
+        if (energia == null && estres == null) return "—";
+        int e = energia != null ? energia : 3;
+        int s = estres != null ? estres : 3;
+        int score = e - s;
+        if (score >= 3) return "🤩";
+        if (score >= 1) return "🙂";
+        if (score == 0) return "😐";
+        if (score >= -2) return "😕";
+        return "😩";
     }
 }

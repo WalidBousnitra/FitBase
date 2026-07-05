@@ -19,7 +19,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="🧪 Test Runner"
+            android:text="Test Runner"
             android:textSize="22sp"
             android:textColor="@color/colorTextPrimary"
             android:fontFamily="sans-serif-medium" />
@@ -54,13 +54,25 @@
         <Button
             android:id="@+id/btnEjecutar"
             android:layout_width="wrap_content"
-            android:layout_height="40dp"
+            android:layout_height="@dimen/touch_target_min"
             android:background="@drawable/gradient_primary_button"
             android:text="▶ Ejecutar"
             android:textColor="@color/colorBackground"
             android:textSize="13sp"
             android:textAllCaps="false"
             android:fontFamily="sans-serif-medium" />
+
+        <Button
+            android:id="@+id/btnCompartir"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/touch_target_min"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/button_secondary"
+            android:text="Compartir"
+            android:textColor="@color/colorTextPrimary"
+            android:textSize="13sp"
+            android:textAllCaps="false"
+            android:visibility="gone" />
     </LinearLayout>
 
     <!-- Progress -->

@@ -1,6 +1,5 @@
 package com.fitbase.ui.plan;
 
-import android.graphics.Color;
 import android.graphics.Typeface;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -171,15 +170,22 @@ public class FaseAdapter extends RecyclerView.Adapter<FaseAdapter.FaseViewHolder
                     || s.contains("T00:");
         }
 
+        // Paleta semántica: hue propio por tipo de fase — colorFaseVol/Fza/Def/Mnt/Deload
+        // en colors.xml son la única fuente de verdad (antes había hex duplicado aquí).
         private int getColorPorTipo(String tipo) {
-            if (tipo == null) return Color.parseColor("#78909C");
+            int contextColor = getColorRes(tipo);
+            return ContextCompat.getColor(itemView.getContext(), contextColor);
+        }
+
+        private int getColorRes(String tipo) {
+            if (tipo == null) return R.color.colorFaseDeload;
             switch (tipo) {
-                case "VOL": return Color.parseColor("#4CAF50");  // Verde vibrante - Volumen
-                case "FZA": return Color.parseColor("#FF5722");  // Naranja accent - Fuerza
-                case "DEF": return Color.parseColor("#FFB300");  // Ámbar brillante - Definición
-                case "MNT": return Color.parseColor("#42A5F5");  // Azul cielo - Mantenimiento
-                case "DELOAD": return Color.parseColor("#78909C"); // Gris azulado - Deload
-                default: return Color.parseColor("#78909C");
+                case "VOL": return R.color.colorFaseVol;
+                case "FZA": return R.color.colorFaseFza;
+                case "DEF": return R.color.colorFaseDef;
+                case "MNT": return R.color.colorFaseMnt;
+                case "DELOAD": return R.color.colorFaseDeload;
+                default: return R.color.colorFaseDeload;
             }
         }
 

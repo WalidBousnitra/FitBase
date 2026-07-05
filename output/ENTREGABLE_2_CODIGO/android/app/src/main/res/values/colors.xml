@@ -1,54 +1,54 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Design System: Vivid Light — Multi-color accents -->
+<!-- Design System: Semántico multi-tono, dark, plano.
+     Cada rol tiene su propio hue (no monocromático): azul para acciones,
+     verde para éxito/positivo, ámbar para aviso, rojo para error/crítico.
+     Tonos propios de FitBase, no los hex exactos de iOS (no pintan nada
+     fuera de UIKit/SwiftUI). -->
 <resources>
-    <!-- Base: Blanco limpio -->
-    <color name="colorBackground">#F5F7FA</color>
-    <color name="colorSurface">#FFFFFF</color>
-    <color name="colorSurfaceElevated">#EEF1F5</color>
+    <!-- Base: carbón oscuro plano -->
+    <color name="colorBackground">#14161C</color>
+    <color name="colorSurface">#1E2129</color>
+    <color name="colorSurfaceElevated">#262A34</color>
 
-    <!-- Texto: Monocromático -->
-    <color name="colorTextPrimary">#1A1D21</color>
-    <color name="colorTextSecondary">#4A5568</color>
-    <color name="colorTextTertiary">#8A94A6</color>
+    <!-- Texto: escala de grises -->
+    <color name="colorTextPrimary">#F2F3F5</color>
+    <color name="colorTextSecondary">#9BA1AC</color>
+    <color name="colorTextTertiary">#5B6170</color>
 
     <!-- Bordes: Subtle Borders (1dp) -->
-    <color name="colorSeparator">#E2E8F0</color>
+    <color name="colorSeparator">#2B2F3A</color>
 
-    <!-- Accent principal: Naranja vibrante -->
-    <color name="colorAccentPrimary">#FF5722</color>
-    <!-- Funcionales -->
-    <color name="colorAccentSecondary">#43A047</color>
-    <color name="colorSuccess">#2E7D32</color>
-    <color name="colorWarning">#F57F17</color>
+    <!-- Accent principal: AZUL — acciones, CTA, botones primarios -->
+    <color name="colorAccentPrimary">#3B82F6</color>
+    <!-- Funcionales: hue propio por rol -->
+    <color name="colorSuccess">#22C55E</color>
     <!-- Aliases for direct R.color usage -->
-    <color name="success">#2E7D32</color>
-    <color name="warning">#F57F17</color>
-    <color name="error">#C62828</color>
-    <color name="colorError">#C62828</color>
-    <color name="colorChart">#1E88E5</color>
-    <color name="colorChartSecondary">#5E35B1</color>
+    <color name="success">#22C55E</color>
+    <color name="warning">#F97316</color>
+    <color name="error">#EF4444</color>
+    <color name="colorChart">#3B82F6</color>
+    <color name="colorChartSecondary">#A855F7</color>
 
-    <!-- Colores por macronutriente -->
-    <color name="colorProteina">#E64A19</color>
-    <color name="colorCarbos">#0288D1</color>
-    <color name="colorGrasa">#F9A825</color>
-    <color name="colorAgua">#00ACC1</color>
+    <!-- Colores por macronutriente: hue propio por macro (convención habitual) -->
+    <color name="colorProteina">#F472B6</color>
+    <color name="colorCarbos">#60A5FA</color>
+    <color name="colorGrasa">#FBBF24</color>
+    <color name="colorAgua">#22D3EE</color>
 
     <!-- Aliases for layout direct usage -->
-    <color name="background">#F5F7FA</color>
-    <color name="surface">#FFFFFF</color>
-    <color name="text_primary">#1A1D21</color>
-    <color name="text_secondary">#4A5568</color>
-    <color name="text_tertiary">#8A94A6</color>
-    <color name="accent">#FF5722</color>
-    <color name="chart">#1E88E5</color>
+    <color name="background">#14161C</color>
+    <color name="surface">#1E2129</color>
+    <color name="text_primary">#F2F3F5</color>
+    <color name="text_secondary">#9BA1AC</color>
+    <color name="text_tertiary">#5B6170</color>
+    <color name="accent">#3B82F6</color>
     <color name="white">#FFFFFF</color>
 
-    <!-- Colores de fase (plan anual) -->
-    <color name="colorFaseVol">#43A047</color>
-    <color name="colorFaseFza">#FF5722</color>
-    <color name="colorFaseDef">#F9A825</color>
-    <color name="colorFaseMnt">#1E88E5</color>
-    <color name="colorFaseDeload">#78909C</color>
-    <color name="colorFaseActualBg">#E3F2FD</color>
+    <!-- Colores de fase (plan anual): hue propio por tipo de fase -->
+    <color name="colorFaseVol">#22C55E</color>
+    <color name="colorFaseFza">#3B82F6</color>
+    <color name="colorFaseDef">#F97316</color>
+    <color name="colorFaseMnt">#A855F7</color>
+    <color name="colorFaseDeload">#5B6170</color>
+    <color name="colorFaseActualBg">#1E2A47</color>
 </resources>

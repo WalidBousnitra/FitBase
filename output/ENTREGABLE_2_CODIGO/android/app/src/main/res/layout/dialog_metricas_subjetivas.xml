@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Diálogo nocturno (tras las 22:00): energía, estrés y notas del día, 1
+     sola vez al día. Ver HomeActivity.comprobarMetricasSubjetivas().
+     Selector de 5 segmentos planos (no RatingBar/estrellas) — coherente con
+     el resto de la app. -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="24dp"
+        android:paddingTop="16dp"
+        android:paddingBottom="8dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Nivel de energía hoy (desgaste físico)"
+            android:textSize="14sp"
+            android:textColor="@color/text_secondary" />
+
+        <LinearLayout
+            android:id="@+id/filaEnergia"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp">
+
+            <View android:id="@+id/nivelEnergia1" android:layout_width="0dp" android:layout_height="40dp"
+                android:layout_weight="1" android:background="@drawable/button_secondary" />
+            <View android:id="@+id/nivelEnergia2" android:layout_width="0dp" android:layout_height="40dp"
+                android:layout_weight="1" android:layout_marginStart="6dp" android:background="@drawable/button_secondary" />
+            <View android:id="@+id/nivelEnergia3" android:layout_width="0dp" android:layout_height="40dp"
+                android:layout_weight="1" android:layout_marginStart="6dp" android:background="@drawable/button_secondary" />
+            <View android:id="@+id/nivelEnergia4" android:layout_width="0dp" android:layout_height="40dp"
+                android:layout_weight="1" android:layout_marginStart="6dp" android:background="@drawable/button_secondary" />
+            <View android:id="@+id/nivelEnergia5" android:layout_width="0dp" android:layout_height="40dp"
+                android:layout_weight="1" android:layout_marginStart="6dp" android:background="@drawable/button_secondary" />
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Nivel de estrés hoy"
+            android:textSize="14sp"
+            android:textColor="@color/text_secondary"
+            android:layout_marginTop="24dp" />
+
+        <LinearLayout
+            android:id="@+id/filaEstres"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp">
+
+            <View android:id="@+id/nivelEstres1" android:layout_width="0dp" android:layout_height="40dp"
+                android:layout_weight="1" android:background="@drawable/button_secondary" />
+            <View android:id="@+id/nivelEstres2" android:layout_width="0dp" android:layout_height="40dp"
+                android:layout_weight="1" android:layout_marginStart="6dp" android:background="@drawable/button_secondary" />
+            <View android:id="@+id/nivelEstres3" android:layout_width="0dp" android:layout_height="40dp"
+                android:layout_weight="1" android:layout_marginStart="6dp" android:background="@drawable/button_secondary" />
+            <View android:id="@+id/nivelEstres4" android:layout_width="0dp" android:layout_height="40dp"
+                android:layout_weight="1" android:layout_marginStart="6dp" android:background="@drawable/button_secondary" />
+            <View android:id="@+id/nivelEstres5" android:layout_width="0dp" android:layout_height="40dp"
+                android:layout_weight="1" android:layout_marginStart="6dp" android:background="@drawable/button_secondary" />
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Notas (opcional)"
+            android:textSize="14sp"
+            android:textColor="@color/text_secondary"
+            android:layout_marginTop="24dp" />
+
+        <EditText
+            android:id="@+id/etNotas"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minLines="2"
+            android:gravity="top|start"
+            android:hint="¿Algo a destacar del día?"
+            android:textColorHint="@color/text_tertiary"
+            android:textColor="@color/text_primary"
+            android:textSize="14sp"
+            android:background="@drawable/button_secondary"
+            android:padding="12dp"
+            android:layout_marginTop="8dp"
+            android:inputType="textMultiLine|textCapSentences" />
+
+    </LinearLayout>
+</ScrollView>
