@@ -11,7 +11,7 @@ import android.widget.Chronometer;
 import android.widget.NumberPicker;
 import android.widget.TextView;
 
-import androidx.appcompat.app.AppCompatActivity;
+import com.fitbase.ui.BaseActivity;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.fitbase.R;
@@ -36,7 +36,7 @@ import java.util.Locale;
  * Timer usa TimerService (Foreground Service + Overlay) para funcionar
  * fuera de la app con Hyper Island personalizable.
  */
-public class WorkoutActivity extends AppCompatActivity {
+public class WorkoutActivity extends BaseActivity {
 
     private WorkoutViewModel viewModel;
     private FeedbackHelper feedback;
@@ -52,15 +52,15 @@ public class WorkoutActivity extends AppCompatActivity {
 
     // ─── Rutina (calentamiento/estiramientos) ───
     private TextView tvRutinaProgreso, tvRutinaTitulo, tvRutinaNombre, tvRutinaValor;
+    private View contenidoRutina;
 
     // ─── Ejercicio activo ───
+    private View contenidoEjercicio;
     private TextView tvNombreEjercicio, tvPesoSugerido, tvMotorDetalle;
     private TextView tvRepsObjetivo, tvRirObjetivo, tvSerieInfo, tvProgreso;
     private TextView tvNotaEjercicio;
     private TextView tvSuperserie;
     private Button btnPesoMenos, btnPesoMas;
-    // Paso del ajuste manual de peso (mancuernas/discos suelen ir de 1-2.5kg).
-    private static final float PASO_PESO_KG = 1.0f;
 
     // ─── Registro RIR ───
     private NumberPicker pickerReps;
@@ -141,6 +141,7 @@ public class WorkoutActivity extends AppCompatActivity {
         tvRutinaTitulo = findViewById(R.id.tvRutinaTitulo);
         tvRutinaNombre = findViewById(R.id.tvRutinaNombre);
         tvRutinaValor = findViewById(R.id.tvRutinaValor);
+        contenidoRutina = findViewById(R.id.contenidoRutina);
         layoutRutina.setOnTouchListener(new SwipeListener(this) {
             @Override public void onSwipeLeft() {
                 feedback.vibrateLight();
@@ -153,6 +154,7 @@ public class WorkoutActivity extends AppCompatActivity {
         });
 
         // Ejercicio
+        contenidoEjercicio = findViewById(R.id.contenidoEjercicio);
         tvNombreEjercicio = findViewById(R.id.tvNombreEjercicio);
         tvPesoSugerido = findViewById(R.id.tvPesoSugerido);
         tvMotorDetalle = findViewById(R.id.tvMotorDetalle);
@@ -167,8 +169,8 @@ public class WorkoutActivity extends AppCompatActivity {
         // partida; lo que quede aquí es lo que se manda a ejercicios_log.
         btnPesoMenos = findViewById(R.id.btnPesoMenos);
         btnPesoMas = findViewById(R.id.btnPesoMas);
-        btnPesoMenos.setOnClickListener(v -> ajustarPeso(-PASO_PESO_KG));
-        btnPesoMas.setOnClickListener(v -> ajustarPeso(PASO_PESO_KG));
+        btnPesoMenos.setOnClickListener(v -> ajustarPeso(-1));
+        btnPesoMas.setOnClickListener(v -> ajustarPeso(1));
 
         // Registro
         pickerReps = findViewById(R.id.pickerReps);
@@ -321,6 +323,11 @@ public class WorkoutActivity extends AppCompatActivity {
     // ─── Cambio de fase ───────────────────────────────────
 
     private void cambiarFase(WorkoutViewModel.FaseWorkout fase) {
+        // Fundido cruzado entre fases (calentamiento→ejercicio→timer→cardio→
+        // resumen) — más amigable que el corte seco de setVisibility a secas.
+        androidx.transition.TransitionManager.beginDelayedTransition(
+                (android.view.ViewGroup) findViewById(R.id.rootWorkout),
+                new androidx.transition.Fade().setDuration(200));
         ocultarTodos();
         switch (fase) {
             case CARGANDO:
@@ -390,6 +397,14 @@ public class WorkoutActivity extends AppCompatActivity {
         tvRutinaValor.setText(item.reps);
         tvRutinaProgreso.setText(String.format(Locale.getDefault(),
                 "%d / %d", (idx != null ? idx : 0) + 1, total));
+        fadeIn(contenidoRutina);
+    }
+
+    /** Fundido de entrada corto para contenido que cambia (swipe entre items/ejercicios). */
+    private void fadeIn(View v) {
+        if (v == null) return;
+        v.setAlpha(0f);
+        v.animate().alpha(1f).setDuration(180).start();
     }
 
     // ─── Ejercicio actual ─────────────────────────────────
@@ -430,14 +445,19 @@ public class WorkoutActivity extends AppCompatActivity {
         } catch (NumberFormatException e) {
             pickerReps.setValue(10);
         }
+        fadeIn(contenidoEjercicio);
     }
 
-    /** Ajusta el peso real de la serie/ejercicio actual (botones −/+). */
-    private void ajustarPeso(float delta) {
+    /**
+     * Ajusta el peso real de la serie/ejercicio actual (botones −/+).
+     * @param signo +1 o -1 — el tamaño del paso lo decide el propio ejercicio
+     *              según su equipo (ver Ejercicio.getPasoPesoKg()).
+     */
+    private void ajustarPeso(int signo) {
         Ejercicio ej = viewModel.getEjercicioActual();
         if (ej == null) return;
         feedback.vibrateLight();
-        ej.ajustarPesoActual(delta);
+        ej.ajustarPesoActual(signo * ej.getPasoPesoKg());
         tvPesoSugerido.setText(ej.getPesoTexto());
     }
 

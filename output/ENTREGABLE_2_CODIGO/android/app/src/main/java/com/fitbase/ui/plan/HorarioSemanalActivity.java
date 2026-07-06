@@ -5,12 +5,11 @@ import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import com.fitbase.R;
 import com.fitbase.data.api.ApiClient;
 import com.fitbase.data.model.ActualizarHorarioResponse;
 import com.fitbase.data.model.HorarioSemanalResponse;
+import com.fitbase.ui.BaseActivity;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -43,7 +42,7 @@ import retrofit2.Response;
  * backend no necesita saber que viene de un preset, solo recibe un
  * horario válido.
  */
-public class HorarioSemanalActivity extends AppCompatActivity {
+public class HorarioSemanalActivity extends BaseActivity {
 
     // Orden ISO de la semana (lunes primero) usado tanto para generar el
     // horario como para pintar la vista previa — getDay() del backend usa

@@ -63,6 +63,9 @@ public class Ejercicio {
     @SerializedName("str_grupo_principal")
     private String grupoMuscular;
 
+    @SerializedName("str_equipamiento")
+    private String equipamiento;
+
     // ─── Motor capas (detalle de la decisión) ───
     public static class MotorCapas {
         @SerializedName("base")
@@ -123,6 +126,26 @@ public class Ejercicio {
     public float getAjusteAplicado() { return ajusteAplicado; }
     public String getNombre() { return nombre; }
     public String getGrupoMuscular() { return grupoMuscular; }
+    public String getEquipamiento() { return equipamiento; }
+
+    /**
+     * Salto del +/- de peso según el equipo (usuario/equipamiento.md):
+     *   - Mancuernas: saltos de 2kg (rango disponible 4-60kg, §2 Mancuernas).
+     *   - Barra (incl. Barra Z): cargada con discos en pareja — el salto más
+     *     fino real con un set olímpico estándar (1.25/2.5/5/10/15/20/25kg)
+     *     es 2*1.25=2.5kg por lado, así que cualquier combinación posible de
+     *     discos cae en un múltiplo de 2.5kg.
+     *   - Máquina/polea/banda: no hay un incremento fijo de fábrica (varía
+     *     por máquina), así que se deja el control más fino (1kg) para poder
+     *     ajustar a cualquier número real.
+     */
+    public float getPasoPesoKg() {
+        if (equipamiento == null) return 1f;
+        String eq = equipamiento.toLowerCase(java.util.Locale.ROOT);
+        if (eq.contains("barra")) return 2.5f;
+        if (eq.contains("mancuerna")) return 2f;
+        return 1f;
+    }
     public int getSerieCompletada() { return serieCompletada; }
     public void setSerieCompletada(int s) { this.serieCompletada = s; }
 

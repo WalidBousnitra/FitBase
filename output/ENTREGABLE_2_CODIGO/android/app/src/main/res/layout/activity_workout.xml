@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/rootWorkout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background">
@@ -38,6 +39,7 @@
             android:padding="24dp" />
 
         <LinearLayout
+            android:id="@+id/contenidoRutina"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
@@ -106,6 +108,7 @@
             android:padding="24dp" />
 
         <LinearLayout
+            android:id="@+id/contenidoEjercicio"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
@@ -139,7 +142,7 @@
                  que se manda a ejercicios_log, así el motor sabe lo que de
                  verdad se levantó. -->
             <LinearLayout
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
@@ -158,15 +161,19 @@
 
                 <TextView
                     android:id="@+id/tvPesoSugerido"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:text="82.5 kg"
-                    android:textSize="@dimen/text_hero"
+                    android:textSize="@dimen/text_display_metric"
+                    android:autoSizeTextType="uniform"
+                    android:autoSizeMinTextSize="18sp"
+                    android:autoSizeMaxTextSize="@dimen/text_display_metric"
+                    android:maxLines="1"
                     android:textColor="@color/accent"
                     android:fontFamily="sans-serif-black"
                     android:letterSpacing="-0.02"
                     android:gravity="center"
-                    android:minWidth="150dp"
                     android:layout_marginHorizontal="4dp" />
 
                 <Button

@@ -5,16 +5,15 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import com.fitbase.R;
+import com.fitbase.ui.BaseActivity;
 
 /**
  * Pantalla de resumen post-sesión (standalone).
  * Normalmente el resumen se muestra DENTRO de WorkoutActivity (fase RESUMEN).
  * Esta Activity solo se usa si se navega directamente desde notificación.
  */
-public class SummaryActivity extends AppCompatActivity {
+public class SummaryActivity extends BaseActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

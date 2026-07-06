@@ -7,11 +7,10 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import com.fitbase.R;
 import com.fitbase.data.api.ApiClient;
 import com.fitbase.data.model.CambioFaseResponse;
+import com.fitbase.ui.BaseActivity;
 
 import java.util.Locale;
 
@@ -25,7 +24,7 @@ import retrofit2.Response;
  * cuando detecta que fase_id cambió desde la última vez (SharedPreferences)
  * — llama a GET cambio_fase.
  */
-public class CambioFaseActivity extends AppCompatActivity {
+public class CambioFaseActivity extends BaseActivity {
 
     private View bloqueAnterior, bloqueNueva;
     private TextView tvFlecha;

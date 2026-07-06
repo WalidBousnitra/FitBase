@@ -6,7 +6,6 @@ import android.os.Handler;
 import android.os.Looper;
 
 import androidx.activity.result.ActivityResultLauncher;
-import androidx.appcompat.app.AppCompatActivity;
 
 import com.fitbase.R;
 import com.fitbase.data.api.ApiClient;
@@ -16,6 +15,7 @@ import com.fitbase.data.health.HealthConnectBridge;
 import com.fitbase.data.model.MetricasProgresionResponse;
 import com.fitbase.data.model.PlanAnualResponse;
 import com.fitbase.data.model.VistaMañanaResponse;
+import com.fitbase.ui.BaseActivity;
 import com.fitbase.ui.home.HomeActivity;
 
 import java.util.Set;
@@ -36,7 +36,7 @@ import retrofit2.Response;
  * termina (o pasa un tiempo máximo de espera) navega a Home — así, mientras se
  * usa la app, las pantallas no tienen que esperar a la red.
  */
-public class SplashActivity extends AppCompatActivity {
+public class SplashActivity extends BaseActivity {
 
     private static final long TIMEOUT_CARGA_MS = 8000;
 

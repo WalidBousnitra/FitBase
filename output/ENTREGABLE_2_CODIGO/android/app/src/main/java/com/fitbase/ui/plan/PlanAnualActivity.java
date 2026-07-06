@@ -4,19 +4,19 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
 
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.fitbase.R;
+import com.fitbase.ui.BaseActivity;
 
 /**
  * Pantalla del Plan Anual (Vista de 11 meses).
  * Muestra fases coloreadas, semana actual, checkpoints.
  * Referencia: REG-DEV-01 (ui.md) § 12
  */
-public class PlanAnualActivity extends AppCompatActivity {
+public class PlanAnualActivity extends BaseActivity {
 
     private PlanAnualViewModel viewModel;
 

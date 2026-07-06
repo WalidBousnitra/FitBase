@@ -5,7 +5,7 @@ import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import androidx.appcompat.app.AppCompatActivity;
+import com.fitbase.ui.BaseActivity;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -25,7 +25,7 @@ import java.util.List;
  * La sincronización Health Connect → BBDD ocurre una vez al día en
  * SplashActivity (ver DailySyncManager), antes de que se pueda llegar aquí.
  */
-public class ProgressionActivity extends AppCompatActivity {
+public class ProgressionActivity extends BaseActivity {
 
     private ProgressionViewModel viewModel;
     private ProgressBar progressBar;

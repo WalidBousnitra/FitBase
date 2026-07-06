@@ -14,12 +14,12 @@ import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.fitbase.R;
 import com.fitbase.data.health.HealthConnectBridge;
 import com.fitbase.data.model.VistaMañanaResponse;
+import com.fitbase.ui.BaseActivity;
 import com.fitbase.ui.plan.PlanAnualActivity;
 import com.fitbase.ui.progression.ProgressionActivity;
 import com.fitbase.ui.summary.SummaryActivity;
@@ -42,7 +42,7 @@ import java.util.Set;
  *   3. A lo largo del día: ve macros RESTANTES a simple vista.
  *   4. Cuando llega al gym: pulsa "Empezar entreno".
  */
-public class HomeActivity extends AppCompatActivity {
+public class HomeActivity extends BaseActivity {
 
     private HomeViewModel viewModel;
     private FeedbackHelper feedback;
@@ -68,8 +68,12 @@ public class HomeActivity extends AppCompatActivity {
     private ProgressBar progressPasos;
 
     // ─── Vistas: Movilidad matutina ───
+    // Colapsada por defecto (ver vincularVistas) — evita que una rutina larga
+    // empuje el resto de la pantalla fuera de la vista (pantalla sin scroll).
+    private View headerMovilidad;
     private LinearLayout layoutMovilidad;
-    private TextView tvMovilidadTitulo;
+    private TextView tvMovilidadTitulo, tvMovilidadChevron;
+    private boolean movilidadExpandida = false;
 
     // ─── Vistas: Sesión ───
     private TextView tvSesionTipo, tvSesionFase;
@@ -223,8 +227,16 @@ public class HomeActivity extends AppCompatActivity {
         tvCardioInfo = findViewById(R.id.tvCardioInfo);
         progressPasos = findViewById(R.id.progressPasos);
 
+        headerMovilidad = findViewById(R.id.headerMovilidad);
         layoutMovilidad = findViewById(R.id.layoutMovilidad);
         tvMovilidadTitulo = findViewById(R.id.tvMovilidadTitulo);
+        tvMovilidadChevron = findViewById(R.id.tvMovilidadChevron);
+        headerMovilidad.setOnClickListener(v -> {
+            feedback.vibrateLight();
+            movilidadExpandida = !movilidadExpandida;
+            layoutMovilidad.setVisibility(movilidadExpandida ? View.VISIBLE : View.GONE);
+            tvMovilidadChevron.setText(movilidadExpandida ? "▾" : "▸");
+        });
 
         tvSesionTipo = findViewById(R.id.tvSesionTipo);
         tvSesionFase = findViewById(R.id.tvSesionFase);
@@ -390,7 +402,9 @@ public class HomeActivity extends AppCompatActivity {
                 tv.setPadding(0, 4, 0, 4);
                 layoutMovilidad.addView(tv);
             }
-            layoutMovilidad.setVisibility(View.VISIBLE);
+            // Respeta el estado colapsado/expandido actual — no se fuerza
+            // VISIBLE aquí (colapsada por defecto, ver vincularVistas).
+            layoutMovilidad.setVisibility(movilidadExpandida ? View.VISIBLE : View.GONE);
         }
 
         // ── Sesión del día ──

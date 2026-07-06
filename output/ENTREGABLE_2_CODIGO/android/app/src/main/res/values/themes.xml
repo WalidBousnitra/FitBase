@@ -31,5 +31,12 @@
 
         <!-- Typography: system sans-serif -->
         <item name="android:fontFamily">sans-serif</item>
+
+        <!-- Feedback visual de pulsado (escala) para TODOS los botones —
+             framework Button/ImageButton y MaterialButton explícito, ver
+             Widget.FitBase.Button.Press en styles.xml. -->
+        <item name="android:buttonStyle">@style/Widget.FitBase.Button.Press</item>
+        <item name="materialButtonStyle">@style/Widget.FitBase.Button.Press</item>
+        <item name="android:imageButtonStyle">@style/Widget.FitBase.ImageButton.Press</item>
     </style>
 </resources>

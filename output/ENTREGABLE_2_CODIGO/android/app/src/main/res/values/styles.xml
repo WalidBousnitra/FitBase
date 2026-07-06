@@ -48,7 +48,7 @@
     <!-- Button: Botones CTA -->
     <style name="Widget.FitBase.Button.Primary">
         <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">60dp</item>
+        <item name="android:layout_height">52dp</item>
         <item name="android:background">@drawable/gradient_primary_button</item>
         <item name="android:textColor">@color/white</item>
         <item name="android:textSize">15sp</item>
@@ -94,6 +94,19 @@
         <item name="android:textSize">20sp</item>
         <item name="android:textColor">@color/colorTextPrimary</item>
         <item name="android:background">?attr/selectableItemBackgroundBorderless</item>
+    </style>
+
+    <!-- Animación de "pulsado" (escala ligera) aplicada a TODOS los botones
+         de la app vía themes.xml (android:buttonStyle / materialButtonStyle /
+         android:imageButtonStyle) — un solo sitio en vez de repetirlo en cada
+         layout. Los estilos base (Material) se mantienen intactos, solo se
+         añade el stateListAnimator. -->
+    <style name="Widget.FitBase.Button.Press" parent="Widget.MaterialComponents.Button">
+        <item name="android:stateListAnimator">@animator/btn_press_scale</item>
+    </style>
+
+    <style name="Widget.FitBase.ImageButton.Press" parent="Widget.AppCompat.ImageButton">
+        <item name="android:stateListAnimator">@animator/btn_press_scale</item>
     </style>
 
 </resources>

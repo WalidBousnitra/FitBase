@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Pantalla anterior reapareciendo (al volver / finish()) — ver BaseActivity. -->
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:interpolator="@android:anim/decelerate_interpolator">
+    <translate
+        android:fromXDelta="-4%"
+        android:toXDelta="0"
+        android:duration="220" />
+    <alpha
+        android:fromAlpha="0.6"
+        android:toAlpha="1"
+        android:duration="220" />
+</set>

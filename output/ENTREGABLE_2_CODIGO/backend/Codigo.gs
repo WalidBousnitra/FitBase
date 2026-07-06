@@ -1473,6 +1473,7 @@ function getEjerciciosSesion_(sesionId) {
     if (cat) {
       ej.nombre = cat.str_nombre;
       ej.str_grupo_principal = cat.str_grupo_principal;
+      ej.str_equipamiento = cat.str_equipamiento;
     }
   });
   return res;
@@ -1595,8 +1596,31 @@ function inicializarHojas() {
     if (!h) h = ss.insertSheet(nombre);
     h.getRange(1, 1, 1, cabs.length).setValues([cabs]).setFontWeight('bold');
     h.setFrozenRows(1);
+
+    // Forzar formato de texto plano en columnas str_* — sin esto, Sheets
+    // autodetecta el tipo al escribir y algo como "8-10" (str_reps_plan) se
+    // interpreta como fecha (8 de octubre), corrompiendo el valor. Se aplica
+    // a toda la columna (no solo filas existentes) para que también cubra
+    // filas que se añadan después (populate, generarSesionTestHoy_, etc).
+    cabs.forEach((cab, i) => {
+      if (cab.indexOf('str_') === 0) {
+        const letra = columnaALetra_(i + 1);
+        h.getRange(letra + '2:' + letra).setNumberFormat('@');
+      }
+    });
   }
   return { ok: true, mensaje: 'Hojas creadas con cabeceras' };
+}
+
+/** Convierte índice de columna (1-based) a letra A1 ('A', 'B', ..., 'AA', ...). */
+function columnaALetra_(col) {
+  let letra = '';
+  while (col > 0) {
+    const resto = (col - 1) % 26;
+    letra = String.fromCharCode(65 + resto) + letra;
+    col = Math.floor((col - 1) / 26);
+  }
+  return letra;
 }
 
 // ─── §7. RELLENAR ─────────────────────────────────────────────
@@ -1709,11 +1733,18 @@ const T = {
       ['EJE_SENTADILLA','Sentadilla barra',4,'6-8',180,'Compuesto',''],
       ['EJE_RDL','RDL',4,'8-10',150,'Isquios+glúteo',''],
       ['EJE_HIP_THRUST','Hip thrust',3,'10-12',120,'',''],
-      // Añadido tras revisión experta: cuádriceps (P7, secundario) se quedaba
-      // corto (10-12 ser/sem objetivo, solo llegaba con sentadilla+extensión).
-      // Leg press confirmado disponible (equipamiento.md) — no viola ninguna
-      // exclusión.
-      ['EJE_LEG_PRESS','Leg press',3,'10-12',120,'Cuádriceps extra',''],
+      // Cuádriceps (P7, secundario) se quedaba corto (10-12 ser/sem objetivo,
+      // solo llegaba con sentadilla+extensión) — se necesitaba un compuesto
+      // extra de cuádriceps. Revisión anterior añadió "Leg press", pero eso
+      // SÍ viola una exclusión explícita del usuario (usuario/
+      // preferencias_ejercicios.md §2: "Prensas en máquina — Inefectivos
+      // (percepción)"), pese a que el comentario decía lo contrario — el
+      // orden de selección (seleccion_ejercicios.md §2) pone las exclusiones
+      // ANTES que la disponibilidad de equipo. Sustituido por Hack squat
+      // (equipamiento.md: máquina distinta, no es una "prensa" — patrón
+      // guiado de sentadilla, no press horizontal — y no está en ninguna
+      // lista de exclusión).
+      ['EJE_HACK_SQUAT','Hack squat',3,'10-12',120,'Cuádriceps extra',''],
       ['EJE_EXT_QUAD','Extensión cuádriceps',3,'12-15',90,'','SS1'],
       ['EJE_CURL_FEM','Curl femoral',3,'10-12',90,'','SS1'],
       // Press Pallof (core anti-rotación) ELIMINADO (revisión 2026): PIERNA_VOL
@@ -1742,7 +1773,7 @@ const T = {
     HOMBR_VOL: [
       ['EJE_PRESS_HOMB','Press hombro mancuernas',4,'8-10',150,'',''],
       ['EJE_LAT_SENT','Elev. laterales sentado',4,'12-15',90,'P1: V-taper extra','SS1'],
-      ['EJE_LAT_POLEA','Elev. laterales polea (tras nuca)',3,'12-15',90,'','SS1'],
+      ['EJE_LAT_POLEA','Elev. laterales polea (media altura)',3,'12-15',90,'','SS1'],
       ['EJE_PAJARO','Pájaro inclinado',3,'12-15',90,'Rear delt',''],
       ['EJE_ZOTTMAN','Curl Zottman',3,'10-12',90,'Bíceps+Antebrazo','SS2'],
       ['EJE_CURL_INC','Curl inclinado 45°',3,'10-12',90,'','SS2'],
@@ -2032,10 +2063,13 @@ function rellenarCatalogo_() {
     ['EJE_SENTADILLA','Sentadilla barra','Barbell Squat','Cuádriceps','["Glúteos","Isquios"]','Extensión rodilla','Barra,Rack',true,true,false,'',''],
     ['EJE_RDL','RDL','Romanian Deadlift','Isquios','["Glúteos"]','Extensión cadera','Barra',true,true,false,'',''],
     ['EJE_HIP_THRUST','Hip thrust','Hip Thrust','Glúteos','["Isquios"]','Extensión cadera','Barra,Banco',true,true,false,'',''],
-    // Añadido tras revisión experta del plan: cuádriceps se quedaba corto de
-    // volumen (objetivo 10-12 ser/sem, programacion.md §3). Confirmado
-    // disponible en equipamiento.md (Fitness Park). Sin conflicto con lesiones.
-    ['EJE_LEG_PRESS','Leg press','Leg Press','Cuádriceps','["Glúteos"]','Extensión rodilla','Máquina Leg Press',true,true,false,'',''],
+    // Cuádriceps se quedaba corto de volumen (objetivo 10-12 ser/sem,
+    // programacion.md §3). "Leg press" (revisión anterior) viola la
+    // exclusión explícita "Prensas en máquina" (usuario/
+    // preferencias_ejercicios.md §2) — sustituido por Hack squat, disponible
+    // en equipamiento.md y no excluido (es un patrón guiado de sentadilla,
+    // no una prensa horizontal).
+    ['EJE_HACK_SQUAT','Hack squat','Hack Squat','Cuádriceps','["Glúteos"]','Extensión rodilla','Máquina Hack Squat',true,true,false,'',''],
     ['EJE_EXT_QUAD','Extensión cuádriceps','Leg Extension','Cuádriceps','[]','Extensión rodilla','Máquina',false,false,false,'',''],
     ['EJE_CURL_FEM','Curl femoral','Leg Curl','Isquios','[]','Flexión rodilla','Máquina',false,false,false,'',''],
     ['EJE_DOMINADAS','Dominadas','Pull-ups','Espalda','["Bíceps"]','Tirón vertical','Barra',true,true,false,'',''],
