@@ -8,8 +8,8 @@ public final class Constants {
 
     private Constants() {}
 
-    // Fecha inicio del programa (biometria.md)
-    public static final String FECHA_INICIO_PROGRAMA = "2026-08-31";
+    // Fecha inicio del programa (biometria.md) — fuente real: plan_anual en
+    // Codigo.gs, propagada a la app vía VistaMañanaResponse.getFechaInicioPlan().
     public static final int DURACION_MESES = 11;
 
     // Datos fijos del usuario (biometria.md)

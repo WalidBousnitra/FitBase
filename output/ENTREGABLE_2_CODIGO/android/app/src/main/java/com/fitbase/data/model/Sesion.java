@@ -57,9 +57,4 @@ public class Sesion {
     public boolean isCompletada() { return completada; }
     public String getFechaInicio() { return fechaInicio; }
     public String getFechaFin() { return fechaFin; }
-
-    // Setters (para demo)
-    public void setTipo(String tipo) { this.tipo = tipo; }
-    public void setDuracionEstimadaMin(int min) { this.duracionEstimadaMin = min; }
-    public void setSesionId(String id) { this.sesionId = id; }
 }

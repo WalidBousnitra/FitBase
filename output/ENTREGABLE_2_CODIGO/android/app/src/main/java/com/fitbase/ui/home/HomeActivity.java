@@ -23,7 +23,6 @@ import com.fitbase.data.model.VistaMañanaResponse;
 import com.fitbase.ui.plan.PlanAnualActivity;
 import com.fitbase.ui.progression.ProgressionActivity;
 import com.fitbase.ui.summary.SummaryActivity;
-import com.fitbase.ui.test.TestRunnerActivity;
 import com.fitbase.ui.workout.WorkoutActivity;
 import com.fitbase.util.FeedbackHelper;
 
@@ -77,13 +76,15 @@ public class HomeActivity extends AppCompatActivity {
     private Button btnEmpezarEntreno;
 
     // ─── Vistas: Navegación ───
-    private View btnPlanAnual, btnProgresion, btnTest, btnPreviewFase, btnPreviewEntreno;
+    private View btnPlanAnual, btnProgresion;
 
     // ─── Vistas: Banners ───
     private View bannerAusencia;
     private TextView tvAusenciaMensaje;
     private View bannerRamadan;
     private TextView tvRamadanTitulo, tvRamadanDetalle;
+    private View bannerPretemporada;
+    private TextView tvPretemporadaDetalle;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -230,49 +231,19 @@ public class HomeActivity extends AppCompatActivity {
         btnEmpezarEntreno = findViewById(R.id.btnEmpezarEntreno);
         btnPlanAnual = findViewById(R.id.btnPlanAnual);
         btnProgresion = findViewById(R.id.btnProgresion);
-        btnTest = findViewById(R.id.btnTest);
-        btnPreviewFase = findViewById(R.id.btnPreviewFase);
-        btnPreviewEntreno = findViewById(R.id.btnPreviewEntreno);
 
         bannerAusencia = findViewById(R.id.bannerAusencia);
         tvAusenciaMensaje = findViewById(R.id.tvAusenciaMensaje);
         bannerRamadan = findViewById(R.id.bannerRamadan);
         tvRamadanTitulo = findViewById(R.id.tvRamadanTitulo);
         tvRamadanDetalle = findViewById(R.id.tvRamadanDetalle);
+        bannerPretemporada = findViewById(R.id.bannerPretemporada);
+        tvPretemporadaDetalle = findViewById(R.id.tvPretemporadaDetalle);
 
         // Navegación (el listener de btnEmpezarEntreno se fija en
         // actualizarVistaMañana — cambia según si ya hay sesión completada hoy)
         btnPlanAnual.setOnClickListener(v -> startActivity(new Intent(this, PlanAnualActivity.class)));
         btnProgresion.setOnClickListener(v -> startActivity(new Intent(this, ProgressionActivity.class)));
-        btnTest.setOnClickListener(v -> startActivity(new Intent(this, TestRunnerActivity.class)));
-        btnPreviewFase.setOnClickListener(v -> {
-            Intent intent = new Intent(this, com.fitbase.ui.plan.CambioFaseActivity.class);
-            intent.putExtra(com.fitbase.ui.plan.CambioFaseActivity.EXTRA_DEMO, true);
-            startActivity(intent);
-        });
-        // No pasa por el gate de tipo_dia: WorkoutActivity ya cae sola en su
-        // sesión demo si sesion_hoy no devuelve nada (pre-temporada, día de
-        // descanso/natación real, o backend aún no redesplegado) — así se
-        // puede probar el flujo de gym en cualquier momento. Si el entreno
-        // demo de HOY ya se completó, la segunda vez lleva al resumen en vez
-        // de dejar empezar otro (mismo criterio que una sesión real completada).
-        btnPreviewEntreno.setOnClickListener(v -> abrirEntrenoODemo());
-    }
-
-    private void abrirEntrenoODemo() {
-        SharedPreferences prefs = getSharedPreferences("fitbase_demo", MODE_PRIVATE);
-        String hoy = new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date());
-        if (hoy.equals(prefs.getString("fecha_completada", null))) {
-            Intent intent = new Intent(this, SummaryActivity.class);
-            intent.putExtra("series", prefs.getInt("series_totales", 0));
-            intent.putExtra("volumen", prefs.getInt("volumen_total_kg", 0));
-            intent.putExtra("rir_medio", prefs.getFloat("rir_medio", 0f));
-            intent.putExtra("intensidad", prefs.getString("intensidad_percibida", null));
-            intent.putExtra("impacto", prefs.getString("impacto", null));
-            startActivity(intent);
-        } else {
-            startActivity(new Intent(this, com.fitbase.ui.workout.WorkoutActivity.class));
-        }
     }
 
     private void observarDatos() {
@@ -301,15 +272,15 @@ public class HomeActivity extends AppCompatActivity {
         // Datos específicos de Health Connect:
         // - FC reposo: RestingHeartRateRecord, literal (el mismo valor que calcula el reloj).
         // - Sleep score: ESTIMADO a partir de datos crudos (duración/fases) — Health Connect
-        //   no tiene el score real de Zepp. Se marca "≈" en la UI. Tiene prioridad sobre el
-        //   valor manual del backend (ver actualizarVistaMañana) — si HC no tiene datos ese
-        //   día, se usa el manual como respaldo.
+        //   no tiene el score real de Zepp. Tiene prioridad sobre el valor manual del backend
+        //   (ver actualizarVistaMañana) — si HC no tiene datos ese día, se usa el manual como
+        //   respaldo.
         viewModel.getHcFcReposo().observe(this, fc -> {
             if (fc != null) tvFcReposo.setText(fc + " bpm");
         });
         viewModel.getHcSleepScore().observe(this, score -> {
             if (score != null) {
-                tvSleepScore.setText("≈" + score + "/100");
+                tvSleepScore.setText(String.valueOf(score));
                 pintarColorSueno(score);
                 if (score < 60) {
                     tvAvisoFatiga.setText("Sueño pobre — sesión reducida");
@@ -331,12 +302,26 @@ public class HomeActivity extends AppCompatActivity {
 
         // ── Tipo de día ──
         String tipoDiaTexto;
-        switch (vista.getTipoDia()) {
-            case "gym": tipoDiaTexto = "DÍA DE GYM"; break;
-            case "natacion": tipoDiaTexto = "NATACIÓN"; break;
-            default: tipoDiaTexto = "DESCANSO"; break;
+        if (vista.isPreTemporada()) {
+            tipoDiaTexto = "PRETEMPORADA";
+        } else {
+            switch (vista.getTipoDia()) {
+                case "gym": tipoDiaTexto = "DÍA DE GYM"; break;
+                case "natacion": tipoDiaTexto = "NATACIÓN"; break;
+                default: tipoDiaTexto = "DESCANSO"; break;
+            }
         }
         tvTipoDia.setText(tipoDiaTexto);
+
+        // ── Aviso pretemporada: el plan de 11 meses aún no ha empezado ──
+        if (vista.isPreTemporada()) {
+            tvPretemporadaDetalle.setText("Tu plan de entrenamiento de 11 meses empieza el "
+                    + formatearFechaLarga(vista.getFechaInicioPlan())
+                    + ". Mientras tanto, la app sigue mostrando sueño, macros, pasos y movilidad matutina con normalidad.");
+            bannerPretemporada.setVisibility(View.VISIBLE);
+        } else {
+            bannerPretemporada.setVisibility(View.GONE);
+        }
 
         // ── Fase ──
         if (vista.getFase() != null) {
@@ -348,11 +333,11 @@ public class HomeActivity extends AppCompatActivity {
         // ── Sueño ──
         // Prioridad: score ESTIMADO de Health Connect (ver observer de getHcSleepScore).
         // Si HC no tiene datos de sueño ese día, usamos el valor manual del backend
-        // (metricas_zepp.num_sleep_score) como respaldo, mostrado sin "≈" porque es literal.
+        // (metricas_zepp.num_sleep_score) como respaldo.
         if (vista.getSueno() != null) {
             if (viewModel.getHcSleepScore().getValue() == null) {
                 Integer score = vista.getSueno().sleepScore;
-                tvSleepScore.setText(score != null ? score + "/100" : "—");
+                tvSleepScore.setText(score != null ? String.valueOf(score) : "—");
                 if (score != null) pintarColorSueno(score);
                 if (score != null && score < 60) {
                     tvAvisoFatiga.setText("Sueño pobre — sesión reducida");
@@ -507,6 +492,16 @@ public class HomeActivity extends AppCompatActivity {
      */
     private void pintarColorSueno(int score) {
         tvSleepScore.setTextColor(getColor(score < 50 ? R.color.error : R.color.text_primary));
+    }
+
+    /** "2026-08-31" → "31 de agosto de 2026" (fecha_inicio_plan viene siempre en yyyy-MM-dd). */
+    private String formatearFechaLarga(String fechaIso) {
+        try {
+            Date fecha = new SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(fechaIso);
+            return new SimpleDateFormat("d 'de' MMMM 'de' yyyy", new Locale("es", "ES")).format(fecha);
+        } catch (Exception e) {
+            return fechaIso;
+        }
     }
 
     private void actualizarPasos() {

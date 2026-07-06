@@ -11,9 +11,9 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:paddingHorizontal="24dp"
-        android:paddingTop="16dp"
-        android:paddingBottom="8dp">
+        android:paddingHorizontal="@dimen/space_xxl"
+        android:paddingTop="@dimen/space_lg"
+        android:paddingBottom="@dimen/space_sm">
 
         <TextView
             android:layout_width="match_parent"
@@ -27,7 +27,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginTop="8dp">
+            android:layout_marginTop="@dimen/space_sm">
 
             <View android:id="@+id/nivelEnergia1" android:layout_width="0dp" android:layout_height="40dp"
                 android:layout_weight="1" android:background="@drawable/button_secondary" />
@@ -47,14 +47,14 @@
             android:text="Nivel de estrés hoy"
             android:textSize="14sp"
             android:textColor="@color/text_secondary"
-            android:layout_marginTop="24dp" />
+            android:layout_marginTop="@dimen/space_xxl" />
 
         <LinearLayout
             android:id="@+id/filaEstres"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginTop="8dp">
+            android:layout_marginTop="@dimen/space_sm">
 
             <View android:id="@+id/nivelEstres1" android:layout_width="0dp" android:layout_height="40dp"
                 android:layout_weight="1" android:background="@drawable/button_secondary" />
@@ -74,7 +74,7 @@
             android:text="Notas (opcional)"
             android:textSize="14sp"
             android:textColor="@color/text_secondary"
-            android:layout_marginTop="24dp" />
+            android:layout_marginTop="@dimen/space_xxl" />
 
         <EditText
             android:id="@+id/etNotas"

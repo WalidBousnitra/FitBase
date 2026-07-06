@@ -91,6 +91,38 @@ object HealthConnectBridge {
     }
 
     /**
+     * Total de pasos de un día YA CERRADO (00:00-24:00 completas), a
+     * diferencia de {@link #readTodayData} que corta en el instante actual.
+     * Usado para cerrar el día anterior al detectar el cambio de fecha (ver
+     * DailySyncManager#cerrarDiaAnteriorSiHaceFalta) — así un paseo nocturno
+     * posterior a la última vez que se abrió la app ese día no se pierde.
+     * Debe llamarse desde background thread.
+     */
+    @JvmStatic
+    fun readStepsForDate(context: Context, fechaStr: String): Int {
+        var pasos = 0
+        try {
+            val client = HealthConnectClient.getOrCreate(context)
+            val fecha = LocalDate.parse(fechaStr)
+            val inicio = fecha.atStartOfDay(ZoneId.systemDefault()).toInstant()
+            val fin = fecha.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant()
+            val timeFilter = TimeRangeFilter.between(inicio, fin)
+
+            runBlocking {
+                val stepsResult = client.readRecords(
+                    ReadRecordsRequest(StepsRecord::class, timeRangeFilter = timeFilter)
+                )
+                for (record in stepsResult.records) {
+                    pasos += record.count.toInt()
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error reading steps for date $fechaStr", e)
+        }
+        return pasos
+    }
+
+    /**
      * Lee datos del día de hoy: pasos, nutrición.
      * Debe llamarse desde background thread.
      */
@@ -153,44 +185,65 @@ object HealthConnectBridge {
      * Lee datos de recuperación: peso corporal, sueño, FC reposo.
      * Para progresión y motor de cargas (Kiviniemi 2007).
      * Debe llamarse desde background thread.
+     *
+     * Cada tipo de dato (peso+grasa+agua / sueño / FC reposo) tiene su PROPIO
+     * permiso de Health Connect, concedibles por separado en el diálogo del
+     * sistema — el usuario puede aceptar Pasos+Peso+Sueño pero dejar sin
+     * marcar FC reposo, por ejemplo. Antes las 5 lecturas compartían un único
+     * try/catch: si UNA sola fallaba (permiso no concedido, o el tipo de
+     * registro no existe porque ninguna app escribe ahí, p.ej.
+     * BodyWaterMassRecord si la báscula no mide hidratación), la excepción
+     * abortaba el bloque entero y se perdían TAMBIÉN las demás lecturas que
+     * sí habrían funcionado — por eso sueño/FC/peso podían llegar vacíos a la
+     * vez aunque solo uno de los permisos fallara. Ahora cada grupo tiene su
+     * propio try/catch: un fallo aislado no tumba a los demás.
      */
     @JvmStatic
     fun readRecoveryData(context: Context, diasAtras: Int): RecoveryData {
         val data = RecoveryData()
-        try {
-            val client = HealthConnectClient.getOrCreate(context)
-            val desde = Instant.now().minus(Duration.ofDays(diasAtras.toLong()))
-            val ahora = Instant.now()
-            val timeFilter = TimeRangeFilter.between(desde, ahora)
+        val client = HealthConnectClient.getOrCreate(context)
+        val desde = Instant.now().minus(Duration.ofDays(diasAtras.toLong()))
+        val ahora = Instant.now()
+        val timeFilter = TimeRangeFilter.between(desde, ahora)
 
+        // PESO CORPORAL + COMPOSICIÓN (grasa %, agua)
+        // Grasa visceral NO existe en Health Connect — ni como registro ni
+        // como campo de ninguno de los existentes — es propietario de
+        // Xiaomi/Mi Fitness (confirmado en el SDK). Sigue siendo entrada
+        // manual (ver hardware.md). Aquí se leen los 3 datos que Health
+        // Connect SÍ expone de forma literal: peso, % grasa, y masa de agua
+        // (convertida a % dividiendo por el peso del mismo día — conversión
+        // de unidades entre dos medidas reales, no una estimación). Grasa/agua
+        // son opcionales: si fallan (permiso no concedido, sin fuente de
+        // datos), el peso se guarda igual, solo sin ese enriquecido.
+        try {
             runBlocking {
-                // PESO CORPORAL + COMPOSICIÓN (grasa %, agua)
-                // Grasa visceral NO existe en Health Connect — ni como registro ni
-                // como campo de ninguno de los existentes — es propietario de
-                // Xiaomi/Mi Fitness (confirmado en el SDK). Sigue siendo entrada
-                // manual (ver hardware.md). Aquí se leen los 3 datos que Health
-                // Connect SÍ expone de forma literal: peso, % grasa, y masa de agua
-                // (convertida a % dividiendo por el peso del mismo día — conversión
-                // de unidades entre dos medidas reales, no una estimación).
                 val pesoResult = client.readRecords(
                     ReadRecordsRequest(WeightRecord::class, timeRangeFilter = timeFilter)
                 )
-                val grasaResult = client.readRecords(
-                    ReadRecordsRequest(BodyFatRecord::class, timeRangeFilter = timeFilter)
-                )
-                val aguaResult = client.readRecords(
-                    ReadRecordsRequest(BodyWaterMassRecord::class, timeRangeFilter = timeFilter)
-                )
-
                 val grasaPctPorDia = mutableMapOf<String, Double>()
-                for (record in grasaResult.records) {
-                    val fecha = record.time.atZone(ZoneId.systemDefault()).toLocalDate().toString()
-                    grasaPctPorDia[fecha] = record.percentage.value
+                try {
+                    val grasaResult = client.readRecords(
+                        ReadRecordsRequest(BodyFatRecord::class, timeRangeFilter = timeFilter)
+                    )
+                    for (record in grasaResult.records) {
+                        val fecha = record.time.atZone(ZoneId.systemDefault()).toLocalDate().toString()
+                        grasaPctPorDia[fecha] = record.percentage.value
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Sin acceso a % grasa (BodyFatRecord): ${e.message}")
                 }
                 val aguaKgPorDia = mutableMapOf<String, Double>()
-                for (record in aguaResult.records) {
-                    val fecha = record.time.atZone(ZoneId.systemDefault()).toLocalDate().toString()
-                    aguaKgPorDia[fecha] = record.mass.inKilograms
+                try {
+                    val aguaResult = client.readRecords(
+                        ReadRecordsRequest(BodyWaterMassRecord::class, timeRangeFilter = timeFilter)
+                    )
+                    for (record in aguaResult.records) {
+                        val fecha = record.time.atZone(ZoneId.systemDefault()).toLocalDate().toString()
+                        aguaKgPorDia[fecha] = record.mass.inKilograms
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Sin acceso a masa de agua (BodyWaterMassRecord): ${e.message}")
                 }
 
                 for (record in pesoResult.records) {
@@ -201,17 +254,23 @@ object HealthConnectBridge {
                     val hidratacionPct = if (aguaKg != null && kg > 0) (aguaKg / kg * 100.0) else null
                     data.pesosKg.add(PesoEntry(fecha, kg, grasaPct, hidratacionPct))
                 }
-                Log.d(TAG, "Weight: ${pesoResult.records.size} records, grasa: ${grasaResult.records.size}, agua: ${aguaResult.records.size} (over $diasAtras days)")
+                Log.d(TAG, "Weight: ${pesoResult.records.size} records, grasa: ${grasaPctPorDia.size}, agua: ${aguaKgPorDia.size} (over $diasAtras days)")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Sin acceso a peso (WeightRecord): ${e.javaClass.simpleName}: ${e.message}", e)
+        }
 
-                // SUEÑO
-                // Health Connect NO expone el "Sleep Score" propietario de Zepp (no existe
-                // ese campo en SleepSessionRecord, solo fases en bruto) — así que el score
-                // que calculamos aquí es una ESTIMACIÓN a partir de datos crudos reales
-                // (duración, profundo, REM, ligero), no el mismo número que calcula Zepp.
-                // Ver el cálculo más abajo para la fórmula y sus fuentes.
-                //
-                // Zepp puede escribir la noche como varias SleepSessionRecord separadas
-                // (p.ej. interrupciones), así que se agrupan por "noche" para sumar los minutos.
+        // SUEÑO
+        // Health Connect NO expone el "Sleep Score" propietario de Zepp (no existe
+        // ese campo en SleepSessionRecord, solo fases en bruto) — así que el score
+        // que calculamos aquí es una ESTIMACIÓN a partir de datos crudos reales
+        // (duración, profundo, REM, ligero), no el mismo número que calcula Zepp.
+        // Ver el cálculo más abajo para la fórmula y sus fuentes.
+        //
+        // Zepp puede escribir la noche como varias SleepSessionRecord separadas
+        // (p.ej. interrupciones), así que se agrupan por "noche" para sumar los minutos.
+        try {
+            runBlocking {
                 val sleepResult = client.readRecords(
                     ReadRecordsRequest(SleepSessionRecord::class, timeRangeFilter = timeFilter)
                 )
@@ -298,11 +357,17 @@ object HealthConnectBridge {
                     ))
                 }
                 Log.d(TAG, "Sleep: ${sleepResult.records.size} sesiones agrupadas en ${porNoche.size} noches")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Sin acceso a sueño (SleepSessionRecord): ${e.javaClass.simpleName}: ${e.message}", e)
+        }
 
-                // FC REPOSO — literal, tal cual la calcula Zepp/Amazfit.
-                // RestingHeartRateRecord es un dato propio del dispositivo (no HeartRateRecord
-                // continuo): no se estima ni se deriva nada aquí. Si un día no está, se omite
-                // (mejor "sin dato" que un número inventado).
+        // FC REPOSO — literal, tal cual la calcula Zepp/Amazfit.
+        // RestingHeartRateRecord es un dato propio del dispositivo (no HeartRateRecord
+        // continuo): no se estima ni se deriva nada aquí. Si un día no está, se omite
+        // (mejor "sin dato" que un número inventado).
+        try {
+            runBlocking {
                 val restingResult = client.readRecords(
                     ReadRecordsRequest(RestingHeartRateRecord::class, timeRangeFilter = timeFilter)
                 )
@@ -318,8 +383,7 @@ object HealthConnectBridge {
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error reading recovery data: ${e.javaClass.simpleName}: ${e.message}", e)
-            // Si es SecurityException = no hay permisos. Los datos quedan vacíos.
+            Log.e(TAG, "Sin acceso a FC reposo (RestingHeartRateRecord): ${e.javaClass.simpleName}: ${e.message}", e)
         }
         return data
     }

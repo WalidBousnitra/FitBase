@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Fondo destacado para la fase actual en Plan Anual -->
+<!-- Fondo destacado para la fase actual en Plan Anual — wash tonal del accent
+     con borde fino, coherente con el resto del sistema (radio grande, sin
+     depender de un stroke grueso para destacar). -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
-    <corners android:radius="12dp" />
-    <stroke android:width="2dp" android:color="@color/colorAccentPrimary" />
+    <corners android:radius="@dimen/radius_card" />
+    <stroke android:width="1dp" android:color="@color/colorAccentPrimary" />
     <solid android:color="@color/colorFaseActualBg" />
 </shape>

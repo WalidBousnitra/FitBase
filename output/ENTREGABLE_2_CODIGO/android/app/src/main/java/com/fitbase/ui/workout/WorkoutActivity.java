@@ -58,6 +58,9 @@ public class WorkoutActivity extends AppCompatActivity {
     private TextView tvRepsObjetivo, tvRirObjetivo, tvSerieInfo, tvProgreso;
     private TextView tvNotaEjercicio;
     private TextView tvSuperserie;
+    private Button btnPesoMenos, btnPesoMas;
+    // Paso del ajuste manual de peso (mancuernas/discos suelen ir de 1-2.5kg).
+    private static final float PASO_PESO_KG = 1.0f;
 
     // ─── Registro RIR ───
     private NumberPicker pickerReps;
@@ -160,6 +163,13 @@ public class WorkoutActivity extends AppCompatActivity {
         tvSerieInfo = findViewById(R.id.tvSerieInfo);
         tvProgreso = findViewById(R.id.tvProgreso);
 
+        // Peso ajustable — el sugerido por el motor es solo el punto de
+        // partida; lo que quede aquí es lo que se manda a ejercicios_log.
+        btnPesoMenos = findViewById(R.id.btnPesoMenos);
+        btnPesoMas = findViewById(R.id.btnPesoMas);
+        btnPesoMenos.setOnClickListener(v -> ajustarPeso(-PASO_PESO_KG));
+        btnPesoMas.setOnClickListener(v -> ajustarPeso(PASO_PESO_KG));
+
         // Registro
         pickerReps = findViewById(R.id.pickerReps);
         pickerReps.setMinValue(0);
@@ -205,6 +215,14 @@ public class WorkoutActivity extends AppCompatActivity {
         // Gestos: swipe izquierda para avanzar (ui.md REG-DEV-01 §4.2/§4.4)
         layoutEjercicio.setOnTouchListener(new SwipeListener(this) {
             @Override public void onSwipeLeft() {
+                Ejercicio ej = viewModel.getEjercicioActual();
+                if (ej != null && ej.necesitaPesoManual()) {
+                    feedback.vibrateStrong();
+                    android.widget.Toast.makeText(WorkoutActivity.this,
+                            "Ajusta el peso (− / +) antes de completar la serie",
+                            android.widget.Toast.LENGTH_SHORT).show();
+                    return;
+                }
                 feedback.vibrateLight();
                 viewModel.mostrarRegistroRpe();
             }
@@ -335,7 +353,11 @@ public class WorkoutActivity extends AppCompatActivity {
                 layoutResumen.setVisibility(View.VISIBLE);
                 break;
             case ERROR:
-                finish();
+                // No cerramos aquí: el observer de getError() ya muestra un
+                // AlertDialog (cancelable=false) cuyo botón OK llama a finish().
+                // Cerrar también aquí competía en una carrera con ese diálogo
+                // y ganaba casi siempre, así que la pantalla se cerraba sola
+                // en milisegundos sin que se llegase a leer el mensaje.
                 break;
         }
     }
@@ -408,6 +430,15 @@ public class WorkoutActivity extends AppCompatActivity {
         } catch (NumberFormatException e) {
             pickerReps.setValue(10);
         }
+    }
+
+    /** Ajusta el peso real de la serie/ejercicio actual (botones −/+). */
+    private void ajustarPeso(float delta) {
+        Ejercicio ej = viewModel.getEjercicioActual();
+        if (ej == null) return;
+        feedback.vibrateLight();
+        ej.ajustarPesoActual(delta);
+        tvPesoSugerido.setText(ej.getPesoTexto());
     }
 
     // ─── Registro de serie ────────────────────────────────

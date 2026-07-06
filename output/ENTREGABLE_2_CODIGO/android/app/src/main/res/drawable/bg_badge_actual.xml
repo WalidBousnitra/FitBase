@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Badge "ACTUAL" — pill naranja outline -->
+<!-- Badge "fase actual" — chip tonal sólido, sin borde (pill moderna) -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
-    <corners android:radius="20dp" />
-    <stroke android:width="1.5dp" android:color="@color/colorAccentPrimary" />
-    <solid android:color="@android:color/transparent" />
+    <corners android:radius="@dimen/radius_pill" />
+    <solid android:color="@color/colorSurfaceElevated2" />
 </shape>

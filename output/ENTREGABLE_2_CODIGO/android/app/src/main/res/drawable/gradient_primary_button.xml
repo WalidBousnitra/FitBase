@@ -1,7 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- CTA Button: índigo pastel plano (sin gradiente — Flat & Clean) -->
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="rectangle">
-    <solid android:color="@color/colorAccentPrimary" />
-    <corners android:radius="@dimen/radius_card" />
-</shape>
+<!-- CTA Button: degradado azul→violeta con "glow" horneado en capa —
+     la pieza más llamativa de la app, el botón de empezar entreno. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:top="4dp" android:left="2dp" android:right="2dp">
+        <shape android:shape="rectangle">
+            <corners android:radius="@dimen/radius_button" />
+            <solid android:color="@color/colorAccentWash" />
+        </shape>
+    </item>
+    <item android:bottom="4dp">
+        <shape android:shape="rectangle">
+            <corners android:radius="@dimen/radius_button" />
+            <gradient
+                android:type="linear"
+                android:angle="45"
+                android:startColor="@color/colorAccentPrimary"
+                android:endColor="@color/colorAccentSecondary" />
+        </shape>
+    </item>
+</layer-list>

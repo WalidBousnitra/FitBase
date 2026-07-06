@@ -1,8 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Card individual para macronutriente — borde color + fondo surface -->
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="rectangle">
-    <corners android:radius="@dimen/radius_card" />
-    <stroke android:width="1.5dp" android:color="@color/colorSeparator" />
-    <solid android:color="@color/colorSurface" />
-</shape>
+<!-- Tile de macronutriente/stat — superficie elevada + sombra horneada,
+     un tono más claro que bg_card_flat para diferenciarse cuando van
+     anidadas dentro de otra card. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:top="2dp" android:left="1dp" android:right="1dp">
+        <shape android:shape="rectangle">
+            <corners android:radius="@dimen/radius_button" />
+            <solid android:color="@color/colorShadow" />
+        </shape>
+    </item>
+    <item android:bottom="2dp">
+        <shape android:shape="rectangle">
+            <corners android:radius="@dimen/radius_button" />
+            <solid android:color="@color/colorSurfaceElevated" />
+        </shape>
+    </item>
+</layer-list>

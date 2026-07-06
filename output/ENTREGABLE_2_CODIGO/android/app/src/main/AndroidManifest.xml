@@ -80,11 +80,6 @@
             android:name=".ui.progression.ProgressionActivity"
             android:screenOrientation="portrait" />
 
-        <!-- Test Runner (solo demo) -->
-        <activity
-            android:name=".ui.test.TestRunnerActivity"
-            android:screenOrientation="portrait" />
-
         <!-- Servicio Timer (Foreground) -->
         <service
             android:name=".service.TimerService"
@@ -96,17 +91,6 @@
         <receiver
             android:name=".service.TimerDetenerReceiver"
             android:exported="false" />
-
-        <!-- FileProvider: para compartir el log de test (Test Runner → Compartir) -->
-        <provider
-            android:name="androidx.core.content.FileProvider"
-            android:authorities="${applicationId}.fileprovider"
-            android:exported="false"
-            android:grantUriPermissions="true">
-            <meta-data
-                android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/file_paths" />
-        </provider>
 
         <!-- Health Connect -->
         <activity-alias

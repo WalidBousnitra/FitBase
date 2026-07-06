@@ -96,6 +96,15 @@ public class Ejercicio {
     // ─── Estado local (UI) ───
     private transient int serieCompletada = 0;
 
+    // Peso que el usuario va a levantar de verdad esta serie/ejercicio —
+    // empieza igual al sugerido por el motor, pero es AJUSTABLE (equipamiento
+    // disponible en gimnasio, sensación del día, o motor sin histórico
+    // todavía — "Elige tu peso"). Sin esto la app solo mostraba una cifra sin
+    // forma de indicarle al motor lo que realmente se levantó, así que
+    // ejercicios_log (y por tanto la autorregulación de la próxima sesión)
+    // quedaba ciega. -1 = sin ajustar, usar el sugerido por el motor.
+    private transient float pesoActual = -1;
+
     // ─── Getters ──────────────────────────────────────────
     public String getPlanId() { return planId; }
     public String getSesionId() { return sesionId; }
@@ -117,24 +126,26 @@ public class Ejercicio {
     public int getSerieCompletada() { return serieCompletada; }
     public void setSerieCompletada(int s) { this.serieCompletada = s; }
 
-    // ─── Setters (para demo — ver WorkoutViewModel.crearSesionDemo) ───
-    public void setEjercicioId(String id) { this.ejercicioId = id; }
-    public void setNombre(String nombre) { this.nombre = nombre; }
-    public void setSeriesPlan(int series) { this.seriesPlan = series; }
-    public void setRepsPlan(String reps) { this.repsPlan = reps; }
-    public void setRirObjetivo(int rir) { this.rirObjetivo = rir; }
-    public void setDescansoSeg(int seg) { this.descansoSeg = seg; }
-    public void setPesoSugerido(float peso) { this.pesoSugerido = peso; }
-    public void setMotorDetalle(String detalle) { this.motorDetalle = detalle; }
+    /**
+     * Peso real que se va a levantar — el sugerido por el motor hasta que el
+     * usuario lo ajuste (stepper +/- en WorkoutActivity). Este es el valor
+     * que se manda a ejercicios_log, NUNCA el sugerido a secas.
+     */
+    public float getPesoActual() { return pesoActual >= 0 ? pesoActual : pesoSugerido; }
 
-    /** Texto legible del peso: "82.5 kg" o "Elige tu peso" si es 0. */
+    public void setPesoActual(float peso) { this.pesoActual = Math.max(0, peso); }
+
+    public void ajustarPesoActual(float delta) { setPesoActual(getPesoActual() + delta); }
+
+    /** Texto legible del peso actual: "82.5 kg" o "Elige tu peso" si es 0. */
     public String getPesoTexto() {
-        if (pesoSugerido <= 0) return "Elige tu peso";
-        return String.format("%.1f kg", pesoSugerido).replace(",0 ", " ");
+        float p = getPesoActual();
+        if (p <= 0) return "Elige tu peso";
+        return String.format("%.1f kg", p).replace(",0 ", " ");
     }
 
-    /** Si el motor no pudo calcular peso (primer uso del ejercicio). */
-    public boolean necesitaPesoManual() { return pesoSugerido <= 0; }
+    /** Si aún no hay un peso real fijado (ni sugerido por el motor, ni ajustado a mano). */
+    public boolean necesitaPesoManual() { return getPesoActual() <= 0; }
 
     /** Nombre corto para UI. */
     public String getNombreCorto() {

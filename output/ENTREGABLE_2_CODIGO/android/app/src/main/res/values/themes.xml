@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Theme: Modern Flat UI -->
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <style name="Theme.FitBase" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <!-- Accent -->
         <item name="colorPrimary">@color/colorAccentPrimary</item>
@@ -16,10 +16,14 @@
         <item name="android:windowBackground">@color/colorBackground</item>
         <item name="colorSurface">@color/colorSurface</item>
 
-        <!-- System bars: blend with background -->
+        <!-- System bars: blend with background — iconos claros porque el
+             fondo es siempre oscuro (MODE_NIGHT_YES forzado). windowLightStatusBar
+             en true aquí sería un bug: pintaría los iconos del sistema oscuros
+             sobre fondo oscuro, invisibles. -->
         <item name="android:statusBarColor">@color/colorBackground</item>
         <item name="android:navigationBarColor">@color/colorBackground</item>
-        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="27">false</item>
 
         <!-- No action bar -->
         <item name="windowNoTitle">true</item>

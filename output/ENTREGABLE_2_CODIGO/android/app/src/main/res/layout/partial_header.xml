@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Header estándar: volver + título + acción opcional a la derecha.
+     Se incluye con <include> en toda pantalla secundaria (Plan Anual,
+     Horario Semanal, Progresión...) para que el patrón sea idéntico en
+     todas — antes cada pantalla lo rehacía a mano con valores distintos.
+     btnHeaderAccion arranca en "invisible" (no "gone") para que el título
+     quede centrado de verdad aunque la pantalla no tenga acción a la derecha;
+     la Activity lo pone en VISIBLE + le da texto/click si la necesita. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical">
+
+    <TextView
+        android:id="@+id/btnVolver"
+        style="@style/Widget.FitBase.HeaderIconButton"
+        android:text="←" />
+
+    <TextView
+        android:id="@+id/tvHeaderTitulo"
+        style="@style/TextAppearance.FitBase.Headline"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:textAlignment="center"
+        android:text="Título" />
+
+    <TextView
+        android:id="@+id/btnHeaderAccion"
+        style="@style/Widget.FitBase.HeaderIconButton"
+        android:text="⚙"
+        android:visibility="invisible" />
+
+</LinearLayout>

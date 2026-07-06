@@ -5,14 +5,14 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:layout_marginBottom="8dp"
+    android:layout_marginBottom="@dimen/space_sm"
     android:background="@drawable/bg_card_flat">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:padding="16dp"
+        android:padding="@dimen/card_padding"
         android:gravity="center_vertical">
 
         <!-- Indicador de color por tipo (más grueso) -->
@@ -21,7 +21,7 @@
             android:layout_width="5dp"
             android:layout_height="52dp"
             android:background="@color/colorSuccess"
-            android:layout_marginEnd="14dp" />
+            android:layout_marginEnd="@dimen/space_md" />
 
         <!-- Info -->
         <LinearLayout
@@ -46,7 +46,7 @@
                 android:text="28 sep → 08 nov · 6 sem"
                 android:textColor="@color/colorTextSecondary"
                 android:textSize="13sp"
-                android:layout_marginTop="3dp" />
+                android:layout_marginTop="@dimen/space_xxs" />
 
             <TextView
                 android:id="@+id/tvFaseRir"
@@ -55,7 +55,7 @@
                 android:text="RIR 2-3 · Hombros, Espalda"
                 android:textColor="@color/colorTextTertiary"
                 android:textSize="12sp"
-                android:layout_marginTop="2dp" />
+                android:layout_marginTop="@dimen/space_xxs" />
         </LinearLayout>
 
         <!-- Badge "ACTUAL" para la fase actual -->
@@ -66,7 +66,8 @@
             android:text="ACTUAL"
             android:textColor="@color/colorAccentPrimary"
             android:textSize="10sp"
-            android:fontFamily="sans-serif-bold"
+            android:fontFamily="sans-serif-medium"
+            android:letterSpacing="0.04"
             android:background="@drawable/bg_badge_actual"
             android:paddingHorizontal="10dp"
             android:paddingVertical="4dp"

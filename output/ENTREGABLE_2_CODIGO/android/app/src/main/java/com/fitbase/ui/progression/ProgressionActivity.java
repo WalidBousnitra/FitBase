@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.fitbase.R;
 import com.fitbase.data.model.MetricasProgresionResponse;
+import com.google.android.material.button.MaterialButton;
 
 import java.util.Collections;
 import java.util.List;
@@ -42,6 +43,10 @@ public class ProgressionActivity extends AppCompatActivity {
     private ProgresionChartView chartProgresion;
     private TextView tvEstadoEmoji;
 
+    // Filtro de rango (7d/30d/90d) — el seleccionado se marca en tonal accent,
+    // el resto en superficie neutra (ver actualizarFiltroSeleccionado).
+    private MaterialButton btn7d, btn30d, btn90d;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -71,10 +76,27 @@ public class ProgressionActivity extends AppCompatActivity {
 
         rvSubjetiva.setLayoutManager(new LinearLayoutManager(this));
 
-        // Boton 7d / 30d / 90d
-        findViewById(R.id.btn7d).setOnClickListener(v -> { diasSeleccionados = 7; viewModel.cargar(7); });
-        findViewById(R.id.btn30d).setOnClickListener(v -> { diasSeleccionados = 30; viewModel.cargar(30); });
-        findViewById(R.id.btn90d).setOnClickListener(v -> { diasSeleccionados = 90; viewModel.cargar(90); });
+        // Header compartido (partial_header.xml) — sin acción a la derecha.
+        ((TextView) findViewById(R.id.tvHeaderTitulo)).setText("Progresión");
+        findViewById(R.id.btnVolver).setOnClickListener(v -> finish());
+
+        // Botón 7d / 30d / 90d
+        btn7d = findViewById(R.id.btn7d);
+        btn30d = findViewById(R.id.btn30d);
+        btn90d = findViewById(R.id.btn90d);
+        btn7d.setOnClickListener(v -> { diasSeleccionados = 7; viewModel.cargar(7); actualizarFiltroSeleccionado(btn7d); });
+        btn30d.setOnClickListener(v -> { diasSeleccionados = 30; viewModel.cargar(30); actualizarFiltroSeleccionado(btn30d); });
+        btn90d.setOnClickListener(v -> { diasSeleccionados = 90; viewModel.cargar(90); actualizarFiltroSeleccionado(btn90d); });
+        actualizarFiltroSeleccionado(btn7d);
+    }
+
+    /** Marca visualmente qué filtro de rango está activo (chip tonal accent vs. superficie neutra). */
+    private void actualizarFiltroSeleccionado(MaterialButton activo) {
+        for (MaterialButton btn : new MaterialButton[]{btn7d, btn30d, btn90d}) {
+            boolean seleccionado = btn == activo;
+            btn.setBackgroundResource(seleccionado ? R.drawable.bg_chip_accent : R.drawable.button_secondary);
+            btn.setTextColor(getColor(seleccionado ? R.color.colorAccentPrimary : R.color.colorTextSecondary));
+        }
     }
 
     private void observar() {

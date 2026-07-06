@@ -15,7 +15,6 @@ import com.fitbase.data.health.HealthConnectReader;
 import com.fitbase.data.model.GenericResponse;
 import com.fitbase.data.model.VistaMañanaResponse;
 
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -34,12 +33,9 @@ import retrofit2.Response;
  */
 public class HomeViewModel extends AndroidViewModel {
 
-    private static final String FECHA_INICIO_PLAN = "2026-08-31";
-
     private final MutableLiveData<VistaMañanaResponse> vistaMañana = new MutableLiveData<>();
     private final MutableLiveData<Boolean> cargando = new MutableLiveData<>(false);
     private final MutableLiveData<String> error = new MutableLiveData<>();
-    private final MutableLiveData<Boolean> modoDemo = new MutableLiveData<>(false);
 
     // Macros consumidas (se leen de Health Connect / FatSecret)
     private final MutableLiveData<Integer> caloriasConsumidas = new MutableLiveData<>(0);
@@ -126,7 +122,6 @@ public class HomeViewModel extends AndroidViewModel {
     public LiveData<VistaMañanaResponse> getVistaMañana() { return vistaMañana; }
     public LiveData<Boolean> getCargando() { return cargando; }
     public LiveData<String> getError() { return error; }
-    public LiveData<Boolean> isModoDemo() { return modoDemo; }
     public LiveData<Integer> getCaloriasConsumidas() { return caloriasConsumidas; }
     public LiveData<Integer> getProteinaConsumida() { return proteinaConsumida; }
     public LiveData<Integer> getCarbosConsumidos() { return carbosConsumidos; }
@@ -143,7 +138,6 @@ public class HomeViewModel extends AndroidViewModel {
     // ─── Carga de datos ───────────────────────────────────
 
     public void cargarDatosDelDia() {
-        verificarModoDemo();
         cargarVistaMañana();
         cargarDatosHealthConnect();
     }
@@ -179,16 +173,6 @@ public class HomeViewModel extends AndroidViewModel {
         });
     }
 
-    private void verificarModoDemo() {
-        try {
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
-            Date inicio = sdf.parse(FECHA_INICIO_PLAN);
-            modoDemo.postValue(new Date().before(inicio));
-        } catch (ParseException e) {
-            modoDemo.postValue(false);
-        }
-    }
-
     private void cargarVistaMañana() {
         cargando.postValue(true);
 
@@ -217,6 +201,13 @@ public class HomeViewModel extends AndroidViewModel {
      */
     private void cargarDatosHealthConnect() {
         try {
+            // Si ha cambiado el día natural desde la última apertura (p.ej. la app
+            // se reanudó desde recientes y SplashActivity no volvió a correr),
+            // cierra el día anterior con el total de pasos definitivo. Gating por
+            // fecha interno — barato en el resto de refrescos (cada 15s).
+            new Thread(() -> com.fitbase.data.health.DailySyncManager
+                    .cerrarDiaAnteriorSiHaceFalta(getApplication())).start();
+
             HealthConnectReader reader = new HealthConnectReader(getApplication());
             // 1. Datos del día (pasos y nutrición)
             reader.leerDatosHoy(datos -> {
@@ -229,7 +220,16 @@ public class HomeViewModel extends AndroidViewModel {
                 // día, así que la fila de hoy en metricas_zepp se mantiene al
                 // día cada vez que Home refresca (onResume), no solo al abrir
                 // la app por la mañana (ver DailySyncManager).
-                com.fitbase.data.health.DailySyncManager.actualizarPasosDelDia(getApplication(), datos.pasos);
+                // Este callback de HealthConnectReader.leerDatosHoy llega en el
+                // hilo PRINCIPAL (mainHandler.post) — actualizarPasosDelDia hace
+                // una llamada de red síncrona, así que iba directa a
+                // NetworkOnMainThreadException. "Funcionaba" solo porque el fallo
+                // se encolaba en Room y SyncManager lo reintentaba después en
+                // segundo plano, con varios segundos de retraso — nunca se
+                // enviaba en el momento real.
+                final int pasosHoy = datos.pasos;
+                new Thread(() -> com.fitbase.data.health.DailySyncManager
+                        .actualizarPasosDelDia(getApplication(), pasosHoy)).start();
             });
 
             // 2. Datos de recuperación (sueño y FC reposo) - leemos últimos 2 días para asegurar hoy
@@ -247,6 +247,14 @@ public class HomeViewModel extends AndroidViewModel {
                     HealthConnectReader.HrEntry ultimo = datos.fcReposo.get(datos.fcReposo.size() - 1);
                     hcFcReposo.postValue(ultimo.bpm);
                 }
+                // Antes esto solo se sincronizaba con la BBDD (metricas_zepp) en
+                // SplashActivity, que solo corre en un arranque en frío real — si
+                // se reabre la app desde recientes (tarea ya viva) nunca se volvía
+                // a ejecutar, así que sueño/FC/peso se quedaban sin actualizar días
+                // enteros. Gating por fecha en DailySyncManager, red en background
+                // para no bloquear el hilo principal (este callback llega en main).
+                new Thread(() -> com.fitbase.data.health.DailySyncManager
+                        .sincronizarSiHaceFalta(getApplication(), datos)).start();
             });
         } catch (Exception ignored) {
             // Health Connect no disponible — mantener 0

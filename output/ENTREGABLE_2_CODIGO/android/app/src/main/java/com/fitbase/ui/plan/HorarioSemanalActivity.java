@@ -92,6 +92,7 @@ public class HorarioSemanalActivity extends AppCompatActivity {
         opNatLunMie.setOnClickListener(v -> elegirNatacion(NAT_LUN_MIE));
         opNatMarJue.setOnClickListener(v -> elegirNatacion(NAT_MAR_JUE));
 
+        ((android.widget.TextView) findViewById(R.id.tvHeaderTitulo)).setText("Horario semanal");
         findViewById(R.id.btnVolver).setOnClickListener(v -> finish());
         findViewById(R.id.btnGuardar).setOnClickListener(v -> guardar());
 

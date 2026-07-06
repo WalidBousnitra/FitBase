@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Pantalla de cambio de fase: cierre de la fase anterior + presentación de
      la nueva. Se muestra 1 vez por transición real (HomeActivity la lanza al
-     detectar que fase_id cambió), y también en modo demo desde el botón de
-     previsualización junto al de test. -->
+     detectar que fase_id cambió). -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -14,7 +13,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:gravity="center"
-        android:padding="28dp">
+        android:padding="@dimen/space_xxl">
 
         <!-- ═══ BLOQUE 1: fase anterior (aparece primero) ═══ -->
         <LinearLayout
@@ -30,7 +29,8 @@
                 android:layout_height="wrap_content"
                 android:text="FASE COMPLETADA"
                 android:textSize="12sp"
-                android:letterSpacing="0.1"
+                android:fontFamily="sans-serif-medium"
+                android:letterSpacing="0.04"
                 android:textColor="@color/text_tertiary" />
 
             <TextView
@@ -49,8 +49,8 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:background="@drawable/bg_card_flat"
-                android:padding="16dp"
-                android:layout_marginTop="16dp">
+                android:padding="@dimen/card_padding"
+                android:layout_marginTop="@dimen/space_lg">
 
                 <LinearLayout
                     android:layout_width="0dp"
@@ -115,7 +115,8 @@
                 android:layout_height="wrap_content"
                 android:text="EMPIEZA AHORA"
                 android:textSize="12sp"
-                android:letterSpacing="0.1"
+                android:fontFamily="sans-serif-medium"
+                android:letterSpacing="0.04"
                 android:textColor="@color/colorAccentPrimary" />
 
             <TextView
@@ -151,12 +152,10 @@
 
             <Button
                 android:id="@+id/btnContinuar"
-                android:layout_width="200dp"
-                android:layout_height="48dp"
+                style="@style/Widget.FitBase.Button.Primary"
+                android:layout_width="220dp"
                 android:text="CONTINUAR"
-                android:background="@drawable/gradient_primary_button"
-                android:textColor="@color/white"
-                android:layout_marginTop="32dp" />
+                android:layout_marginTop="@dimen/space_xxxl" />
         </LinearLayout>
 
     </LinearLayout>

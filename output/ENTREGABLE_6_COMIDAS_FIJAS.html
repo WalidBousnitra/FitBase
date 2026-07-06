@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitBase — Comidas Fijas (Desayuno · Comida · Cena · Snacks)</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #14161C; --surface: #1E2129; --surface2: #262A34;
+            --text: #F2F3F5; --text2: #9BA1AC; --text3: #5B6170;
+            --accent: #3B82F6; --success: #22C55E; --warning: #F97316;
+            --prot: #F472B6; --carb: #60A5FA; --fat: #FBBF24;
+            --radius: 12px;
+        }
+        body { font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; padding-bottom: 60px; }
+
+        .hero { min-height: 28vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 50px 20px; border-bottom: 1px solid var(--surface2); }
+        .hero h1 { font-size: clamp(1.5rem,5vw,2.3rem); font-weight: 200; }
+        .hero p { color: var(--text2); margin-top: 12px; max-width: 640px; font-size: 0.95rem; }
+
+        section { max-width: 960px; margin: 0 auto; padding: 32px 20px; }
+        h2 { font-size: 1.35rem; font-weight: 400; margin-bottom: 8px; }
+        .sec-desc { color: var(--text2); font-size: 0.9rem; margin-bottom: 18px; }
+        .target-badge { display: inline-block; background: var(--surface2); border: 1px solid var(--accent); border-radius: 100px; padding: 6px 14px; font-size: 0.8rem; margin-bottom: 18px; }
+        .target-badge strong { color: var(--accent); }
+
+        .grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+
+        .card { background: var(--surface); border-radius: var(--radius); padding: 18px; display: flex; flex-direction: column; }
+        .card-num { font-size: 0.7rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+        .card h3 { font-size: 1.02rem; font-weight: 500; margin-bottom: 10px; }
+
+        table.ing-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+        table.ing-table td { padding: 4px 0; font-size: 0.82rem; border-bottom: 1px solid var(--surface2); }
+        table.ing-table td:first-child { color: var(--text2); }
+        table.ing-table td:last-child { color: var(--text); font-weight: 500; text-align: right; white-space: nowrap; padding-left: 10px; }
+        table.ing-table tr:last-child td { border-bottom: none; }
+
+        .card .method { font-size: 0.75rem; color: var(--text3); margin-bottom: 12px; }
+        .card .method strong { color: var(--accent); }
+
+        .macros { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; }
+        .macro-chip { background: var(--surface2); border-radius: 6px; padding: 4px 9px; font-size: 0.72rem; white-space: nowrap; }
+        .macro-chip.kcal { color: var(--text); font-weight: 600; }
+        .macro-chip.prot { color: var(--prot); }
+        .macro-chip.carb { color: var(--carb); }
+        .macro-chip.fat { color: var(--fat); }
+
+        .info-box { background: rgba(59,130,246,0.08); border-left: 3px solid var(--accent); border-radius: 8px; padding: 14px 16px; margin: 16px 0; font-size: 0.85rem; color: var(--text2); }
+        .info-box strong { color: var(--accent); }
+        .warn-box { background: rgba(249,115,22,0.08); border-left: 3px solid var(--warning); border-radius: 8px; padding: 14px 16px; margin: 16px 0; font-size: 0.85rem; color: var(--text2); }
+        .warn-box strong { color: var(--warning); }
+        .success-box { background: rgba(34,197,94,0.08); border-left: 3px solid var(--success); border-radius: 8px; padding: 14px 16px; margin: 16px 0; font-size: 0.85rem; color: var(--text2); }
+        .success-box strong { color: var(--success); }
+
+        table.scale-table { width: 100%; border-collapse: separate; border-spacing: 0 4px; margin-top: 12px; }
+        table.scale-table th { text-align: left; font-size: 0.7rem; color: var(--text3); text-transform: uppercase; padding: 4px 10px; font-weight: 500; }
+        table.scale-table td { padding: 10px; background: var(--surface2); font-size: 0.82rem; }
+        table.scale-table tr td:first-child { border-radius: 6px 0 0 6px; font-weight: 500; }
+        table.scale-table tr td:last-child { border-radius: 0 6px 6px 0; }
+
+        .footer { text-align: center; padding: 40px; color: var(--text3); font-size: 0.8rem; border-top: 1px solid var(--surface2); max-width: 960px; margin: 0 auto; }
+        code { background: var(--surface2); padding: 1px 6px; border-radius: 4px; font-size: 0.85em; }
+
+        .day-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+        .day-card { background: var(--surface); border-radius: var(--radius); padding: 18px; display: flex; flex-direction: column; }
+        .day-card .card-num { font-size: 0.7rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+        .day-card h3 { font-size: 1.02rem; font-weight: 500; margin-bottom: 10px; }
+        .day-row { display: flex; justify-content: space-between; gap: 10px; font-size: 0.82rem; padding: 5px 0; border-bottom: 1px solid var(--surface2); }
+        .day-row:last-of-type { border-bottom: none; }
+        .day-row .label { color: var(--text2); }
+        .day-row .val { color: var(--text); text-align: right; white-space: nowrap; }
+        .day-total { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--surface2); }
+        .tip-line { margin-top: 8px; font-size: 0.75rem; color: var(--text3); }
+    </style>
+</head>
+<body>
+
+<div class="hero">
+    <h1>Comidas Fijas — Desayuno · Comida · Cena · Snacks</h1>
+    <p>Dentro de cada categoría, todas las opciones apuntan al MISMO objetivo de macros — así puedes cambiar cualquiera por cualquiera sin descuadrar el día. Cantidades exactas listas para guardar como receta en FatSecret.</p>
+</div>
+
+<section>
+    <h2>Filosofía + cómo pasarlo a FatSecret</h2>
+    <div class="sec-desc">De <code>preferencias.md</code> (REG-NUT-02) y <code>cultura.md</code> (USR-PER-01).</div>
+    <div class="info-box">
+        <strong>Por qué todas pesan casi lo mismo:</strong> dentro de Desayuno, todas rondan las mismas kcal/proteína/carbos/grasa; igual en Comida, Cena y Snacks. Los carbos/grasa varían un pelín según el ingrediente (los huevos traen algo más de grasa que la avena, por ejemplo), pero están ajustadas para quedar en el mismo rango — así cualquier opción de una categoría es intercambiable por otra sin tener que recalcular el resto del día.
+    </div>
+    <div class="info-box">
+        <strong>Cómo añadir cada receta:</strong> en FatSecret, crea una "Receta" nueva con el nombre de la tarjeta, y añade cada fila de la tabla de ingredientes buscando ese alimento con la cantidad indicada (ya en gramos). Los chips de kcal/macros de cada tarjeta son mi referencia aproximada — FatSecret calculará el número real con su propia base de datos, que puede variar un poco.
+    </div>
+    <div class="warn-box">
+        <strong>Halal siempre:</strong> nada de cerdo, jamón, bacon, chorizo, gelatina animal ni alcohol. <strong>Excluidos por gusto:</strong> setas y champiñones. Todo lo de abajo cumple ambas reglas.
+    </div>
+    <div class="success-box">
+        <strong>Quién cocina:</strong> desayuno, tupper y snacks los preparas tú. La comida principal del mediodía normalmente la cocina tu madre (no hace falta trackearla al gramo — solo decirle el objetivo de macros restante). Cena es "variable según el día" (preferencias.md) — por eso aquí también tienes variantes de cena para cuando te toca prepararla tú, con el mismo objetivo que la comida (motor_dieta.md las trata igual: ~920 kcal cada una).
+    </div>
+</section>
+
+<section>
+    <h2>🍳 Desayuno</h2>
+    <div class="target-badge">Objetivo de TODAS: <strong>~720 kcal · 40g proteína · 105g carbos · 16g grasa</strong> · Preparación &le;15 min</div>
+    <div class="grid3">
+        <div class="card">
+            <div class="card-num">Opción 1</div>
+            <h3>Tortilla + pan + plátano</h3>
+            <table class="ing-table">
+                <tr><td>Huevo entero</td><td>3 uds</td></tr>
+                <tr><td>Clara de huevo</td><td>1 ud</td></tr>
+                <tr><td>Pan integral</td><td>130g</td></tr>
+                <tr><td>Plátano</td><td>130g</td></tr>
+            </table>
+            <div class="method">Sartén antiadherente, 5 min.</div>
+            <div class="macros">
+                <span class="macro-chip kcal">~720 kcal</span>
+                <span class="macro-chip prot">40g prot</span>
+                <span class="macro-chip carb">105g carb</span>
+                <span class="macro-chip fat">16g grasa</span>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-num">Opción 2</div>
+            <h3>Gachas de avena con whey</h3>
+            <table class="ing-table">
+                <tr><td>Avena en copos</td><td>70g</td></tr>
+                <tr><td>Leche semidesnatada</td><td>280ml</td></tr>
+                <tr><td>Plátano</td><td>100g</td></tr>
+                <tr><td>Whey proteína</td><td>25g</td></tr>
+                <tr><td>Nueces o almendras</td><td>10g</td></tr>
+                <tr><td>Canela</td><td>al gusto</td></tr>
+            </table>
+            <div class="method">Cazo o microondas, 5 min. Whey al final, fuera del fuego (nunca avena sola).</div>
+            <div class="macros">
+                <span class="macro-chip kcal">~720 kcal</span>
+                <span class="macro-chip prot">40g prot</span>
+                <span class="macro-chip carb">105g carb</span>
+                <span class="macro-chip fat">16g grasa</span>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-num">Opción 3</div>
+            <h3>Batido licuado de avena</h3>
+            <table class="ing-table">
+                <tr><td>Leche semidesnatada</td><td>300ml</td></tr>
+                <tr><td>Avena en copos</td><td>65g</td></tr>
+                <tr><td>Plátano</td><td>100g</td></tr>
+                <tr><td>Whey proteína</td><td>25g</td></tr>
+                <tr><td>Crema de cacahuete</td><td>8g</td></tr>
+            </table>
+            <div class="method">Batidora, 2 min. Para días con prisa.</div>
+            <div class="macros">
+                <span class="macro-chip kcal">~720 kcal</span>
+                <span class="macro-chip prot">40g prot</span>
+                <span class="macro-chip carb">105g carb</span>
+                <span class="macro-chip fat">16g grasa</span>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-num">Opción 4</div>
+            <h3>Huevos con tomate (estilo casa) + pan</h3>
+            <table class="ing-table">
+                <tr><td>Huevo entero</td><td>3 uds</td></tr>
+                <tr><td>Clara de huevo</td><td>1 ud</td></tr>
+                <tr><td>Tomate triturado</td><td>100g</td></tr>
+                <tr><td>Pan integral</td><td>130g</td></tr>
+                <tr><td>Comino/pimentón</td><td>al gusto</td></tr>
+            </table>
+            <div class="method">Sartén antiadherente, 8 min — receta marroquí de casa (cultura.md).</div>
+            <div class="macros">
+                <span class="macro-chip kcal">~720 kcal</span>
+                <span class="macro-chip prot">40g prot</span>
+                <span class="macro-chip carb">105g carb</span>
+                <span class="macro-chip fat">16g grasa</span>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-num">Opción 5</div>
+            <h3>Tostadas con atún y huevo duro</h3>
+            <table class="ing-table">
+                <tr><td>Pan integral</td><td>130g</td></tr>
+                <tr><td>Atún al natural (escurrido)</td><td>70g</td></tr>
+                <tr><td>Huevo duro</td><td>2 uds</td></tr>
+                <tr><td>Tomate en rodajas</td><td>50g</td></tr>
+                <tr><td>Aceite de oliva</td><td>5g</td></tr>
+            </table>
+            <div class="method">Sin apenas cocinar — huevos duros hechos con antelación (batch, ver Cena).</div>
+            <div class="macros">
+                <span class="macro-chip kcal">~720 kcal</span>
+                <span class="macro-chip prot">40g prot</span>
+                <span class="macro-chip carb">105g carb</span>
+                <span class="macro-chip fat">16g grasa</span>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-num">Opción 6</div>
+            <h3>Overnight oats (preparar la noche antes)</h3>
+            <table class="ing-table">
+                <tr><td>Avena en copos</td><td>70g</td></tr>
+                <tr><td>Leche semidesnatada</td><td>250ml</td></tr>
+                <tr><td>Yogur natural</td><td>60g</td></tr>
+                <tr><td>Whey proteína</td><td>25g</td></tr>
+                <tr><td>Plátano</td><td>100g</td></tr>
+                <tr><td>Canela</td><td>al gusto</td></tr>
+            </table>
+            <div class="method">Mezclar todo en un tarro la noche anterior, nevera. 0 min por la mañana.</div>
+            <div class="macros">
+                <span class="macro-chip kcal">~720 kcal</span>
+                <span class="macro-chip prot">40g prot</span>
+                <span class="macro-chip carb">105g carb</span>
+                <span class="macro-chip fat">16g grasa</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section>
+    <h2>🍱 Comida (Tupper)</h2>
+    <div class="target-badge">Objetivo de TODAS: <strong>~920 kcal · 42g proteína · 140g carbos · 23g grasa</strong> · Batch-cook el finde</div>
+    <div class="sec-desc">Portionar para la semana. Prioridad de cocción: <strong>Airfryer &gt; Horno &gt; Microondas</strong> (equipamiento.md).</div>
+    <div class="grid3">
+        <div class="card">
+            <div class="card-num">Opción 1</div>
+            <h3>Arroz + pollo + verduras</h3>
+            <table class="ing-table">
+                <tr><td>Arroz blanco cocido</td><td>260g</td></tr>
+                <tr><td>Pechuga de pollo</td><td>150g</td></tr>
+                <tr><td>Calabacín</td><td>100g</td></tr>
+                <tr><td>Pimiento</td><td>80g</td></tr>
+                <tr><td>Aceite de oliva</td><td>12g</td></tr>
+                <tr><td>Especias (pimentón, comino, ajo)</td><td>al gusto</td></tr>
+            </table>
+            <div class="method">Airfryer 180°C ~15 min el pollo, verduras salteadas.</div>
+            <div class="macros">
+                <span class="macro-chip kcal">~920 kcal</span>
+                <span class="macro-chip prot">42g prot</span>
+                <span class="macro-chip carb">140g carb</span>
+                <span class="macro-chip fat">23g grasa</span>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-num">Opción 2</div>
+            <h3>Pasta integral + atún + tomate</h3>
+            <table class="ing-table">
+                <tr><td>Pasta integral cocida</td><td>260g</td></tr>
+                <tr><td>Atún al natural (escurrido)</td><td>130g</td></tr>
+                <tr><td>Tomate frito casero</td><td>100g</td></tr>
+                <tr><td>Aceite de oliva</td><td>10g</td></tr>
+            </table>
+            <div class="method">Sin cocinar carne — la más rápida para tandas grandes.</div>
+            <div class="macros">
+                <span class="macro-chip kcal">~920 kcal</span>
+                <span class="macro-chip prot">42g prot</span>
+                <span class="macro-chip carb">140g carb</span>
+                <span class="macro-chip fat">23g grasa</span>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-num">Opción 3</div>
+            <h3>Arroz + ternera especiada + verduras</h3>
+            <table class="ing-table">
+                <tr><td>Arroz blanco cocido</td><td>250g</td></tr>
+                <tr><td>Ternera magra (tiras)</td><td>140g</td></tr>
+                <tr><td>Cebolla</td><td>50g</td></tr>
+                <tr><td>Pimiento</td><td>80g</td></tr>
+                <tr><td>Aceite de oliva</td><td>12g</td></tr>
+                <tr><td>Comino, cúrcuma, ras el hanout</td><td>al gusto</td></tr>
+            </table>
+            <div class="method">Horno — especias de casa, ración individual controlable.</div>
+            <div class="macros">
+                <span class="macro-chip kcal">~920 kcal</span>
+                <span class="macro-chip prot">42g prot</span>
+                <span class="macro-chip carb">140g carb</span>
+                <span class="macro-chip fat">23g grasa</span>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-num">Opción 4</div>
+            <h3>Arroz + salmón al horno + brócoli</h3>
+            <table class="ing-table">
+                <tr><td>Arroz blanco cocido</td><td>230g</td></tr>
+                <tr><td>Salmón (filete)</td><td>130g</td></tr>
+                <tr><td>Brócoli</td><td>150g</td></tr>
+                <tr><td>Aceite de oliva</td><td>10g</td></tr>
+                <tr><td>Limón</td><td>al gusto</td></tr>
+            </table>
+            <div class="method">Horno 200°C ~15 min. Salmón es "ocasional" (precio) — para variar entre semana.</div>
+            <div class="macros">
+                <span class="macro-chip kcal">~920 kcal</span>
+                <span class="macro-chip prot">42g prot</span>
+                <span class="macro-chip carb">140g carb</span>
+                <span class="macro-chip fat">23g grasa</span>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-num">Opción 5</div>
+            <h3>Pasta + pollo + verduras</h3>
+            <table class="ing-table">
+                <tr><td>Pasta integral cocida</td><td>250g</td></tr>
+                <tr><td>Pechuga de pollo</td><td>140g</td></tr>
+                <tr><td>Tomate triturado</td><td>80g</td></tr>
+                <tr><td>Calabacín</td><td>80g</td></tr>
+                <tr><td>Aceite de oliva</td><td>10g</td></tr>
+            </table>
+            <div class="method">Airfryer el pollo, pasta hervida — variante de la Opción 1 con pasta.</div>
+            <div class="macros">
+                <span class="macro-chip kcal">~920 kcal</span>
+                <span class="macro-chip prot">42g prot</span>
+                <span class="macro-chip carb">140g carb</span>
+                <span class="macro-chip fat">23g grasa</span>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-num">Opción 6</div>
+            <h3>Patata asada + atún + ensalada</h3>
+            <table class="ing-table">
+                <tr><td>Patata</td><td>340g</td></tr>
+                <tr><td>Atún al natural (escurrido)</td><td>130g</td></tr>
+                <tr><td>Tomate</td><td>80g</td></tr>
+                <tr><td>Pepino</td><td>60g</td></tr>
+                <tr><td>Aceite de oliva</td><td>14g</td></tr>
+            </table>
+            <div class="method">Airfryer/horno la patata ~25 min — variante sin arroz/pasta.</div>
+            <div class="macros">
+                <span class="macro-chip kcal">~920 kcal</span>
+                <span class="macro-chip prot">42g prot</span>
+                <span class="macro-chip carb">140g carb</span>
+                <span class="macro-chip fat">23g grasa</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section>
+    <h2>🌙 Cena</h2>
+    <div class="target-badge">Objetivo de TODAS: <strong>~920 kcal · 42g proteína · 140g carbos · 23g grasa</strong> (igual que Comida)</div>
+    <div class="sec-desc">"Variable según el día" (preferencias.md) — para cuando te toca prepararla a ti. Motor_dieta.md reparte el mismo objetivo que la comida del mediodía, así que estas recetas llevan un acompañamiento de carbo (arroz, pan o similar) para llegar al mismo sitio, no son solo un plato suelto.</div>
+    <div class="grid3">
+        <div class="card">
+            <div class="card-num">Opción 1</div>
+            <h3>Huevos con tomate + arroz (receta de casa)</h3>
+            <table class="ing-table">
+                <tr><td>Huevo entero</td><td>4 uds</td></tr>
+                <tr><td>Clara de huevo</td><td>2 uds</td></tr>
+                <tr><td>Tomate triturado</td><td>120g</td></tr>
+                <tr><td>Arroz blanco cocido</td><td>330g</td></tr>
+                <tr><td>Plátano</td><td>100g</td></tr>
+            </table>
+            <div class="method">Sartén antiadherente, 8 min. Arroz de acompañamiento en vez de pan.</div>
+            <div class="macros">
+                <span class="macro-chip kcal">~920 kcal</span>
+                <span class="macro-chip prot">42g prot</span>
+                <span class="macro-chip carb">140g carb</span>
+                <span class="macro-chip fat">21g grasa</span>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-num">Opción 2</div>
+            <h3>Tortilla francesa + ensalada + pan</h3>
+            <table class="ing-table">
+                <tr><td>Huevo entero</td><td>4 uds</td></tr>
+                <tr><td>Clara de huevo</td><td>2 uds</td></tr>
+                <tr><td>Tomate, pepino, cebolla (ensalada)</td><td>120g</td></tr>
+                <tr><td>Pan integral</td><td>220g</td></tr>
+                <tr><td>Aceite de oliva</td><td>8g</td></tr>
+            </table>
+            <div class="method">Sartén, 5 min. Ensalada estilo casa (cultura.md).</div>
+            <div class="macros">
+                <span class="macro-chip kcal">~920 kcal</span>
+                <span class="macro-chip prot">42g prot</span>
+                <span class="macro-chip carb">140g carb</span>
+                <span class="macro-chip fat">23g grasa</span>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-num">Opción 3</div>
+            <h3>Atún + arroz + ensalada</h3>
+            <table class="ing-table">
+                <tr><td>Atún al natural (escurrido)</td><td>160g</td></tr>
+                <tr><td>Arroz blanco cocido</td><td>280g</td></tr>
+                <tr><td>Tomate, pepino (ensalada)</td><td>130g</td></tr>
+                <tr><td>Aceite de oliva</td><td>12g</td></tr>
+            </table>
+            <div class="method">Sin apenas cocinar — atún de lata + arroz ya hecho (batch del finde).</div>
+            <div class="macros">
+                <span class="macro-chip kcal">~920 kcal</span>
+                <span class="macro-chip prot">42g prot</span>
+                <span class="macro-chip carb">140g carb</span>
+                <span class="macro-chip fat">23g grasa</span>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-num">Opción 4</div>
+            <h3>Pollo a la plancha + arroz + verduras</h3>
+            <table class="ing-table">
+                <tr><td>Pechuga de pollo</td><td>170g</td></tr>
+                <tr><td>Arroz blanco cocido</td><td>260g</td></tr>
+                <tr><td>Calabacín y pimiento</td><td>130g</td></tr>
+                <tr><td>Aceite de oliva</td><td>10g</td></tr>
+            </table>
+            <div class="method">Plancha/airfryer, 12 min.</div>
+            <div class="macros">
+                <span class="macro-chip kcal">~920 kcal</span>
+                <span class="macro-chip prot">42g prot</span>
+                <span class="macro-chip carb">140g carb</span>
+                <span class="macro-chip fat">23g grasa</span>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-num">Opción 5</div>
+            <h3>Yogur + avena + fruta + frutos secos</h3>
+            <table class="ing-table">
+                <tr><td>Yogur natural</td><td>300g</td></tr>
+                <tr><td>Avena en copos</td><td>60g</td></tr>
+                <tr><td>Fruta de temporada</td><td>150g</td></tr>
+                <tr><td>Frutos secos</td><td>20g</td></tr>
+                <tr><td>Miel</td><td>20g</td></tr>
+            </table>
+            <div class="method">Sin cocinar — mezclar todo, tipo "bowl". Ideal para cena tardía sin encender fuegos.</div>
+            <div class="macros">
+                <span class="macro-chip kcal">~920 kcal</span>
+                <span class="macro-chip prot">28g prot</span>
+                <span class="macro-chip carb">140g carb</span>
+                <span class="macro-chip fat">23g grasa</span>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-num">Opción 6</div>
+            <h3>Batido de caseína + avena + fruta</h3>
+            <table class="ing-table">
+                <tr><td>Caseína</td><td>40g</td></tr>
+                <tr><td>Leche semidesnatada</td><td>300ml</td></tr>
+                <tr><td>Avena en copos</td><td>70g</td></tr>
+                <tr><td>Plátano</td><td>150g</td></tr>
+            </table>
+            <div class="method">Batidora, 2 min. Para cenas tarde/sin ganas de cocinar.</div>
+            <div class="macros">
+                <span class="macro-chip kcal">~920 kcal</span>
+                <span class="macro-chip prot">42g prot</span>
+                <span class="macro-chip carb">140g carb</span>
+                <span class="macro-chip fat">15g grasa</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section>
+    <h2>🥜 Snacks</h2>
+    <div class="target-badge">Objetivo de TODAS: <strong>~240 kcal · 11g proteína · 34g carbos · 5g grasa</strong> (por snack, asumiendo 3/día) · Preparación &le;5 min</div>
+    <div class="grid3">
+        <div class="card">
+            <div class="card-num">Opción 1</div>
+            <h3>Dátiles + frutos secos</h3>
+            <table class="ing-table">
+                <tr><td>Dátiles</td><td>35g (4 uds)</td></tr>
+                <tr><td>Almendras/nueces</td><td>10g</td></tr>
+            </table>
+            <div class="method">Ya es tu favorito — carbos rápidos ideales pre-entreno.</div>
+            <div class="macros">
+                <span class="macro-chip kcal">~160 kcal</span>
+                <span class="macro-chip prot">3g prot</span>
+                <span class="macro-chip carb">28g carb</span>
+                <span class="macro-chip fat">5g grasa</span>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-num">Opción 2</div>
+            <h3>Fruta de temporada + yogur</h3>
+            <table class="ing-table">
+                <tr><td>Fruta de temporada</td><td>130g</td></tr>
+                <tr><td>Yogur natural</td><td>125g</td></tr>
+            </table>
+            <div class="method">Sin preparación. Rota con lo que haya de temporada.</div>
+            <div class="macros">
+                <span class="macro-chip kcal">~170 kcal</span>
+                <span class="macro-chip prot">6g prot</span>
+                <span class="macro-chip carb">28g carb</span>
+                <span class="macro-chip fat">4g grasa</span>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-num">Opción 3</div>
+            <h3>Batido de caseína + fruta</h3>
+            <table class="ing-table">
+                <tr><td>Caseína</td><td>20g</td></tr>
+                <tr><td>Leche semidesnatada</td><td>150ml</td></tr>
+                <tr><td>Plátano</td><td>50g</td></tr>
+            </table>
+            <div class="method">Batidora, 1 min.</div>
+            <div class="macros">
+                <span class="macro-chip kcal">~230 kcal</span>
+                <span class="macro-chip prot">21g prot</span>
+                <span class="macro-chip carb">27g carb</span>
+                <span class="macro-chip fat">4g grasa</span>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-num">Opción 4</div>
+            <h3>Plátano + crema de cacahuete</h3>
+            <table class="ing-table">
+                <tr><td>Plátano</td><td>150g</td></tr>
+                <tr><td>Crema de cacahuete</td><td>10g</td></tr>
+            </table>
+            <div class="method">Sin preparación.</div>
+            <div class="macros">
+                <span class="macro-chip kcal">~200 kcal</span>
+                <span class="macro-chip prot">3g prot</span>
+                <span class="macro-chip carb">35g carb</span>
+                <span class="macro-chip fat">6g grasa</span>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-num">Opción 5</div>
+            <h3>Huevo duro + fruta</h3>
+            <table class="ing-table">
+                <tr><td>Huevo duro</td><td>2 uds</td></tr>
+                <tr><td>Manzana</td><td>100g</td></tr>
+            </table>
+            <div class="method">Huevos duros hechos en batch (mismo lote que la Opción 5 de desayuno).</div>
+            <div class="macros">
+                <span class="macro-chip kcal">~205 kcal</span>
+                <span class="macro-chip prot">13g prot</span>
+                <span class="macro-chip carb">14g carb</span>
+                <span class="macro-chip fat">10g grasa</span>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-num">Opción 6</div>
+            <h3>Frutos secos + dátiles (mix rápido)</h3>
+            <table class="ing-table">
+                <tr><td>Frutos secos variados</td><td>10g</td></tr>
+                <tr><td>Dátiles</td><td>30g (3 uds)</td></tr>
+            </table>
+            <div class="method">Sin preparación — variante de la Opción 1 con otras proporciones.</div>
+            <div class="macros">
+                <span class="macro-chip kcal">~150 kcal</span>
+                <span class="macro-chip prot">2g prot</span>
+                <span class="macro-chip carb">24g carb</span>
+                <span class="macro-chip fat">5g grasa</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="dias-completos">
+    <h2>📅 Días Completos — plantillas listas para no tener que calcular nada</h2>
+    <div class="sec-desc">Eliges 1 Desayuno + 1 Comida + 3 Snacks + 1 Cena de las secciones de arriba y el día casi se cuadra solo, porque cada categoría ya apunta al mismo objetivo. Aquí tienes 6 combinaciones ya montadas (una por día, L-S) con la suma real hecha, para que veas cómo se llega al total sin tener que pensarlo cada vez.</div>
+    <div class="target-badge">Objetivo del día completo: <strong>~3280 kcal · 156g proteína · 488g carbos · 78g grasa</strong> (motor_dieta.md §7)</div>
+    <div class="info-box">
+        <strong>La cuenta, explicada:</strong> Desayuno (~720) + Comida (~920) + Cena (~920) + 3 Snacks (~720 juntos) = ~3280 kcal. Con la proteína pasa igual: 40 + 42 + 42 + ~32 (repartidos entre los 3 snacks) = ~156g. Por eso no hace falta que sumes nada a mano: si respetas "1 de cada categoría + 3 snacks", el total ya está resuelto de fábrica.
+    </div>
+    <div class="day-grid">
+        <div class="day-card">
+            <div class="card-num">Día 1 · Lunes</div>
+            <h3>Combinación A</h3>
+            <div class="day-row"><span class="label">Desayuno</span><span class="val">Op.1 · Tortilla + pan + plátano</span></div>
+            <div class="day-row"><span class="label">Comida</span><span class="val">Op.1 · Arroz + pollo + verduras</span></div>
+            <div class="day-row"><span class="label">Snack 1</span><span class="val">Op.3 · Batido caseína + fruta</span></div>
+            <div class="day-row"><span class="label">Snack 2</span><span class="val">Op.4 · Plátano + crema cacahuete</span></div>
+            <div class="day-row"><span class="label">Snack 3</span><span class="val">Op.5 · Huevo duro + fruta</span></div>
+            <div class="day-row"><span class="label">Cena</span><span class="val">Op.1 · Huevos con tomate + arroz</span></div>
+            <div class="day-total macros">
+                <span class="macro-chip kcal">~3195 kcal</span>
+                <span class="macro-chip prot">161g prot</span>
+                <span class="macro-chip carb">461g carb</span>
+                <span class="macro-chip fat">80g grasa</span>
+            </div>
+        </div>
+        <div class="day-card">
+            <div class="card-num">Día 2 · Martes</div>
+            <h3>Combinación B</h3>
+            <div class="day-row"><span class="label">Desayuno</span><span class="val">Op.2 · Gachas de avena con whey</span></div>
+            <div class="day-row"><span class="label">Comida</span><span class="val">Op.2 · Pasta + atún + tomate</span></div>
+            <div class="day-row"><span class="label">Snack 1</span><span class="val">Op.1 · Dátiles + frutos secos</span></div>
+            <div class="day-row"><span class="label">Snack 2</span><span class="val">Op.2 · Fruta + yogur</span></div>
+            <div class="day-row"><span class="label">Snack 3</span><span class="val">Op.3 · Batido caseína + fruta</span></div>
+            <div class="day-row"><span class="label">Cena</span><span class="val">Op.2 · Tortilla francesa + ensalada + pan</span></div>
+            <div class="day-total macros">
+                <span class="macro-chip kcal">~3120 kcal</span>
+                <span class="macro-chip prot">154g prot</span>
+                <span class="macro-chip carb">468g carb</span>
+                <span class="macro-chip fat">75g grasa</span>
+            </div>
+        </div>
+        <div class="day-card">
+            <div class="card-num">Día 3 · Miércoles</div>
+            <h3>Combinación C</h3>
+            <div class="day-row"><span class="label">Desayuno</span><span class="val">Op.3 · Batido licuado de avena</span></div>
+            <div class="day-row"><span class="label">Comida</span><span class="val">Op.3 · Arroz + ternera + verduras</span></div>
+            <div class="day-row"><span class="label">Snack 1</span><span class="val">Op.3 · Batido caseína + fruta</span></div>
+            <div class="day-row"><span class="label">Snack 2</span><span class="val">Op.4 · Plátano + crema cacahuete</span></div>
+            <div class="day-row"><span class="label">Snack 3</span><span class="val">Op.6 · Frutos secos + dátiles</span></div>
+            <div class="day-row"><span class="label">Cena</span><span class="val">Op.3 · Atún + arroz + ensalada</span></div>
+            <div class="day-total macros">
+                <span class="macro-chip kcal">~3140 kcal</span>
+                <span class="macro-chip prot">150g prot</span>
+                <span class="macro-chip carb">471g carb</span>
+                <span class="macro-chip fat">77g grasa</span>
+            </div>
+        </div>
+        <div class="day-card">
+            <div class="card-num">Día 4 · Jueves</div>
+            <h3>Combinación D</h3>
+            <div class="day-row"><span class="label">Desayuno</span><span class="val">Op.4 · Huevos con tomate + pan</span></div>
+            <div class="day-row"><span class="label">Comida</span><span class="val">Op.4 · Arroz + salmón + brócoli</span></div>
+            <div class="day-row"><span class="label">Snack 1</span><span class="val">Op.2 · Fruta + yogur</span></div>
+            <div class="day-row"><span class="label">Snack 2</span><span class="val">Op.3 · Batido caseína + fruta</span></div>
+            <div class="day-row"><span class="label">Snack 3</span><span class="val">Op.4 · Plátano + crema cacahuete</span></div>
+            <div class="day-row"><span class="label">Cena</span><span class="val">Op.4 · Pollo + arroz + verduras</span></div>
+            <div class="day-total macros">
+                <span class="macro-chip kcal">~3160 kcal</span>
+                <span class="macro-chip prot">154g prot</span>
+                <span class="macro-chip carb">475g carb</span>
+                <span class="macro-chip fat">76g grasa</span>
+            </div>
+        </div>
+        <div class="day-card">
+            <div class="card-num">Día 5 · Viernes</div>
+            <h3>Combinación E</h3>
+            <div class="day-row"><span class="label">Desayuno</span><span class="val">Op.5 · Tostadas con atún y huevo duro</span></div>
+            <div class="day-row"><span class="label">Comida</span><span class="val">Op.5 · Pasta + pollo + verduras</span></div>
+            <div class="day-row"><span class="label">Snack 1</span><span class="val">Op.1 · Dátiles + frutos secos</span></div>
+            <div class="day-row"><span class="label">Snack 2</span><span class="val">Op.3 · Batido caseína + fruta</span></div>
+            <div class="day-row"><span class="label">Snack 3</span><span class="val">Op.5 · Huevo duro + fruta</span></div>
+            <div class="day-row"><span class="label">Cena</span><span class="val">Op.5 · Yogur + avena + fruta + frutos secos</span></div>
+            <div class="day-total macros">
+                <span class="macro-chip kcal">~3155 kcal</span>
+                <span class="macro-chip prot">147g prot</span>
+                <span class="macro-chip carb">454g carb</span>
+                <span class="macro-chip fat">81g grasa</span>
+            </div>
+            <div class="tip-line">La Cena Op.5 trae algo menos de proteína (28g) — si quieres subir a 156g, añade un huevo duro más o medio scoop de whey.</div>
+        </div>
+        <div class="day-card">
+            <div class="card-num">Día 6 · Sábado</div>
+            <h3>Combinación F</h3>
+            <div class="day-row"><span class="label">Desayuno</span><span class="val">Op.6 · Overnight oats</span></div>
+            <div class="day-row"><span class="label">Comida</span><span class="val">Op.6 · Patata asada + atún + ensalada</span></div>
+            <div class="day-row"><span class="label">Snack 1</span><span class="val">Op.3 · Batido caseína + fruta</span></div>
+            <div class="day-row"><span class="label">Snack 2</span><span class="val">Op.4 · Plátano + crema cacahuete</span></div>
+            <div class="day-row"><span class="label">Snack 3</span><span class="val">Op.6 · Frutos secos + dátiles</span></div>
+            <div class="day-row"><span class="label">Cena</span><span class="val">Op.6 · Batido de caseína + avena + fruta</span></div>
+            <div class="day-total macros">
+                <span class="macro-chip kcal">~3140 kcal</span>
+                <span class="macro-chip prot">150g prot</span>
+                <span class="macro-chip carb">471g carb</span>
+                <span class="macro-chip fat">69g grasa</span>
+            </div>
+            <div class="tip-line">La Cena Op.6 trae algo menos de grasa (15g) — si quieres subir a 78g, añade un puñado de frutos secos o un chorrito extra de aceite en la comida.</div>
+        </div>
+    </div>
+    <div class="warn-box">
+        <strong>Ajuste rápido si un día se queda corto:</strong> las combinaciones reales bajan un poco del objetivo exacto (normal — los snacks reales pesan entre 150-230 kcal, no justo 240 cada uno). Si ves que un día ronda ~3100-3200 en vez de ~3280, añade cualquiera de estos "extras" sin recalcular nada: <strong>+30g dátiles</strong> (+80 kcal), <strong>+15g frutos secos</strong> (+90 kcal), o <strong>medio scoop de whey en agua</strong> (+60 kcal, +12g proteína). No necesitas que cuadre al gramo — con motor_dieta.md ya trabajas por rango, no por número exacto.
+    </div>
+    <div class="success-box">
+        <strong>Domingo = Cuscús, no forces una plantilla:</strong> mantén el Desayuno normal (cualquier opción), pero sustituye la Comida por el cuscús familiar (~800-1200 kcal, cultura.md) — no lo peses, es tradición semanal y el propio sistema dice "no trackear estrictamente, disfrutar". Para compensar, reduce el carbohidrato de la Cena ese día (por ejemplo, la Op.2 de Cena sin pan, o directamente un snack extra de proteína en vez de cena completa) y usa solo 2 snacks en lugar de 3.
+    </div>
+    <div class="info-box">
+        <strong>Intercambiabilidad entre días:</strong> igual que las opciones dentro de una categoría, estas 6 combinaciones se pueden mezclar libremente entre sí — combina el Desayuno de la Combinación B con la Cena de la D si te apetece, el resultado sigue rondando el mismo objetivo diario porque cada pieza ya está calibrada por separado.
+    </div>
+</section>
+
+<section>
+    <h2>🥑 Variantes con enfoque hormonal (grasas completas)</h2>
+    <div class="target-badge">Objetivo de TODAS: <strong>~600 kcal · 35g proteína · 20g carbos · 40g grasa</strong> (perfil propio, deliberadamente distinto)</div>
+    <div class="sec-desc">Huevo entero (yema incluida), aguacate, mantequilla y carne roja con su grasa. Etiquetadas por franja para saber dónde sustituyen a una opción normal (no se suman a ella).</div>
+    <div class="info-box">
+        <strong>Base real (sin sobre-vender el dato):</strong> <code>evidencia/hormonal.md</code> §8 dice que las grasas dietarias son precursoras hormonales y recomienda 20-30% de las calorías en grasa (§9) — eso ya está aplicado en tu reparto de macros. Ese archivo NO valida específicamente "aguacate" o "carne roja" por nombre (esas dos secciones están sin terminar — "completar tras revisar papers"). Son sentido común nutricional dentro del rango de grasa que ya tienes, no una regla nueva del motor de dieta. Por eso su objetivo es distinto al resto (más grasa, menos carbo) — no están pensadas para ser intercambiables 1:1 con las demás categorías, solo entre ellas.
+    </div>
+    <div class="grid3">
+        <div class="card">
+            <div class="card-num">Desayuno</div>
+            <h3>Huevos enteros + aguacate + mantequilla</h3>
+            <table class="ing-table">
+                <tr><td>Huevo entero</td><td>3 uds</td></tr>
+                <tr><td>Aguacate</td><td>90g</td></tr>
+                <tr><td>Mantequilla</td><td>8g</td></tr>
+                <tr><td>Pan integral</td><td>35g</td></tr>
+            </table>
+            <div class="method">Huevos revueltos en mantequilla, 5 min.</div>
+            <div class="macros">
+                <span class="macro-chip kcal">~600 kcal</span>
+                <span class="macro-chip prot">35g prot</span>
+                <span class="macro-chip carb">20g carb</span>
+                <span class="macro-chip fat">40g grasa</span>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-num">Desayuno (alt.)</div>
+            <h3>Tostada de aguacate + huevo</h3>
+            <table class="ing-table">
+                <tr><td>Pan integral</td><td>35g</td></tr>
+                <tr><td>Aguacate</td><td>110g</td></tr>
+                <tr><td>Huevo entero</td><td>3 uds</td></tr>
+                <tr><td>Mantequilla</td><td>5g</td></tr>
+            </table>
+            <div class="method">Huevo frito/poché en mantequilla, aguacate machacado sobre el pan.</div>
+            <div class="macros">
+                <span class="macro-chip kcal">~600 kcal</span>
+                <span class="macro-chip prot">35g prot</span>
+                <span class="macro-chip carb">20g carb</span>
+                <span class="macro-chip fat">40g grasa</span>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-num">Comida / Tupper</div>
+            <h3>Ternera + aguacate + verduras</h3>
+            <table class="ing-table">
+                <tr><td>Ternera magra</td><td>170g</td></tr>
+                <tr><td>Aguacate</td><td>80g</td></tr>
+                <tr><td>Pimiento y calabacín</td><td>100g</td></tr>
+                <tr><td>Arroz blanco cocido</td><td>60g</td></tr>
+            </table>
+            <div class="method">Horno/plancha la ternera — sin el arroz extra de la versión normal, el aguacate hace de "grasa" en vez de aceite.</div>
+            <div class="macros">
+                <span class="macro-chip kcal">~600 kcal</span>
+                <span class="macro-chip prot">35g prot</span>
+                <span class="macro-chip carb">20g carb</span>
+                <span class="macro-chip fat">40g grasa</span>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-num">Cena</div>
+            <h3>Ternera a la plancha + aguacate + verduras</h3>
+            <table class="ing-table">
+                <tr><td>Ternera (corte con algo de grasa, tipo entrecot)</td><td>190g</td></tr>
+                <tr><td>Aguacate</td><td>80g</td></tr>
+                <tr><td>Pimiento y calabacín salteados</td><td>120g</td></tr>
+                <tr><td>Mantequilla</td><td>5g</td></tr>
+            </table>
+            <div class="method">Plancha con mantequilla en vez de aceite, 8 min.</div>
+            <div class="macros">
+                <span class="macro-chip kcal">~600 kcal</span>
+                <span class="macro-chip prot">35g prot</span>
+                <span class="macro-chip carb">20g carb</span>
+                <span class="macro-chip fat">40g grasa</span>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-num">Snack</div>
+            <h3>Huevos duros + aguacate</h3>
+            <table class="ing-table">
+                <tr><td>Huevo duro (entero)</td><td>3 uds</td></tr>
+                <tr><td>Aguacate</td><td>110g</td></tr>
+                <tr><td>Sal / limón</td><td>al gusto</td></tr>
+            </table>
+            <div class="method">Sin cocinar — huevos duros hechos en batch. Snack más grande que los normales, a propósito (perfil hormonal completo).</div>
+            <div class="macros">
+                <span class="macro-chip kcal">~400 kcal</span>
+                <span class="macro-chip prot">22g prot</span>
+                <span class="macro-chip carb">10g carb</span>
+                <span class="macro-chip fat">32g grasa</span>
+            </div>
+        </div>
+    </div>
+    <div class="warn-box">
+        <strong>Ojo con el total de grasa del día:</strong> úsalas para sustituir una opción normal del día, no para sumarlas encima — si las metes en un día que ya tenía otra comida alta en grasa (tajine con aceitunas, cuscús del domingo...), puedes pasarte del 20-30% kcal de grasa recomendado.
+    </div>
+</section>
+
+<section>
+    <h2>Cómo se completa el día</h2>
+    <div class="success-box">
+        <strong>Comida principal (madre):</strong> lo que no cubran estas recetas lo completa lo que cocine tu madre (tajine, marga, huevos, legumbres...) — no hace falta pesarlo, solo decirle el objetivo de macros restante y ella adapta la ración (preferencias.md §2).
+    </div>
+    <div class="info-box">
+        <strong>Domingo = cuscús:</strong> tradición familiar fija (~800-1200 kcal la ración). Trátalo como el día alto en carbos de la semana — reduce arroz/pasta del resto del domingo, y si entrenas ese día, mejor cuscús post-entreno.
+    </div>
+    <div class="warn-box">
+        <strong>Ramadán:</strong> estas comidas se reestructuran a la ventana Iftar-Suhur (avena, huevos, frutos secos, plátano en Suhur; dátiles + proteína + verduras al romper el ayuno) — la app ya lo gestiona automáticamente, no hace falta cambiar nada aquí a mano.
+    </div>
+
+    <h2 style="margin-top:28px;">Ajuste por fase</h2>
+    <div class="sec-desc">Las cantidades de arriba están calculadas para <strong>bulk</strong> (fase por defecto). La proteína se mantiene alta en todas las fases (Helms 2014: en cut aún sube) — lo que se ajusta es el carbohidrato:</div>
+    <table class="scale-table">
+        <tr><th>Fase</th><th>Qué cambiar</th></tr>
+        <tr><td>Bulk (por defecto)</td><td>Cantidades tal cual están arriba.</td></tr>
+        <tr><td>Definición (cut)</td><td>Reduce arroz/pasta/patata/pan a la mitad en Comida y Cena. Mantén huevos, pollo, atún, ternera y salmón igual — la proteína sube en cut (2.3-3.1 g/kg), no baja.</td></tr>
+        <tr><td>Mantenimiento</td><td>Punto intermedio: quita ~1/4 del arroz/pasta/pan respecto a bulk.</td></tr>
+    </table>
+</section>
+
+<div class="footer">
+    FitBase · Comidas fijas — Desayuno/Comida/Cena/Snacks · Fuentes: <code>preferencias.md</code> (REG-NUT-02), <code>motor_dieta.md</code> (REG-NUT-01), <code>cultura.md</code> (USR-PER-01), <code>equipamiento.md</code> (USR-03)
+</div>
+
+</body>
+</html>

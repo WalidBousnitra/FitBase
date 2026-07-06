@@ -72,7 +72,8 @@
                 android:text="10/lado"
                 android:textSize="@dimen/text_display_metric"
                 android:textColor="@color/accent"
-                android:fontFamily="sans-serif-medium"
+                android:fontFamily="sans-serif-black"
+                android:letterSpacing="-0.02"
                 android:layout_marginTop="16dp" />
         </LinearLayout>
 
@@ -132,15 +133,62 @@
                 android:gravity="center"
                 android:layout_marginTop="12dp" />
 
-            <TextView
-                android:id="@+id/tvPesoSugerido"
+            <!-- Peso AJUSTABLE — el sugerido por el motor es solo el punto de
+                 partida (equipamiento disponible, sensación del día, o motor
+                 sin histórico "Elige tu peso"). Lo que se ajusta aquí es lo
+                 que se manda a ejercicios_log, así el motor sabe lo que de
+                 verdad se levantó. -->
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="82.5 kg"
-                android:textSize="@dimen/text_hero"
-                android:textColor="@color/accent"
-                android:fontFamily="sans-serif-medium"
-                android:layout_marginTop="16dp" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="16dp">
+
+                <Button
+                    android:id="@+id/btnPesoMenos"
+                    android:layout_width="@dimen/touch_target_min"
+                    android:layout_height="@dimen/touch_target_min"
+                    android:text="−"
+                    android:textSize="20sp"
+                    android:textColor="@color/text_primary"
+                    android:background="@drawable/button_secondary"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp" />
+
+                <TextView
+                    android:id="@+id/tvPesoSugerido"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="82.5 kg"
+                    android:textSize="@dimen/text_hero"
+                    android:textColor="@color/accent"
+                    android:fontFamily="sans-serif-black"
+                    android:letterSpacing="-0.02"
+                    android:gravity="center"
+                    android:minWidth="150dp"
+                    android:layout_marginHorizontal="4dp" />
+
+                <Button
+                    android:id="@+id/btnPesoMas"
+                    android:layout_width="@dimen/touch_target_min"
+                    android:layout_height="@dimen/touch_target_min"
+                    android:text="+"
+                    android:textSize="20sp"
+                    android:textColor="@color/text_primary"
+                    android:background="@drawable/button_secondary"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvAjustePeso"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Toca − / + para ajustar el peso real"
+                android:textSize="12sp"
+                android:textColor="@color/text_tertiary"
+                android:layout_marginTop="4dp" />
 
             <TextView
                 android:id="@+id/tvRepsObjetivo"
@@ -283,7 +331,8 @@
             android:text="2:00"
             android:textSize="@dimen/text_timer_hero"
             android:textColor="@color/accent"
-            android:fontFamily="sans-serif-medium"
+            android:fontFamily="sans-serif-black"
+            android:letterSpacing="-0.02"
             android:layout_marginTop="12dp" />
 
         <TextView
@@ -371,6 +420,7 @@
                 android:layout_height="wrap_content"
                 android:text="Sesión completada"
                 android:textSize="22sp"
+                android:fontFamily="sans-serif-medium"
                 android:textColor="@color/success" />
 
             <LinearLayout
@@ -386,7 +436,7 @@
                         android:text="SERIES" android:textSize="11sp" android:textColor="@color/text_tertiary" />
                     <TextView android:id="@+id/tvResumenSeries" android:layout_width="wrap_content"
                         android:layout_height="wrap_content" android:text="—"
-                        android:textSize="24sp" android:textColor="@color/accent" />
+                        android:textSize="24sp" android:fontFamily="sans-serif-black" android:textColor="@color/accent" />
                 </LinearLayout>
 
                 <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
@@ -397,7 +447,7 @@
                         android:text="VOLUMEN" android:textSize="11sp" android:textColor="@color/text_tertiary" />
                     <TextView android:id="@+id/tvResumenVolumen" android:layout_width="wrap_content"
                         android:layout_height="wrap_content" android:text="—"
-                        android:textSize="24sp" android:textColor="@color/text_primary" />
+                        android:textSize="24sp" android:fontFamily="sans-serif-black" android:textColor="@color/text_primary" />
                 </LinearLayout>
 
                 <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
@@ -408,7 +458,7 @@
                         android:text="RIR MEDIO" android:textSize="11sp" android:textColor="@color/text_tertiary" />
                     <TextView android:id="@+id/tvResumenRir" android:layout_width="wrap_content"
                         android:layout_height="wrap_content" android:text="—"
-                        android:textSize="24sp" android:textColor="@color/text_primary" />
+                        android:textSize="24sp" android:fontFamily="sans-serif-black" android:textColor="@color/text_primary" />
                 </LinearLayout>
             </LinearLayout>
 

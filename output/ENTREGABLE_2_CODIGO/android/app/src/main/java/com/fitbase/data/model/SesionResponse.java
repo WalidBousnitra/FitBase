@@ -48,13 +48,6 @@ public class SesionResponse {
 
     public boolean tieneSesion() { return sesion != null; }
 
-    // ─── Setters (para demo — ver WorkoutViewModel.crearSesionDemo) ───
-    public void setSesion(Sesion sesion) { this.sesion = sesion; }
-    public void setEjercicios(List<Ejercicio> ejercicios) { this.ejercicios = ejercicios; }
-    public void setMensaje(String mensaje) { this.mensaje = mensaje; }
-    public void setCalentamiento(RutinaInfo r) { this.calentamiento = r; }
-    public void setEstiramientos(RutinaInfo r) { this.estiramientos = r; }
-
     /**
      * Calentamiento/estiramientos: vienen del backend (getCalentamiento_ /
      * getEstiramientos_ en Codigo.gs), citando evidencia — NUNCA hardcodeados

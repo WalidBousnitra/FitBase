@@ -72,7 +72,12 @@ public class SplashActivity extends AppCompatActivity {
                     AppDataCache.setHealthHoy(hoyData);
                     AppDataCache.setHealthRecuperacion30d(recuperacion30d);
 
-                    // 2) Sync diario HC → BBDD (idempotente) ANTES de pedir al backend,
+                    // 2) Si ha cambiado el día natural desde la última apertura, cierra
+                    // el día anterior con el total de pasos definitivo (paseo nocturno
+                    // tras la última apertura de ese día incluido).
+                    DailySyncManager.cerrarDiaAnteriorSiHaceFalta(this);
+
+                    // 3) Sync diario HC → BBDD (idempotente) ANTES de pedir al backend,
                     // para que el histórico que lea Progresión ya incluya lo de hoy.
                     DailySyncManager.sincronizarSiHaceFalta(this, hoyData, recuperacion30d);
                 }

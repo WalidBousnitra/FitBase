@@ -1,70 +1,51 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Pantalla de Progresion de Metricas — Modern Flat UI -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?android:colorBackground"
+    android:background="@color/colorBackground"
     android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="24dp">
+        android:paddingHorizontal="@dimen/screen_padding"
+        android:paddingTop="@dimen/space_lg"
+        android:paddingBottom="@dimen/space_xl">
 
-        <!-- Header -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Progresion"
-            android:textSize="28sp"
-            android:textColor="?android:textColorPrimary"
-            android:fontFamily="sans-serif-light"
-            android:layout_marginBottom="8dp" />
+        <include layout="@layout/partial_header" />
 
         <TextView
+            style="@style/TextAppearance.FitBase.Body"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Seguimiento de metricas clave"
-            android:textSize="14sp"
-            android:textColor="?android:textColorSecondary"
-            android:layout_marginBottom="16dp" />
+            android:text="Seguimiento de métricas clave"
+            android:layout_marginTop="@dimen/space_xs"
+            android:layout_marginBottom="@dimen/space_lg" />
 
         <!-- Filtros de tiempo -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginBottom="24dp">
+            android:layout_marginBottom="@dimen/space_xl">
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn7d"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                android:layout_width="0dp"
-                android:layout_height="@dimen/touch_target_min"
-                android:layout_weight="1"
+                style="@style/Widget.FitBase.Button.Filter"
                 android:text="7d"
-                android:textSize="12sp"
-                android:layout_marginEnd="8dp" />
+                android:layout_marginEnd="@dimen/space_sm" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn30d"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                android:layout_width="0dp"
-                android:layout_height="@dimen/touch_target_min"
-                android:layout_weight="1"
+                style="@style/Widget.FitBase.Button.Filter"
                 android:text="30d"
-                android:textSize="12sp"
-                android:layout_marginEnd="8dp" />
+                android:layout_marginEnd="@dimen/space_sm" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn90d"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                android:layout_width="0dp"
-                android:layout_height="@dimen/touch_target_min"
-                android:layout_weight="1"
-                android:text="90d"
-                android:textSize="12sp" />
+                style="@style/Widget.FitBase.Button.Filter"
+                android:text="90d" />
         </LinearLayout>
 
         <ProgressBar
@@ -76,19 +57,19 @@
 
         <TextView
             android:id="@+id/tvError"
+            style="@style/TextAppearance.FitBase.Body"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textColor="@color/error"
-            android:textSize="14sp"
             android:visibility="gone"
-            android:layout_marginBottom="16dp" />
+            android:layout_marginBottom="@dimen/space_lg" />
 
         <!-- ═══ RESUMEN CARDS ═══ -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginBottom="24dp">
+            android:layout_marginBottom="@dimen/space_md">
 
             <!-- Peso -->
             <LinearLayout
@@ -97,25 +78,21 @@
                 android:layout_weight="1"
                 android:orientation="vertical"
                 android:background="@drawable/bg_card_flat"
-                android:padding="16dp"
-                android:layout_marginEnd="8dp">
+                android:padding="@dimen/card_padding"
+                android:layout_marginEnd="@dimen/space_sm">
 
                 <TextView
+                    style="@style/TextAppearance.FitBase.Caption"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="PESO"
-                    android:textSize="11sp"
-                    android:textColor="?android:textColorTertiary"
-                    android:letterSpacing="0.05" />
+                    android:text="PESO" />
 
                 <TextView
                     android:id="@+id/tvPesoActual"
+                    style="@style/TextAppearance.FitBase.Headline"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="— kg"
-                    android:textSize="22sp"
-                    android:textColor="?android:textColorPrimary"
-                    android:fontFamily="sans-serif-medium" />
+                    android:text="— kg" />
 
                 <TextView
                     android:id="@+id/tvPesoCambio"
@@ -133,25 +110,20 @@
                 android:layout_weight="1"
                 android:orientation="vertical"
                 android:background="@drawable/bg_card_flat"
-                android:padding="16dp"
-                android:layout_marginEnd="8dp">
+                android:padding="@dimen/card_padding">
 
                 <TextView
+                    style="@style/TextAppearance.FitBase.Caption"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="GRASA"
-                    android:textSize="11sp"
-                    android:textColor="?android:textColorTertiary"
-                    android:letterSpacing="0.05" />
+                    android:text="GRASA" />
 
                 <TextView
                     android:id="@+id/tvGrasaActual"
+                    style="@style/TextAppearance.FitBase.Headline"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="—%"
-                    android:textSize="22sp"
-                    android:textColor="?android:textColorPrimary"
-                    android:fontFamily="sans-serif-medium" />
+                    android:text="—%" />
 
                 <TextView
                     android:id="@+id/tvGrasaCambio"
@@ -163,39 +135,35 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Segunda fila: Sueno + Pasos -->
+        <!-- Segunda fila: Sueño + Pasos -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginBottom="32dp">
+            android:layout_marginBottom="@dimen/space_xxl">
 
-            <!-- Sueno -->
+            <!-- Sueño -->
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:orientation="vertical"
                 android:background="@drawable/bg_card_flat"
-                android:padding="16dp"
-                android:layout_marginEnd="8dp">
+                android:padding="@dimen/card_padding"
+                android:layout_marginEnd="@dimen/space_sm">
 
                 <TextView
+                    style="@style/TextAppearance.FitBase.Caption"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="SUENO"
-                    android:textSize="11sp"
-                    android:textColor="?android:textColorTertiary"
-                    android:letterSpacing="0.05" />
+                    android:text="SUEÑO" />
 
                 <TextView
                     android:id="@+id/tvSleepMedia"
+                    style="@style/TextAppearance.FitBase.Headline"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="—"
-                    android:textSize="22sp"
-                    android:textColor="?android:textColorPrimary"
-                    android:fontFamily="sans-serif-medium" />
+                    android:text="—" />
             </LinearLayout>
 
             <!-- Pasos -->
@@ -205,49 +173,43 @@
                 android:layout_weight="1"
                 android:orientation="vertical"
                 android:background="@drawable/bg_card_flat"
-                android:padding="16dp">
+                android:padding="@dimen/card_padding">
 
                 <TextView
+                    style="@style/TextAppearance.FitBase.Caption"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="PASOS/DIA"
-                    android:textSize="11sp"
-                    android:textColor="?android:textColorTertiary"
-                    android:letterSpacing="0.05" />
+                    android:text="PASOS/DÍA" />
 
                 <TextView
                     android:id="@+id/tvPasosMedia"
+                    style="@style/TextAppearance.FitBase.Headline"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="—"
-                    android:textSize="22sp"
-                    android:textColor="?android:textColorPrimary"
-                    android:fontFamily="sans-serif-medium" />
+                    android:text="—" />
             </LinearLayout>
         </LinearLayout>
 
-        <!-- ═══ EVOLUCION: Peso, Grasa, Sueno, Pasos en una sola grafica ═══ -->
+        <!-- ═══ EVOLUCIÓN: Peso, Grasa, Sueño, Pasos en una sola gráfica ═══ -->
         <TextView
+            style="@style/TextAppearance.FitBase.Title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Evolucion"
-            android:textSize="16sp"
-            android:textColor="?android:textColorPrimary"
-            android:fontFamily="sans-serif-medium"
-            android:layout_marginBottom="8dp" />
+            android:text="Evolución"
+            android:layout_marginBottom="@dimen/space_sm" />
 
         <com.fitbase.ui.progression.ProgresionChartView
             android:id="@+id/chartProgresion"
             android:layout_width="match_parent"
             android:layout_height="176dp"
-            android:layout_marginBottom="12dp" />
+            android:layout_marginBottom="@dimen/space_md" />
 
         <!-- Leyenda -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginBottom="24dp">
+            android:layout_marginBottom="@dimen/space_xl">
 
             <LinearLayout
                 android:layout_width="0dp"
@@ -258,14 +220,15 @@
                 <View
                     android:layout_width="8dp"
                     android:layout_height="8dp"
-                    android:layout_marginEnd="6dp"
-                    android:background="@color/colorAccentPrimary" />
+                    android:layout_marginEnd="@dimen/space_xs"
+                    android:background="@drawable/shape_dot"
+                    android:backgroundTint="@color/colorAccentPrimary" />
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Peso"
                     android:textSize="12sp"
-                    android:textColor="?android:textColorSecondary" />
+                    android:textColor="@color/colorTextSecondary" />
             </LinearLayout>
 
             <LinearLayout
@@ -277,14 +240,15 @@
                 <View
                     android:layout_width="8dp"
                     android:layout_height="8dp"
-                    android:layout_marginEnd="6dp"
-                    android:background="@color/colorGrasa" />
+                    android:layout_marginEnd="@dimen/space_xs"
+                    android:background="@drawable/shape_dot"
+                    android:backgroundTint="@color/colorGrasa" />
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Grasa"
                     android:textSize="12sp"
-                    android:textColor="?android:textColorSecondary" />
+                    android:textColor="@color/colorTextSecondary" />
             </LinearLayout>
 
             <LinearLayout
@@ -296,14 +260,15 @@
                 <View
                     android:layout_width="8dp"
                     android:layout_height="8dp"
-                    android:layout_marginEnd="6dp"
-                    android:background="@color/colorChartSecondary" />
+                    android:layout_marginEnd="@dimen/space_xs"
+                    android:background="@drawable/shape_dot"
+                    android:backgroundTint="@color/colorChartSecondary" />
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Sueno"
+                    android:text="Sueño"
                     android:textSize="12sp"
-                    android:textColor="?android:textColorSecondary" />
+                    android:textColor="@color/colorTextSecondary" />
             </LinearLayout>
 
             <LinearLayout
@@ -315,14 +280,15 @@
                 <View
                     android:layout_width="8dp"
                     android:layout_height="8dp"
-                    android:layout_marginEnd="6dp"
-                    android:background="@color/colorSuccess" />
+                    android:layout_marginEnd="@dimen/space_xs"
+                    android:background="@drawable/shape_dot"
+                    android:backgroundTint="@color/colorSuccess" />
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Pasos"
                     android:textSize="12sp"
-                    android:textColor="?android:textColorSecondary" />
+                    android:textColor="@color/colorTextSecondary" />
             </LinearLayout>
         </LinearLayout>
 
@@ -332,16 +298,14 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:layout_marginBottom="8dp">
+            android:layout_marginBottom="@dimen/space_sm">
 
             <TextView
+                style="@style/TextAppearance.FitBase.Title"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Energía y estrés (subjetivo)"
-                android:textSize="16sp"
-                android:textColor="?android:textColorPrimary"
-                android:fontFamily="sans-serif-medium" />
+                android:text="Energía y estrés (subjetivo)" />
 
             <TextView
                 android:id="@+id/tvEstadoEmoji"
@@ -356,7 +320,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:nestedScrollingEnabled="false"
-            android:layout_marginBottom="32dp" />
+            android:layout_marginBottom="@dimen/space_xxxl" />
 
     </LinearLayout>
 </ScrollView>

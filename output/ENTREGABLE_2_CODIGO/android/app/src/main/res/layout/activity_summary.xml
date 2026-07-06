@@ -1,72 +1,91 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:gravity="center"
-    android:padding="24dp"
+    android:fillViewport="true"
     android:background="@color/background">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Sesión completada"
-        android:textSize="24sp"
-        android:textColor="@color/success" />
-
-    <TextView
-        android:id="@+id/tvSummarySeries"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="24 series"
-        android:textSize="20sp"
-        android:textColor="@color/text_primary"
-        android:layout_marginTop="24dp" />
-
-    <TextView
-        android:id="@+id/tvSummaryVolumen"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="4500 kg total"
-        android:textSize="20sp"
-        android:textColor="@color/text_primary"
-        android:layout_marginTop="8dp" />
-
-    <TextView
-        android:id="@+id/tvSummaryRir"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="RIR medio 2.0"
-        android:textSize="16sp"
-        android:textColor="@color/text_secondary"
-        android:layout_marginTop="8dp" />
-
-    <TextView
-        android:id="@+id/tvSummaryIntensidad"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Alta — zona óptima hipertrofia"
-        android:textSize="14sp"
-        android:textColor="@color/success"
-        android:layout_marginTop="8dp" />
-
-    <TextView
-        android:id="@+id/tvSummaryImpacto"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="El motor ajustará tu próxima sesión."
-        android:textSize="14sp"
-        android:textColor="@color/text_secondary"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
         android:gravity="center"
-        android:layout_marginTop="16dp" />
+        android:padding="24dp">
 
-    <Button
-        android:id="@+id/btnSummaryCerrar"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_marginTop="32dp"
-        android:text="CERRAR"
-        android:background="@drawable/gradient_primary_button"
-        android:textColor="@color/white" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Sesión completada"
+            android:textSize="24sp"
+            android:fontFamily="sans-serif-medium"
+            android:textColor="@color/success" />
 
-</LinearLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="24dp">
+
+            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:orientation="vertical" android:gravity="center"
+                android:background="@drawable/bg_card_flat" android:padding="14dp">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="SERIES" android:textSize="11sp" android:fontFamily="sans-serif-medium"
+                    android:letterSpacing="0.04" android:textColor="@color/text_tertiary" />
+                <TextView android:id="@+id/tvSummarySeries" android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:layout_marginTop="2dp" android:text="24"
+                    android:textSize="24sp" android:fontFamily="sans-serif-black" android:textColor="@color/accent" />
+            </LinearLayout>
+
+            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:orientation="vertical" android:gravity="center"
+                android:background="@drawable/bg_card_flat" android:padding="14dp"
+                android:layout_marginStart="8dp">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="VOLUMEN" android:textSize="11sp" android:fontFamily="sans-serif-medium"
+                    android:letterSpacing="0.04" android:textColor="@color/text_tertiary" />
+                <TextView android:id="@+id/tvSummaryVolumen" android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:layout_marginTop="2dp" android:text="4500 kg"
+                    android:textSize="24sp" android:fontFamily="sans-serif-black" android:textColor="@color/text_primary" />
+            </LinearLayout>
+
+            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:orientation="vertical" android:gravity="center"
+                android:background="@drawable/bg_card_flat" android:padding="14dp"
+                android:layout_marginStart="8dp">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="RIR MEDIO" android:textSize="11sp" android:fontFamily="sans-serif-medium"
+                    android:letterSpacing="0.04" android:textColor="@color/text_tertiary" />
+                <TextView android:id="@+id/tvSummaryRir" android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:layout_marginTop="2dp" android:text="2.0"
+                    android:textSize="24sp" android:fontFamily="sans-serif-black" android:textColor="@color/text_primary" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvSummaryIntensidad"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Alta — zona óptima hipertrofia"
+            android:textSize="15sp"
+            android:textColor="@color/success"
+            android:layout_marginTop="16dp" />
+
+        <TextView
+            android:id="@+id/tvSummaryImpacto"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="El motor ajustará tu próxima sesión."
+            android:textSize="13sp"
+            android:textColor="@color/text_secondary"
+            android:gravity="center"
+            android:layout_marginTop="12dp" />
+
+        <Button
+            android:id="@+id/btnSummaryCerrar"
+            style="@style/Widget.FitBase.Button.Primary"
+            android:layout_marginTop="32dp"
+            android:text="CERRAR" />
+
+    </LinearLayout>
+</ScrollView>

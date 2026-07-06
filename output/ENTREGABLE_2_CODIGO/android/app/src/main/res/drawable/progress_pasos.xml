@@ -1,17 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Progress pasos — Verde vibrante -->
+<!-- Progress pasos — pill gruesa con degradado verde→cian (fresco/cardio) -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:id="@android:id/background">
         <shape android:shape="rectangle">
-            <corners android:radius="3dp" />
-            <solid android:color="@color/colorSeparator" />
+            <corners android:radius="@dimen/radius_pill" />
+            <solid android:color="@color/colorSurfaceElevated" />
         </shape>
     </item>
     <item android:id="@android:id/progress">
         <clip>
             <shape android:shape="rectangle">
-                <corners android:radius="3dp" />
-                <solid android:color="@color/colorSuccess" />
+                <corners android:radius="@dimen/radius_pill" />
+                <gradient
+                    android:type="linear"
+                    android:angle="0"
+                    android:startColor="@color/colorSuccess"
+                    android:endColor="@color/colorAgua" />
             </shape>
         </clip>
     </item>

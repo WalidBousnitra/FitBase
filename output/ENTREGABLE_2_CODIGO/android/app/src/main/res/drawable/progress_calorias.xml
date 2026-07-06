@@ -1,17 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Progress calorías — índigo pastel plano (sin gradiente) -->
+<!-- Progress calorías — pill gruesa con degradado azul→violeta -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:id="@android:id/background">
         <shape android:shape="rectangle">
-            <corners android:radius="3dp" />
-            <solid android:color="@color/colorSeparator" />
+            <corners android:radius="@dimen/radius_pill" />
+            <solid android:color="@color/colorSurfaceElevated" />
         </shape>
     </item>
     <item android:id="@android:id/progress">
         <clip>
             <shape android:shape="rectangle">
-                <corners android:radius="3dp" />
-                <solid android:color="@color/colorAccentPrimary" />
+                <corners android:radius="@dimen/radius_pill" />
+                <gradient
+                    android:type="linear"
+                    android:angle="0"
+                    android:startColor="@color/colorAccentPrimary"
+                    android:endColor="@color/colorAccentSecondary" />
             </shape>
         </clip>
     </item>

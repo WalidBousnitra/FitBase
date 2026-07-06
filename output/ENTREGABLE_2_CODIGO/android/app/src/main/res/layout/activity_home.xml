@@ -12,55 +12,105 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="20dp">
+        android:orientation="vertical">
 
-        <!-- ═══ HEADER ═══ -->
-        <TextView
-            android:id="@+id/tvSaludo"
-            android:layout_width="wrap_content"
+        <!-- ═══ HERO: saludo + fecha + chips de estado ═══ -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Buenos días"
-            android:textSize="24sp"
-            android:textColor="@color/text_primary"
-            android:fontFamily="sans-serif-medium" />
+            android:orientation="vertical"
+            android:background="@drawable/bg_hero_panel"
+            android:paddingHorizontal="20dp"
+            android:paddingTop="16dp"
+            android:paddingBottom="16dp">
 
-        <TextView
-            android:id="@+id/tvFecha"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="miércoles 2 de julio"
-            android:textSize="14sp"
-            android:textColor="@color/text_secondary"
-            android:layout_marginTop="2dp" />
+            <TextView
+                android:id="@+id/tvSaludo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Buenos días"
+                android:textSize="23sp"
+                android:textColor="@color/text_primary"
+                android:fontFamily="sans-serif-black"
+                android:letterSpacing="-0.01" />
+
+            <TextView
+                android:id="@+id/tvFecha"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="miércoles 2 de julio"
+                android:textSize="13sp"
+                android:textColor="@color/text_secondary"
+                android:layout_marginTop="2dp" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="10dp"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/tvTipoDia"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="—"
+                    android:textSize="12sp"
+                    android:fontFamily="sans-serif-medium"
+                    android:textColor="@color/accent"
+                    android:background="@drawable/bg_chip_accent"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="6dp" />
+
+                <TextView
+                    android:id="@+id/tvFaseNombre"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="Hipertrofia I"
+                    android:textSize="12sp"
+                    android:textColor="@color/text_secondary"
+                    android:background="@drawable/bg_badge_actual"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="6dp"
+                    android:visibility="gone" />
+            </LinearLayout>
+        </LinearLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginTop="8dp"
-            android:gravity="center_vertical">
+            android:orientation="vertical"
+            android:paddingHorizontal="20dp"
+            android:paddingTop="14dp"
+            android:paddingBottom="16dp">
+
+        <!-- ═══ BANNER PRETEMPORADA (el plan de 11 meses aún no ha empezado) ═══ -->
+        <LinearLayout
+            android:id="@+id/bannerPretemporada"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/bg_card_flat"
+            android:padding="12dp"
+            android:visibility="gone">
 
             <TextView
-                android:id="@+id/tvTipoDia"
-                android:layout_width="0dp"
+                android:id="@+id/tvPretemporadaTitulo"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="—"
-                android:textSize="16sp"
+                android:text="Pretemporada"
+                android:textSize="13sp"
+                android:fontFamily="sans-serif-medium"
                 android:textColor="@color/accent" />
 
             <TextView
-                android:id="@+id/tvFaseNombre"
-                android:layout_width="wrap_content"
+                android:id="@+id/tvPretemporadaDetalle"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Hipertrofia I"
+                android:layout_marginTop="4dp"
                 android:textSize="12sp"
-                android:textColor="@color/text_tertiary"
-                android:background="@drawable/bg_badge_actual"
-                android:paddingHorizontal="8dp"
-                android:paddingVertical="2dp"
-                android:visibility="gone" />
+                android:textColor="@color/text_secondary" />
         </LinearLayout>
 
         <!-- ═══ BANNER AUSENCIA ═══ -->
@@ -71,14 +121,14 @@
             android:orientation="horizontal"
             android:background="@drawable/bg_card_flat"
             android:padding="12dp"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="8dp"
             android:visibility="gone">
 
             <TextView
                 android:id="@+id/tvAusenciaMensaje"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textSize="13sp"
+                android:textSize="12sp"
                 android:textColor="@color/text_secondary" />
         </LinearLayout>
 
@@ -90,14 +140,14 @@
             android:orientation="vertical"
             android:background="@drawable/bg_card_flat"
             android:padding="12dp"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="8dp"
             android:visibility="gone">
 
             <TextView
                 android:id="@+id/tvRamadanTitulo"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textSize="14sp"
+                android:textSize="13sp"
                 android:fontFamily="sans-serif-medium"
                 android:textColor="@color/accent" />
 
@@ -105,173 +155,94 @@
                 android:id="@+id/tvRamadanDetalle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:textSize="13sp"
+                android:layout_marginTop="4dp"
+                android:textSize="12sp"
                 android:textColor="@color/text_secondary" />
         </LinearLayout>
 
-        <!-- ═══ SUEÑO ═══ -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginTop="20dp"
-            android:gravity="center_vertical">
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="SUEÑO (estimado)"
-                    android:textSize="11sp"
-                    android:textColor="@color/text_tertiary" />
-                <TextView
-                    android:id="@+id/tvSleepScore"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="—"
-                    android:textSize="@dimen/text_header"
-                    android:textColor="@color/text_primary" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="FC REPOSO"
-                    android:textSize="11sp"
-                    android:textColor="@color/text_tertiary" />
-                <TextView
-                    android:id="@+id/tvFcReposo"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="—"
-                    android:textSize="@dimen/text_header"
-                    android:textColor="@color/text_primary" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <TextView
-            android:id="@+id/tvAvisoFatiga"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Sueño pobre — sesión reducida"
-            android:textSize="13sp"
-            android:textColor="@color/warning"
-            android:layout_marginTop="4dp"
-            android:visibility="gone" />
-
-        <!-- ═══ MACROS RESTANTES ═══ -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="MACROS RESTANTES"
-            android:textSize="11sp"
-            android:textColor="@color/text_tertiary"
-            android:layout_marginTop="24dp" />
-
-        <TextView
-            android:id="@+id/tvCaloriasRestantes"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="—"
-            android:textSize="@dimen/text_display_metric"
-            android:textColor="@color/accent"
-            android:fontFamily="sans-serif-medium" />
-
-        <ProgressBar
-            android:id="@+id/progressCalorias"
-            style="@android:style/Widget.ProgressBar.Horizontal"
-            android:layout_width="match_parent"
-            android:layout_height="8dp"
-            android:layout_marginTop="4dp"
-            android:progressDrawable="@drawable/progress_calorias"
-            android:max="3280" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginTop="12dp">
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical"
-                android:gravity="center"
-                android:background="@drawable/bg_macro_card"
-                android:padding="10dp">
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="PROT" android:textSize="10sp" android:textColor="@color/text_tertiary" />
-                <TextView android:id="@+id/tvProtRestante" android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" android:text="—"
-                    android:textSize="18sp" android:textColor="@color/colorProteina" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical"
-                android:gravity="center"
-                android:background="@drawable/bg_macro_card"
-                android:padding="10dp"
-                android:layout_marginStart="8dp">
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="CARBOS" android:textSize="10sp" android:textColor="@color/text_tertiary" />
-                <TextView android:id="@+id/tvCarbosRestantes" android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" android:text="—"
-                    android:textSize="18sp" android:textColor="@color/colorCarbos" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical"
-                android:gravity="center"
-                android:background="@drawable/bg_macro_card"
-                android:padding="10dp"
-                android:layout_marginStart="8dp">
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="GRASA" android:textSize="10sp" android:textColor="@color/text_tertiary" />
-                <TextView android:id="@+id/tvGrasasRestantes" android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" android:text="—"
-                    android:textSize="18sp" android:textColor="@color/colorGrasa" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical"
-                android:gravity="center"
-                android:background="@drawable/bg_macro_card"
-                android:padding="10dp"
-                android:layout_marginStart="8dp">
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="AGUA" android:textSize="10sp" android:textColor="@color/text_tertiary" />
-                <TextView android:id="@+id/tvAgua" android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" android:text="—"
-                    android:textSize="18sp" android:textColor="@color/colorAgua" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <!-- ═══ PASOS Y CARDIO ═══ -->
+        <!-- ═══ ESTADO: sueño + FC + pasos, todo en una tarjeta ═══ -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:layout_marginTop="20dp">
+            android:background="@drawable/bg_card_flat"
+            android:padding="14dp"
+            android:layout_marginTop="14dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="SUEÑO"
+                        android:textSize="10sp"
+                        android:fontFamily="sans-serif-medium"
+                        android:letterSpacing="0.04"
+                        android:textColor="@color/text_tertiary" />
+                    <TextView
+                        android:id="@+id/tvSleepScore"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="—"
+                        android:textSize="20sp"
+                        android:fontFamily="sans-serif-black"
+                        android:textColor="@color/text_primary" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="1dp"
+                    android:layout_height="match_parent"
+                    android:background="@color/colorSeparator" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:paddingStart="14dp">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="FC REPOSO"
+                        android:textSize="10sp"
+                        android:fontFamily="sans-serif-medium"
+                        android:letterSpacing="0.04"
+                        android:textColor="@color/text_tertiary" />
+                    <TextView
+                        android:id="@+id/tvFcReposo"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="—"
+                        android:textSize="20sp"
+                        android:fontFamily="sans-serif-black"
+                        android:textColor="@color/text_primary" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvAvisoFatiga"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Sueño pobre — sesión reducida"
+                android:textSize="12sp"
+                android:textColor="@color/warning"
+                android:layout_marginTop="6dp"
+                android:visibility="gone" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/colorSeparator"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="12dp" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -284,7 +255,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="0"
-                    android:textSize="20sp"
+                    android:textSize="18sp"
+                    android:fontFamily="sans-serif-black"
                     android:textColor="@color/text_primary" />
 
                 <TextView
@@ -292,7 +264,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="/ — pasos"
-                    android:textSize="14sp"
+                    android:textSize="13sp"
                     android:textColor="@color/text_tertiary"
                     android:layout_marginStart="4dp" />
             </LinearLayout>
@@ -301,8 +273,8 @@
                 android:id="@+id/progressPasos"
                 style="@android:style/Widget.ProgressBar.Horizontal"
                 android:layout_width="match_parent"
-                android:layout_height="6dp"
-                android:layout_marginTop="4dp"
+                android:layout_height="8dp"
+                android:layout_marginTop="6dp"
                 android:progressDrawable="@drawable/progress_pasos"
                 android:max="8000" />
 
@@ -311,10 +283,134 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="20 min bici post-gym"
-                android:textSize="13sp"
+                android:textSize="12sp"
                 android:textColor="@color/text_secondary"
-                android:layout_marginTop="6dp"
+                android:layout_marginTop="8dp"
                 android:visibility="gone" />
+        </LinearLayout>
+
+        <!-- ═══ MACROS RESTANTES ═══ -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="MACROS RESTANTES"
+            android:textSize="10sp"
+            android:fontFamily="sans-serif-medium"
+            android:letterSpacing="0.04"
+            android:textColor="@color/text_tertiary"
+            android:layout_marginTop="16dp" />
+
+        <TextView
+            android:id="@+id/tvCaloriasRestantes"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="—"
+            android:textSize="32sp"
+            android:textColor="@color/accent"
+            android:fontFamily="sans-serif-black"
+            android:letterSpacing="-0.02" />
+
+        <ProgressBar
+            android:id="@+id/progressCalorias"
+            style="@android:style/Widget.ProgressBar.Horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="10dp"
+            android:layout_marginTop="6dp"
+            android:progressDrawable="@drawable/progress_calorias"
+            android:max="3280" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="10dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:background="@drawable/bg_macro_card"
+                android:padding="10dp">
+                <View
+                    android:layout_width="6dp"
+                    android:layout_height="6dp"
+                    android:layout_marginBottom="4dp"
+                    android:background="@drawable/shape_dot"
+                    android:backgroundTint="@color/colorProteina" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="PROT" android:textSize="9sp" android:fontFamily="sans-serif-medium" android:textColor="@color/text_tertiary" />
+                <TextView android:id="@+id/tvProtRestante" android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:text="—"
+                    android:textSize="16sp" android:fontFamily="sans-serif-medium" android:textColor="@color/colorProteina" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:background="@drawable/bg_macro_card"
+                android:padding="10dp"
+                android:layout_marginStart="8dp">
+                <View
+                    android:layout_width="6dp"
+                    android:layout_height="6dp"
+                    android:layout_marginBottom="4dp"
+                    android:background="@drawable/shape_dot"
+                    android:backgroundTint="@color/colorCarbos" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="CARBOS" android:textSize="9sp" android:fontFamily="sans-serif-medium" android:textColor="@color/text_tertiary" />
+                <TextView android:id="@+id/tvCarbosRestantes" android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:text="—"
+                    android:textSize="16sp" android:fontFamily="sans-serif-medium" android:textColor="@color/colorCarbos" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:background="@drawable/bg_macro_card"
+                android:padding="10dp"
+                android:layout_marginStart="8dp">
+                <View
+                    android:layout_width="6dp"
+                    android:layout_height="6dp"
+                    android:layout_marginBottom="4dp"
+                    android:background="@drawable/shape_dot"
+                    android:backgroundTint="@color/colorGrasa" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="GRASA" android:textSize="9sp" android:fontFamily="sans-serif-medium" android:textColor="@color/text_tertiary" />
+                <TextView android:id="@+id/tvGrasasRestantes" android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:text="—"
+                    android:textSize="16sp" android:fontFamily="sans-serif-medium" android:textColor="@color/colorGrasa" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:background="@drawable/bg_macro_card"
+                android:padding="10dp"
+                android:layout_marginStart="8dp">
+                <View
+                    android:layout_width="6dp"
+                    android:layout_height="6dp"
+                    android:layout_marginBottom="4dp"
+                    android:background="@drawable/shape_dot"
+                    android:backgroundTint="@color/colorAgua" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="AGUA" android:textSize="9sp" android:fontFamily="sans-serif-medium" android:textColor="@color/text_tertiary" />
+                <TextView android:id="@+id/tvAgua" android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:text="—"
+                    android:textSize="16sp" android:fontFamily="sans-serif-medium" android:textColor="@color/colorAgua" />
+            </LinearLayout>
         </LinearLayout>
 
         <!-- ═══ MOVILIDAD MATUTINA ═══ -->
@@ -322,16 +418,17 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:layout_marginTop="20dp"
+            android:layout_marginTop="12dp"
             android:background="@drawable/bg_card_flat"
-            android:padding="14dp">
+            android:padding="12dp">
 
             <TextView
                 android:id="@+id/tvMovilidadTitulo"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Movilidad matutina"
-                android:textSize="14sp"
+                android:textSize="13sp"
+                android:fontFamily="sans-serif-medium"
                 android:textColor="@color/success" />
 
             <LinearLayout
@@ -346,13 +443,9 @@
         <!-- ═══ BOTÓN EMPEZAR ENTRENO ═══ -->
         <Button
             android:id="@+id/btnEmpezarEntreno"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:layout_marginTop="24dp"
+            style="@style/Widget.FitBase.Button.Primary"
+            android:layout_marginTop="16dp"
             android:text="EMPEZAR ENTRENO"
-            android:textSize="16sp"
-            android:textColor="@color/white"
-            android:background="@drawable/gradient_primary_button"
             android:visibility="visible" />
 
         <TextView
@@ -376,78 +469,30 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginTop="20dp">
+            android:layout_marginTop="10dp">
 
             <Button
                 android:id="@+id/btnPlanAnual"
+                style="@style/Widget.FitBase.Button.Secondary"
                 android:layout_width="0dp"
-                android:layout_height="@dimen/touch_target_min"
                 android:layout_weight="1"
                 android:text="Plan Anual"
-                android:textSize="13sp"
-                android:background="@drawable/button_secondary" />
+                android:textSize="13sp" />
 
             <ImageButton
                 android:id="@+id/btnProgresion"
-                android:layout_width="@dimen/touch_target_min"
-                android:layout_height="@dimen/touch_target_min"
-                android:layout_marginStart="8dp"
+                android:layout_width="52dp"
+                android:layout_height="52dp"
+                android:layout_marginStart="10dp"
                 android:contentDescription="Progresión"
-                android:padding="12dp"
+                android:padding="14dp"
                 android:scaleType="fitCenter"
                 android:src="@drawable/ic_chart"
                 android:background="@drawable/button_secondary" />
         </LinearLayout>
 
+        </LinearLayout>
     </LinearLayout>
 </ScrollView>
-
-    <!-- Botón de test: SOLO para desarrollo, flotante para no afectar al
-         resto de la composición. No participa del flujo del layout. -->
-    <Button
-        android:id="@+id/btnTest"
-        android:layout_width="wrap_content"
-        android:layout_height="36dp"
-        android:layout_gravity="top|end"
-        android:layout_margin="12dp"
-        android:alpha="0.85"
-        android:paddingHorizontal="12dp"
-        android:text="TEST"
-        android:textSize="11sp"
-        android:background="@drawable/button_secondary" />
-
-    <!-- Botón de previsualización de cambio de fase: SOLO para desarrollo,
-         lanza CambioFaseActivity con datos de ejemplo (sin depender de que
-         hoy sea un cambio real de fase). -->
-    <Button
-        android:id="@+id/btnPreviewFase"
-        android:layout_width="wrap_content"
-        android:layout_height="36dp"
-        android:layout_gravity="top|end"
-        android:layout_marginTop="56dp"
-        android:layout_marginEnd="12dp"
-        android:alpha="0.85"
-        android:paddingHorizontal="12dp"
-        android:text="FASE"
-        android:textSize="11sp"
-        android:background="@drawable/button_secondary" />
-
-    <!-- Botón de previsualización de entreno: SOLO para desarrollo, lanza
-         WorkoutActivity directamente sin pasar por el gate de tipo_dia de
-         Home — así se puede probar el flujo de gym cualquier día (incluido
-         descanso/natación real) sin depender de haber redesplegado
-         Codigo.gs ni de qué día de la semana sea hoy. -->
-    <Button
-        android:id="@+id/btnPreviewEntreno"
-        android:layout_width="wrap_content"
-        android:layout_height="36dp"
-        android:layout_gravity="top|end"
-        android:layout_marginTop="100dp"
-        android:layout_marginEnd="12dp"
-        android:alpha="0.85"
-        android:paddingHorizontal="12dp"
-        android:text="ENTRENO"
-        android:textSize="11sp"
-        android:background="@drawable/button_secondary" />
 
 </FrameLayout>

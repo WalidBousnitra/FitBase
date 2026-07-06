@@ -12,17 +12,10 @@ import com.fitbase.data.local.SyncManager;
 import com.fitbase.data.model.Ejercicio;
 import com.fitbase.data.model.GenericResponse;
 import com.fitbase.data.model.ResumenSesionResponse;
-import com.fitbase.data.model.Sesion;
 import com.fitbase.data.model.SesionResponse;
-import com.fitbase.util.Constants;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 import retrofit2.Call;
@@ -74,18 +67,16 @@ public class WorkoutViewModel extends AndroidViewModel {
     // SharedPreferences en cada avance — si el móvil se apaga de golpe, se
     // cierra la app a medias, o el proceso muere por batería/memoria, al
     // reabrir se retoma exactamente donde se dejó en vez de reiniciar desde
-    // CALENTAMIENTO. Se identifica por sesionId (ya incluye la fecha, tanto
-    // en sesión real como demo), así que nunca se resume una sesión de otro
-    // día por error.
+    // CALENTAMIENTO. Se identifica por sesionId (ya incluye la fecha), así
+    // que nunca se resume una sesión de otro día por error.
     private static final String PREFS_PROGRESO = "fitbase_workout_progreso";
 
     // Acumulado LOCAL de la sesión en curso (se va sumando serie a serie en
     // registrarSerie) — respaldo SOLO si falla la red (el resumen "de
-    // verdad" siempre viene de completar_sesion/BBDD, incluida la sesión
-    // demo, que también se guarda ahora en ejercicios_log).
-    private int demoSeriesTotales = 0;
-    private float demoVolumenTotalKg = 0f;
-    private int demoRirSum = 0;
+    // verdad" siempre viene de completar_sesion/BBDD).
+    private int acumSeriesTotales = 0;
+    private float acumVolumenTotalKg = 0f;
+    private int acumRirSum = 0;
 
     public WorkoutViewModel(@NonNull Application application) {
         super(application);
@@ -182,9 +173,9 @@ public class WorkoutViewModel extends AndroidViewModel {
     public void cargarSesion() {
         faseWorkout.postValue(FaseWorkout.CARGANDO);
         rutinaIdx.postValue(0);
-        demoSeriesTotales = 0;
-        demoVolumenTotalKg = 0f;
-        demoRirSum = 0;
+        acumSeriesTotales = 0;
+        acumVolumenTotalKg = 0f;
+        acumRirSum = 0;
         tiempoInicioMs = System.currentTimeMillis();
 
         ApiClient.getApi().getSesionHoy("sesion_hoy").enqueue(new Callback<SesionResponse>() {
@@ -195,15 +186,6 @@ public class WorkoutViewModel extends AndroidViewModel {
                     sesionData.postValue(data);
                     sesionId = data.getSesion().getSesionId();
                     reanudarOEmpezar();
-                } else if (estaEnModoDemo()) {
-                    // Antes de Constants.FECHA_INICIO_PROGRAMA no hay sesiones reales
-                    // en sesiones_plan (el plan de 11 meses empieza ese día) — se
-                    // muestra una sesión de ejemplo para poder probar toda la pantalla
-                    // (PROMPT_FITBASE.md §4 "MODO DEMO": todas las pantallas navegables).
-                    SesionResponse demo = crearSesionDemo();
-                    sesionData.postValue(demo);
-                    sesionId = demo.getSesion().getSesionId();
-                    reanudarOEmpezar();
                 } else {
                     error.postValue("No hay sesión para hoy");
                     faseWorkout.postValue(FaseWorkout.ERROR);
@@ -212,15 +194,8 @@ public class WorkoutViewModel extends AndroidViewModel {
 
             @Override
             public void onFailure(Call<SesionResponse> call, Throwable t) {
-                if (estaEnModoDemo()) {
-                    SesionResponse demo = crearSesionDemo();
-                    sesionData.postValue(demo);
-                    sesionId = demo.getSesion().getSesionId();
-                    reanudarOEmpezar();
-                } else {
-                    error.postValue("Sin conexión: " + t.getMessage());
-                    faseWorkout.postValue(FaseWorkout.ERROR);
-                }
+                error.postValue("Sin conexión: " + t.getMessage());
+                faseWorkout.postValue(FaseWorkout.ERROR);
             }
         });
     }
@@ -268,85 +243,6 @@ public class WorkoutViewModel extends AndroidViewModel {
     private void borrarProgresoLocal() {
         getApplication().getSharedPreferences(PREFS_PROGRESO, android.content.Context.MODE_PRIVATE)
                 .edit().clear().apply();
-    }
-
-    private SimpleDateFormat formatoFecha() {
-        return new SimpleDateFormat("yyyy-MM-dd", Locale.US);
-    }
-
-    private boolean estaEnModoDemo() {
-        try {
-            Date inicio = formatoFecha().parse(Constants.FECHA_INICIO_PROGRAMA);
-            return new Date().before(inicio);
-        } catch (ParseException e) {
-            return false;
-        }
-    }
-
-    /**
-     * Sesión de ejemplo para modo demo (antes de que empiece el plan real).
-     * Pesos y series son solo ilustrativos — "(demo)" en motor_detalle deja
-     * claro que no vienen del motor de 6 capas real. El id incluye la fecha
-     * (DEMO_20260705, no "DEMO" a secas) para que cada día de pruebas quede
-     * aislado en ejercicios_log — si no, el resumen de hoy sumaría también
-     * las series de sesiones demo de días anteriores.
-     */
-    private SesionResponse crearSesionDemo() {
-        Sesion sesion = new Sesion();
-        sesion.setSesionId("DEMO_" + formatoFecha().format(new Date()).replace("-", ""));
-        sesion.setTipo("Push");
-        sesion.setDuracionEstimadaMin(60);
-
-        List<Ejercicio> ejercicios = new ArrayList<>();
-        ejercicios.add(crearEjercicioDemo("EJE_PRESS_HOMB", "Press hombro mancuernas", 4, "8-10", 3, 150, 20f));
-        ejercicios.add(crearEjercicioDemo("EJE_LAT_SENT", "Elev. laterales sentado", 4, "12-15", 3, 90, 10f));
-        ejercicios.add(crearEjercicioDemo("EJE_PRESS_INC", "Press inclinado mancuernas", 4, "8-10", 3, 150, 22.5f));
-
-        SesionResponse demo = new SesionResponse();
-        demo.setSesion(sesion);
-        demo.setEjercicios(ejercicios);
-        demo.setMensaje("Sesión de ejemplo — el plan real empieza el " + Constants.FECHA_INICIO_PROGRAMA);
-        demo.setCalentamiento(crearRutinaDemo(
-                "Círculos de cadera", "10/lado",
-                "Gato-vaca", "10 reps",
-                "Face pulls ligeros", "15 reps"));
-        demo.setEstiramientos(crearRutinaDemo(
-                "Pectoral en marco de puerta", "30s/lado",
-                "Estiramiento deltoides (brazo cruzado)", "30s/lado",
-                "Extensión tríceps overhead", "30s/brazo"));
-        return demo;
-    }
-
-    /** Rutina de calentamiento/estiramientos de ejemplo (mismo shape que el backend real). */
-    private SesionResponse.RutinaInfo crearRutinaDemo(String n1, String r1, String n2, String r2, String n3, String r3) {
-        SesionResponse.RutinaInfo rutina = new SesionResponse.RutinaInfo();
-        rutina.duracionMin = 6;
-        rutina.ejercicios = new ArrayList<>();
-        rutina.ejercicios.add(itemRutina(n1, r1));
-        rutina.ejercicios.add(itemRutina(n2, r2));
-        rutina.ejercicios.add(itemRutina(n3, r3));
-        return rutina;
-    }
-
-    private SesionResponse.ItemRutina itemRutina(String nombre, String reps) {
-        SesionResponse.ItemRutina item = new SesionResponse.ItemRutina();
-        item.nombre = nombre;
-        item.reps = reps;
-        return item;
-    }
-
-    private Ejercicio crearEjercicioDemo(String id, String nombre, int series, String reps,
-                                          int rir, int descansoSeg, float pesoSugerido) {
-        Ejercicio ej = new Ejercicio();
-        ej.setEjercicioId(id);
-        ej.setNombre(nombre);
-        ej.setSeriesPlan(series);
-        ej.setRepsPlan(reps);
-        ej.setRirObjetivo(rir);
-        ej.setDescansoSeg(descansoSeg);
-        ej.setPesoSugerido(pesoSugerido);
-        ej.setMotorDetalle("(demo) — el plan real empieza el " + Constants.FECHA_INICIO_PROGRAMA);
-        return ej;
     }
 
     // ─── Transiciones de fase ─────────────────────────────
@@ -413,23 +309,23 @@ public class WorkoutViewModel extends AndroidViewModel {
         // siempre empieza mostrando el ejercicio, no el registro).
         mostrandoRegistro.postValue(false);
 
-        // Acumulado local — respaldo para el resumen si falla la red (ver
-        // construirResumenDemo, usado también como fallback offline).
-        demoSeriesTotales++;
-        demoVolumenTotalKg += ej.getPesoSugerido() * repsCompletadas;
-        demoRirSum += rirPercibido;
+        // Acumulado local — respaldo para el resumen si falla la red
+        // (ver construirResumenLocal).
+        acumSeriesTotales++;
+        acumVolumenTotalKg += ej.getPesoActual() * repsCompletadas;
+        acumRirSum += rirPercibido;
 
-        // La sesión demo (pre-temporada, sesionId="DEMO_yyyyMMdd") también se
-        // guarda de verdad en ejercicios_log — el usuario ya tiene limpiarDatosTest() en
-        // Codigo.gs (§8 LIMPIAR) para resetear ejercicios_log/metricas/sesiones
-        // completadas después de probar, así que no hace falta bloquearlo aquí.
         Map<String, Object> datos = new HashMap<>();
         datos.put("accion", "guardar_log");
         datos.put("plan_id", ej.getPlanId());
         datos.put("sesion_id", sesionId);
         datos.put("ejercicio_id", ej.getEjercicioId());
         datos.put("num_serie", serie);
-        datos.put("num_peso_usado_kg", ej.getPesoSugerido());
+        // Peso REAL (ajustado por el usuario, ver Ejercicio.pesoActual) — no
+        // el sugerido a secas, si no el motor nunca se entera de lo que de
+        // verdad se levantó y la autorregulación de la próxima sesión queda
+        // ciega.
+        datos.put("num_peso_usado_kg", ej.getPesoActual());
         datos.put("num_reps_completadas", repsCompletadas);
         datos.put("num_rir_percibido", rirPercibido);
         datos.put("str_sensacion", sensacion);
@@ -503,7 +399,7 @@ public class WorkoutViewModel extends AndroidViewModel {
     private void completarSesionYMostrarResumen() {
         borrarProgresoLocal(); // se está terminando — ya no hay nada que retomar
         if (sesionId == null) {
-            resumen.postValue(construirResumenDemo());
+            resumen.postValue(construirResumenLocal());
             faseWorkout.postValue(FaseWorkout.RESUMEN);
             return;
         }
@@ -518,15 +414,12 @@ public class WorkoutViewModel extends AndroidViewModel {
                 if (response.isSuccessful() && response.body() != null && response.body().getResumen() != null) {
                     ResumenSesionResponse.Resumen r = response.body().getResumen();
                     resumen.postValue(r);
-                    guardarResumenDemoSiAplica(r);
                 } else {
                     // Backend respondió pero sin resumen usable (p.ej. 5xx) →
                     // encolar para que bool_completada/date_fin se marquen en
                     // cuanto haya red, y mostrar el acumulado local mientras tanto.
                     SyncManager.encolar(getApplication(), datos);
-                    ResumenSesionResponse.Resumen r = construirResumenDemo();
-                    resumen.postValue(r);
-                    guardarResumenDemoSiAplica(r);
+                    resumen.postValue(construirResumenLocal());
                 }
                 faseWorkout.postValue(FaseWorkout.RESUMEN);
             }
@@ -537,47 +430,26 @@ public class WorkoutViewModel extends AndroidViewModel {
                 // cuanto haya conexión). Mientras tanto, mostramos el acumulado
                 // local para no dejar la pantalla en blanco.
                 SyncManager.encolar(getApplication(), datos);
-                ResumenSesionResponse.Resumen r = construirResumenDemo();
-                resumen.postValue(r);
-                guardarResumenDemoSiAplica(r);
+                resumen.postValue(construirResumenLocal());
                 faseWorkout.postValue(FaseWorkout.RESUMEN);
             }
         });
     }
 
     /**
-     * Si la sesión era la demo de pre-temporada (sesionId="DEMO_yyyyMMdd"),
-     * recuerda en SharedPreferences que HOY ya se completó, con el resumen —
-     * así HomeActivity puede llevar directo al resumen la próxima vez que se
-     * pulse el botón de previsualización de entreno, igual que ya hace con
-     * una sesión real ya completada (ver HomeActivity.actualizarVistaMañana).
-     */
-    private void guardarResumenDemoSiAplica(ResumenSesionResponse.Resumen r) {
-        if (sesionId == null || !sesionId.startsWith("DEMO_") || r == null) return;
-        getApplication().getSharedPreferences("fitbase_demo", android.content.Context.MODE_PRIVATE)
-                .edit()
-                .putString("fecha_completada", formatoFecha().format(new Date()))
-                .putInt("series_totales", r.seriesTotales)
-                .putInt("volumen_total_kg", r.volumenTotalKg)
-                .putFloat("rir_medio", r.rirMedio)
-                .putString("intensidad_percibida", r.intensidadPercibida)
-                .putString("impacto", r.impacto)
-                .apply();
-    }
-
-    /**
-     * Resumen a partir del acumulado LOCAL (demo, u offline como respaldo).
+     * Resumen a partir del acumulado LOCAL — respaldo offline (ver campos
+     * acumSeriesTotales/acumVolumenTotalKg/acumRirSum en registrarSerie).
      * Misma clasificación de intensidad que usa el backend (Helms 2016).
      */
-    private ResumenSesionResponse.Resumen construirResumenDemo() {
+    private ResumenSesionResponse.Resumen construirResumenLocal() {
         ResumenSesionResponse.Resumen r = new ResumenSesionResponse.Resumen();
-        if (demoSeriesTotales == 0) {
+        if (acumSeriesTotales == 0) {
             r.mensaje = "Sesión sin series registradas";
             return r;
         }
-        r.seriesTotales = demoSeriesTotales;
-        r.volumenTotalKg = Math.round(demoVolumenTotalKg);
-        r.rirMedio = Math.round((demoRirSum / (float) demoSeriesTotales) * 10) / 10f;
+        r.seriesTotales = acumSeriesTotales;
+        r.volumenTotalKg = Math.round(acumVolumenTotalKg);
+        r.rirMedio = Math.round((acumRirSum / (float) acumSeriesTotales) * 10) / 10f;
 
         if (r.rirMedio <= 1) {
             r.intensidadPercibida = "Muy alta — cerca del fallo (RPE 9-10, Helms 2016)";

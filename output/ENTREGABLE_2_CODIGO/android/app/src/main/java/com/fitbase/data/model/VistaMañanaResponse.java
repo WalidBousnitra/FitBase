@@ -16,6 +16,12 @@ public class VistaMañanaResponse {
     @SerializedName("tipo_dia")
     private String tipoDia; // "gym", "natacion", "descanso"
 
+    @SerializedName("pre_temporada")
+    private boolean preTemporada; // true antes de que empiece el plan de 11 meses
+
+    @SerializedName("fecha_inicio_plan")
+    private String fechaInicioPlan; // yyyy-MM-dd, solo relevante si preTemporada
+
     @SerializedName("fase")
     private FaseInfo fase;
 
@@ -157,6 +163,8 @@ public class VistaMañanaResponse {
 
     public String getFecha() { return fecha; }
     public String getTipoDia() { return tipoDia; }
+    public boolean isPreTemporada() { return preTemporada; }
+    public String getFechaInicioPlan() { return fechaInicioPlan; }
     public FaseInfo getFase() { return fase; }
     public Sueno getSueno() { return sueno; }
     public MacrosResumen getMacros() { return macros; }

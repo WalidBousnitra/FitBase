@@ -1,8 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Radios (Modern Flat: suaves, no pill) -->
-    <dimen name="radius_card">12dp</dimen>
-    <dimen name="radius_button">8dp</dimen>
+    <!-- Radios (Modern Soft: grandes, "bento") -->
+    <dimen name="radius_card">20dp</dimen>
+    <dimen name="radius_button">16dp</dimen>
+    <dimen name="radius_pill">100dp</dimen>
+
+    <!-- Escala de espaciado — usar SIEMPRE uno de estos en vez de dp sueltos,
+         para que márgenes/paddings no diverjan pantalla a pantalla. -->
+    <dimen name="space_xxs">4dp</dimen>
+    <dimen name="space_xs">6dp</dimen>
+    <dimen name="space_sm">8dp</dimen>
+    <dimen name="space_md">12dp</dimen>
+    <dimen name="space_lg">16dp</dimen>
+    <dimen name="space_xl">20dp</dimen>
+    <dimen name="space_xxl">24dp</dimen>
+    <dimen name="space_xxxl">32dp</dimen>
+
+    <!-- Padding estándar de pantalla completa (todas las Activity de nivel
+         superior usan este mismo valor horizontal) -->
+    <dimen name="screen_padding">20dp</dimen>
+    <!-- Padding estándar de una card de contenido (bg_card_flat) -->
+    <dimen name="card_padding">16dp</dimen>
+    <!-- Padding de un tile denso en grid (bg_macro_card cuando van 3-4 en fila) -->
+    <dimen name="tile_padding">10dp</dimen>
 
     <!-- Área táctil mínima Material (48dp) — NO 44dp, ese es el valor de Apple HIG. -->
     <dimen name="touch_target_min">48dp</dimen>

@@ -36,9 +36,9 @@ public class SummaryActivity extends AppCompatActivity {
         String intensidad = getIntent().getStringExtra("intensidad");
         String impacto = getIntent().getStringExtra("impacto");
 
-        tvSeries.setText(series + " series");
-        tvVolumen.setText(volumen + " kg total");
-        tvRir.setText("RIR medio " + rirMedio);
+        tvSeries.setText(String.valueOf(series));
+        tvVolumen.setText(volumen + " kg");
+        tvRir.setText(String.valueOf(rirMedio));
         tvIntensidad.setText(intensidad != null ? intensidad : "");
         tvIntensidad.setVisibility(intensidad != null ? View.VISIBLE : View.GONE);
         tvImpacto.setText(impacto != null ? impacto : "Sesión registrada correctamente.");

@@ -194,6 +194,24 @@ function getSesionHoy_() {
       break;
     }
   }
+
+  // Pre-temporada (antes de plan.fecha_inicio): rellenarPlanCompleto solo
+  // genera filas dentro de las fechas de FASES, así que hoy nunca tiene
+  // sesión todavía. Si el horario semanal marca hoy como día de gym, se
+  // genera AHORA una sesión real (mismas plantillas T[] que usará el plan
+  // real, FAS_01 como fase de referencia) para poder probar el flujo
+  // completo de entreno + guardado antes de que el plan arranque de verdad.
+  // Se marca con sufijo _TEST en el id para poder identificarla y borrarla
+  // a mano — no se limpia sola en limpiarDatosTest() (§8 conserva sesiones_plan).
+  if (!sesion) {
+    const plan = getPlanAnual_();
+    if (hoy < plan.fecha_inicio) {
+      const tipoSesionHoy = getHorarioSemanal_()[new Date().getDay()];
+      if (TIPO_DISPLAY[tipoSesionHoy]) {
+        sesion = generarSesionTestHoy_(hoy, tipoSesionHoy);
+      }
+    }
+  }
   if (!sesion) return { sesion: null, ejercicios: [], mensaje: 'No hay sesión para hoy' };
 
   // Ramadán (cultura.md §5): -30% volumen, intensidad se mantiene. Se aplica
@@ -568,23 +586,39 @@ function upsertPorFecha_(hoja, colFecha, fecha, filaCompleta) {
  * peso_log, separado — ahora centralizado aquí). Los campos que no vengan
  * en la llamada mantienen el valor ya guardado ese día (no se pisan a '0'
  * si, por ejemplo, solo se sincroniza el peso más tarde).
+ *
+ * La app manda pasos (cada ~15s mientras está abierta) y sueño/FC/peso
+ * (1 vez al día) como llamadas HTTP INDEPENDIENTES y casi simultáneas —
+ * sin lock, dos ejecuciones de Apps Script podían solaparse: ambas leen
+ * "existente" ANTES de que la otra escriba, y la que termina de escribir
+ * segunda pisa a la primera con sus valores por defecto (0 / '' para los
+ * campos que ella no traía) — o, peor, cada una hace appendRow_ por
+ * separado y quedan DOS filas para el mismo día. LockService serializa el
+ * read-modify-write para que la segunda llamada siempre vea ya escrita la
+ * primera.
  */
 function guardarMetricas_(datos) {
-  const hoja = getHoja_(HOJAS.METRICAS_ZEPP);
-  const fecha = datos.fecha || fechaHoy_();
-  const existente = getUltimaFila_(HOJAS.METRICAS_ZEPP, 'date_fecha', fecha);
-  const id = existente ? existente.metrica_id : genId_('ZEP');
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const hoja = getHoja_(HOJAS.METRICAS_ZEPP);
+    const fecha = datos.fecha || fechaHoy_();
+    const existente = getUltimaFila_(HOJAS.METRICAS_ZEPP, 'date_fecha', fecha);
+    const id = existente ? existente.metrica_id : genId_('ZEP');
 
-  const sleepScore = datos.sleep_score != null ? datos.sleep_score : (existente ? existente.num_sleep_score : 0);
-  const pasos = datos.pasos != null ? datos.pasos : (existente ? existente.num_pasos : 0);
-  const hrReposo = datos.hr_reposo != null ? datos.hr_reposo : (existente ? existente.num_hr_reposo : 0);
-  const pesoKg = datos.peso_kg != null ? datos.peso_kg : (existente ? existente.num_peso_kg : '');
-  const grasaPct = datos.grasa_pct != null ? datos.grasa_pct : (existente ? existente.num_grasa_pct : '');
+    const sleepScore = datos.sleep_score != null ? datos.sleep_score : (existente ? existente.num_sleep_score : 0);
+    const pasos = datos.pasos != null ? datos.pasos : (existente ? existente.num_pasos : 0);
+    const hrReposo = datos.hr_reposo != null ? datos.hr_reposo : (existente ? existente.num_hr_reposo : 0);
+    const pesoKg = datos.peso_kg != null ? datos.peso_kg : (existente ? existente.num_peso_kg : '');
+    const grasaPct = datos.grasa_pct != null ? datos.grasa_pct : (existente ? existente.num_grasa_pct : '');
 
-  const actualizado = upsertPorFecha_(hoja, 'date_fecha', fecha, [
-    id, fecha, sleepScore, pasos, hrReposo, pesoKg, grasaPct, new Date().toISOString()
-  ]);
-  return { ok: true, metrica_id: id, actualizado: actualizado };
+    const actualizado = upsertPorFecha_(hoja, 'date_fecha', fecha, [
+      id, fecha, sleepScore, pasos, hrReposo, pesoKg, grasaPct, new Date().toISOString()
+    ]);
+    return { ok: true, metrica_id: id, actualizado: actualizado };
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 /**
@@ -701,17 +735,19 @@ function getVistaMañana_() {
   var tipoFase = faseActual ? faseActual.str_tipo : 'VOL';
 
   // 4. Tipo de día: gym/natación/descanso
-  // Antes de plan.fecha_inicio el split semanal fijo todavía no rige — no
-  // hay sesiones reales en sesiones_plan (rellenarPlanCompleto solo genera
-  // filas dentro de las fechas de FASES) y no tiene sentido "descansar" de
-  // un programa que no ha empezado. Se fuerza gym todos los días en esta
-  // pre-temporada para poder probar el flujo de entreno (WorkoutViewModel
-  // cae a su sesión demo cuando no encuentra sesión real, ver crearSesionDemo).
+  // Antes de plan.fecha_inicio no hay sesiones reales pre-generadas en
+  // sesiones_plan (rellenarPlanCompleto solo genera filas dentro de las
+  // fechas de FASES) — pero el horario semanal SÍ es real (es el mismo que
+  // regirá cuando el plan arranque), así que se usa igual para decidir el
+  // tipo de día. getSesionHoy_() genera la sesión real de hoy sobre la
+  // marcha en pre-temporada (plantillas reales, ver generarSesionTestHoy_)
+  // para poder probar el flujo completo de entreno antes del 31 de agosto.
+  // La app sigue mostrando el aviso de pretemporada vía pre_temporada +
+  // fecha_inicio_plan (más abajo), aunque tipo_dia ya sea 'gym'/'natacion'.
   var preTemporada = hoy < plan.fecha_inicio;
   var tipoSesionHoy = getHorarioSemanal_()[diaSemana];
   var tipoDia;
-  if (preTemporada) tipoDia = 'gym';
-  else if (tipoSesionHoy === 'NATACION') tipoDia = 'natacion';
+  if (tipoSesionHoy === 'NATACION') tipoDia = 'natacion';
   else if (tipoSesionHoy === 'DESCANSO') tipoDia = 'descanso';
   else tipoDia = 'gym'; // PUSH/PIERNA/PULL/HOMBR
 
@@ -734,6 +770,8 @@ function getVistaMañana_() {
   return {
     fecha: hoy,
     tipo_dia: tipoDia,
+    pre_temporada: preTemporada,
+    fecha_inicio_plan: plan.fecha_inicio,
     fase: faseActual ? { fase_id: faseActual.fase_id, nombre: faseActual.str_nombre_fase, tipo: tipoFase, nutri: faseActual.str_objetivo_nutri } : null,
     sueno: sueno,
     macros: {
@@ -1850,6 +1888,45 @@ function generarFilasSesiones_(fechaDesde, fechaHasta, horario) {
   }
 
   return { filasSes: filasSes, filasEj: filasEj, sesN: sesN, ejN: ejN };
+}
+
+/**
+ * Genera y guarda una única sesión real de HOY (pre-temporada, ver
+ * getSesionHoy_) usando la fase FAS_01 (la primera del plan real) como
+ * plantilla — mismas series/reps/rir/superseries que se usarán cuando el
+ * plan arranque de verdad (Schoenfeld 2017, misma tabla T[] de
+ * generarFilasSesiones_). Solo la fecha es "de prueba"; el contenido de la
+ * sesión es idéntico a lo que generaría el plan real ese día de la semana.
+ */
+function generarSesionTestHoy_(hoy, tipoSesion) {
+  const hojaSes = getHoja_(HOJAS.SESIONES_PLAN);
+  const hojaEj = getHoja_(HOJAS.EJERCICIOS_PLAN);
+  const fase = FASES[0];
+  const esDeload = fase.tipo === 'DELOAD';
+  const semFase = 1;
+  const rirNum = esDeload ? 5 : (fase.tipo === 'FZA' ? 2 : 4); // progresión RIR, semana 1
+
+  const fStr = hoy.replace(/-/g, '');
+  const sesId = 'SES_' + fStr + '_TEST';
+  const filaSes = [sesId, hoy, TIPO_DISPLAY[tipoSesion], semFase, fase.nombre, 1.0, 75, false, '', '', new Date().toISOString()];
+  hojaSes.appendRow(filaSes);
+
+  const tmplKey = getTemplate(fase.tipo, tipoSesion);
+  const tmpl = T[tmplKey] || T[tipoSesion + '_VOL'];
+  if (tmpl && tmpl.length) {
+    const filasEj = tmpl.map(function(ej, oi) {
+      return ['PLA_' + fStr + '_T' + String(oi + 1).padStart(2, '0'),
+              sesId, ej[0], oi + 1, ej[2], ej[3], rirNum, ej[4], ej[5], false, ej[6] || ''];
+    });
+    hojaEj.getRange(hojaEj.getLastRow() + 1, 1, filasEj.length, filasEj[0].length).setValues(filasEj);
+  }
+
+  return {
+    sesion_id: sesId, date_fecha: hoy, str_tipo: TIPO_DISPLAY[tipoSesion],
+    num_semana_meso: semFase, str_fase: fase.nombre, num_ajuste_volumen: 1.0,
+    num_duracion_est_min: 75, bool_completada: false, date_inicio: '', date_fin: '',
+    date_creado: filaSes[10]
+  };
 }
 
 /**

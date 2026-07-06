@@ -85,8 +85,7 @@ com.fitbase/
 │   ├── workout/             # Gym screen (swipe between exercises, log sets)
 │   ├── summary/             # Post-workout summary
 │   ├── plan/                # Annual and weekly plan views
-│   ├── progression/         # Progress tracking with metrics
-│   └── test/                # TestRunnerActivity (integration tests)
+│   └── progression/         # Progress tracking with metrics
 └── util/                    # Constants, FeedbackHelper
 ```
 

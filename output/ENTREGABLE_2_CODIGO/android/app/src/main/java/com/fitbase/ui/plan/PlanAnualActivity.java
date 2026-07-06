@@ -1,6 +1,7 @@
 package com.fitbase.ui.plan;
 
 import android.os.Bundle;
+import android.view.View;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -69,13 +70,16 @@ public class PlanAnualActivity extends AppCompatActivity {
 
         viewModel.cargarPlan();
 
-        // Botón volver
+        // Header compartido (partial_header.xml)
+        ((TextView) findViewById(R.id.tvHeaderTitulo)).setText("Plan 2026–2027");
         findViewById(R.id.btnVolver).setOnClickListener(v -> finish());
 
         // Horario semanal (qué tipo de sesión le toca a cada día) — editable
         // porque natación depende del horario de la piscina del curso/
         // cuatrimestre, no es fijo como el resto del split.
-        findViewById(R.id.btnHorario).setOnClickListener(v ->
+        View btnHeaderAccion = findViewById(R.id.btnHeaderAccion);
+        btnHeaderAccion.setVisibility(View.VISIBLE);
+        btnHeaderAccion.setOnClickListener(v ->
                 startActivity(new android.content.Intent(this, HorarioSemanalActivity.class)));
     }
 }

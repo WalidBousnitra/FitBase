@@ -1,32 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Design System: Semántico multi-tono, dark, plano.
-     Cada rol tiene su propio hue (no monocromático): azul para acciones,
-     verde para éxito/positivo, ámbar para aviso, rojo para error/crítico.
-     Tonos propios de FitBase, no los hex exactos de iOS (no pintan nada
-     fuera de UIKit/SwiftUI). -->
+<!-- Design System v2: Dark, profundo, con acento degradado azul→violeta y
+     sombras "horneadas" en los drawables (layer-list) en vez de elevación
+     nativa — resultado consistente en cualquier API/dispositivo. -->
 <resources>
-    <!-- Base: carbón oscuro plano -->
-    <color name="colorBackground">#14161C</color>
-    <color name="colorSurface">#1E2129</color>
-    <color name="colorSurfaceElevated">#262A34</color>
+    <!-- Base: negro azulado profundo, 3 niveles de superficie para dar
+         sensación de profundidad sin depender de sombras del sistema. -->
+    <color name="colorBackground">#0B0D12</color>
+    <color name="colorSurface">#15171F</color>
+    <color name="colorSurfaceElevated">#1D2029</color>
+    <color name="colorSurfaceElevated2">#262A36</color>
+    <!-- Sombra horneada en los drawables (layer-list), semitransparente -->
+    <color name="colorShadow">#40000000</color>
 
     <!-- Texto: escala de grises -->
-    <color name="colorTextPrimary">#F2F3F5</color>
+    <color name="colorTextPrimary">#F5F6F8</color>
     <color name="colorTextSecondary">#9BA1AC</color>
     <color name="colorTextTertiary">#5B6170</color>
 
-    <!-- Bordes: Subtle Borders (1dp) -->
-    <color name="colorSeparator">#2B2F3A</color>
+    <!-- Bordes: ya casi no se usan (la profundidad la da la sombra horneada),
+         se mantienen solo para separadores finos puntuales -->
+    <color name="colorSeparator">#2A2E3A</color>
 
-    <!-- Accent principal: AZUL — acciones, CTA, botones primarios -->
-    <color name="colorAccentPrimary">#3B82F6</color>
+    <!-- Accent principal: azul eléctrico + violeta para el degradado — el
+         par que da la identidad "última generación" a CTAs y chips -->
+    <color name="colorAccentPrimary">#4F7CFF</color>
+    <color name="colorAccentSecondary">#A855F7</color>
+    <!-- Wash del accent para chips tonales (fondo semitransparente) -->
+    <color name="colorAccentWash">#1F4F7CFF</color>
+
     <!-- Funcionales: hue propio por rol -->
     <color name="colorSuccess">#22C55E</color>
     <!-- Aliases for direct R.color usage -->
     <color name="success">#22C55E</color>
     <color name="warning">#F97316</color>
     <color name="error">#EF4444</color>
-    <color name="colorChart">#3B82F6</color>
+    <color name="colorChart">#4F7CFF</color>
     <color name="colorChartSecondary">#A855F7</color>
 
     <!-- Colores por macronutriente: hue propio por macro (convención habitual) -->
@@ -36,17 +44,17 @@
     <color name="colorAgua">#22D3EE</color>
 
     <!-- Aliases for layout direct usage -->
-    <color name="background">#14161C</color>
-    <color name="surface">#1E2129</color>
-    <color name="text_primary">#F2F3F5</color>
+    <color name="background">#0B0D12</color>
+    <color name="surface">#15171F</color>
+    <color name="text_primary">#F5F6F8</color>
     <color name="text_secondary">#9BA1AC</color>
     <color name="text_tertiary">#5B6170</color>
-    <color name="accent">#3B82F6</color>
+    <color name="accent">#4F7CFF</color>
     <color name="white">#FFFFFF</color>
 
     <!-- Colores de fase (plan anual): hue propio por tipo de fase -->
     <color name="colorFaseVol">#22C55E</color>
-    <color name="colorFaseFza">#3B82F6</color>
+    <color name="colorFaseFza">#4F7CFF</color>
     <color name="colorFaseDef">#F97316</color>
     <color name="colorFaseMnt">#A855F7</color>
     <color name="colorFaseDeload">#5B6170</color>
