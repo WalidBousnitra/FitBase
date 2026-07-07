@@ -462,6 +462,57 @@
                 android:visibility="gone" />
         </LinearLayout>
 
+        <!-- ═══ CORE (día de descanso) — colapsable como movilidad. Solo se
+             muestra cuando el backend manda core_dia (días de descanso), si no
+             la tarjeta entera queda oculta (cardCore GONE en HomeActivity). ═══ -->
+        <LinearLayout
+            android:id="@+id/cardCore"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/bg_card_flat"
+            android:padding="10dp"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:id="@+id/headerCore"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?attr/selectableItemBackground">
+
+                <TextView
+                    android:id="@+id/tvCoreTitulo"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Core"
+                    android:textSize="13sp"
+                    android:fontFamily="sans-serif-medium"
+                    android:textColor="@color/success" />
+
+                <TextView
+                    android:id="@+id/tvCoreChevron"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="▸"
+                    android:textSize="13sp"
+                    android:textColor="@color/success" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/layoutCore"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="6dp"
+                android:visibility="gone" />
+        </LinearLayout>
+
         <!-- ═══ BOTÓN EMPEZAR ENTRENO ═══ -->
         <Button
             android:id="@+id/btnEmpezarEntreno"

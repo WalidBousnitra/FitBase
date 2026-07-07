@@ -26,12 +26,6 @@ public class Sesion {
     @SerializedName("str_fase")
     private String fase; // acumulacion, intensificacion, deload
 
-    @SerializedName("num_ajuste_volumen")
-    private float ajusteVolumen;
-
-    @SerializedName("str_razon_ajuste")
-    private String razonAjuste;
-
     @SerializedName("num_duracion_est_min")
     private int duracionEstimadaMin;
 
@@ -51,8 +45,6 @@ public class Sesion {
     public String getTipo() { return tipo; }
     public int getSemanaMeso() { return semanaMeso; }
     public String getFase() { return fase; }
-    public float getAjusteVolumen() { return ajusteVolumen; }
-    public String getRazonAjuste() { return razonAjuste; }
     public int getDuracionEstimadaMin() { return duracionEstimadaMin; }
     public boolean isCompletada() { return completada; }
     public String getFechaInicio() { return fechaInicio; }

@@ -23,6 +23,16 @@ public class Ejercicio {
     @SerializedName("num_series_plan")
     private int seriesPlan;
 
+    // Volumen Máximo Adaptativo (MAV): series base del plan antes de la
+    // auto-regulación por recuperación, y el motivo del cambio si lo hubo
+    // ('vol-progresion' = +series hacia el techo del grupo; 'vol-recuperacion'
+    // = -1 serie por fatiga). seriesPlan ya viene con el ajuste aplicado.
+    @SerializedName("num_series_base")
+    private int seriesBase;
+
+    @SerializedName("volumen_adaptativo")
+    private String volumenAdaptativo;
+
     @SerializedName("str_reps_plan")
     private String repsPlan; // "8-10", "6-8", "30s"
 
@@ -34,9 +44,6 @@ public class Ejercicio {
 
     @SerializedName("str_notas")
     private String notas;
-
-    @SerializedName("bool_es_warmup")
-    private boolean esWarmup;
 
     // Superserie (preferencias.md §5): si coincide con el grupo del siguiente
     // ejercicio, no hay descanso entre ambos — ver WorkoutViewModel.
@@ -114,11 +121,20 @@ public class Ejercicio {
     public String getEjercicioId() { return ejercicioId; }
     public int getOrden() { return orden; }
     public int getSeriesPlan() { return seriesPlan; }
+    public int getSeriesBase() { return seriesBase; }
+    public String getVolumenAdaptativo() { return volumenAdaptativo; }
+
+    /** Texto corto del ajuste de volumen (MAV) para la UI, o null si no hubo. */
+    public String getVolumenAdaptativoTexto() {
+        if (volumenAdaptativo == null) return null;
+        if ("vol-progresion".equals(volumenAdaptativo)) return "▲ Volumen (buena recuperación)";
+        if ("vol-recuperacion".equals(volumenAdaptativo)) return "▼ Volumen (recuperación baja)";
+        return null;
+    }
     public String getRepsPlan() { return repsPlan; }
     public int getRirObjetivo() { return rirObjetivo; }
     public int getDescansoSeg() { return descansoSeg; }
     public String getNotas() { return notas; }
-    public boolean isEsWarmup() { return esWarmup; }
     public String getSupersetGrupo() { return supersetGrupo; }
     public float getPesoSugerido() { return pesoSugerido; }
     public String getMotorDetalle() { return motorDetalle; }

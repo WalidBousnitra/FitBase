@@ -75,6 +75,13 @@ public class HomeActivity extends BaseActivity {
     private TextView tvMovilidadTitulo, tvMovilidadChevron;
     private boolean movilidadExpandida = false;
 
+    // Core del día de descanso (recuperación activa) — colapsable, misma lógica
+    // que movilidad. La tarjeta entera se oculta si el día no trae core.
+    private View cardCore, headerCore;
+    private LinearLayout layoutCore;
+    private TextView tvCoreTitulo, tvCoreChevron;
+    private boolean coreExpandido = false;
+
     // ─── Vistas: Sesión ───
     private TextView tvSesionTipo, tvSesionFase;
     private Button btnEmpezarEntreno;
@@ -236,6 +243,18 @@ public class HomeActivity extends BaseActivity {
             movilidadExpandida = !movilidadExpandida;
             layoutMovilidad.setVisibility(movilidadExpandida ? View.VISIBLE : View.GONE);
             tvMovilidadChevron.setText(movilidadExpandida ? "▾" : "▸");
+        });
+
+        cardCore = findViewById(R.id.cardCore);
+        headerCore = findViewById(R.id.headerCore);
+        layoutCore = findViewById(R.id.layoutCore);
+        tvCoreTitulo = findViewById(R.id.tvCoreTitulo);
+        tvCoreChevron = findViewById(R.id.tvCoreChevron);
+        headerCore.setOnClickListener(v -> {
+            feedback.vibrateLight();
+            coreExpandido = !coreExpandido;
+            layoutCore.setVisibility(coreExpandido ? View.VISIBLE : View.GONE);
+            tvCoreChevron.setText(coreExpandido ? "▾" : "▸");
         });
 
         tvSesionTipo = findViewById(R.id.tvSesionTipo);
@@ -405,6 +424,27 @@ public class HomeActivity extends BaseActivity {
             // Respeta el estado colapsado/expandido actual — no se fuerza
             // VISIBLE aquí (colapsada por defecto, ver vincularVistas).
             layoutMovilidad.setVisibility(movilidadExpandida ? View.VISIBLE : View.GONE);
+        }
+
+        // ── Core del día de descanso (recuperación activa) ──
+        // Solo llega en días de descanso (hipertrofia.md §3: sube la frecuencia
+        // de core a 2x/sem). En gym/natación core_dia es null → tarjeta oculta.
+        VistaMañanaResponse.CoreDia core = vista.getCoreDia();
+        if (core != null && core.ejercicios != null && !core.ejercicios.isEmpty()) {
+            tvCoreTitulo.setText((core.titulo != null ? core.titulo : "Core")
+                    + " (" + core.duracionMin + " min)");
+            layoutCore.removeAllViews();
+            for (VistaMañanaResponse.EjercicioMovilidad ej : core.ejercicios) {
+                TextView tv = new TextView(this);
+                tv.setText("• " + ej.nombre + " — " + ej.reps);
+                tv.setTextColor(getColor(R.color.text_secondary));
+                tv.setPadding(0, 4, 0, 4);
+                layoutCore.addView(tv);
+            }
+            layoutCore.setVisibility(coreExpandido ? View.VISIBLE : View.GONE);
+            cardCore.setVisibility(View.VISIBLE);
+        } else {
+            cardCore.setVisibility(View.GONE);
         }
 
         // ── Sesión del día ──

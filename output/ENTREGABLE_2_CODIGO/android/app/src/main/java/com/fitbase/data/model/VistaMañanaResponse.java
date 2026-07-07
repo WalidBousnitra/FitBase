@@ -37,6 +37,11 @@ public class VistaMañanaResponse {
     @SerializedName("movilidad_matutina")
     private MovilidadMatutina movilidadMatutina;
 
+    // Core del día de descanso (recuperación activa) — solo presente en días de
+    // descanso; null en gym/natación (ahí el core va en el día de Pierna).
+    @SerializedName("core_dia")
+    private CoreDia coreDia;
+
     @SerializedName("aviso_ausencia")
     private AvisoAusencia avisoAusencia;
 
@@ -123,6 +128,21 @@ public class VistaMañanaResponse {
         public String objetivo;
     }
 
+    /** Bloque de core del día de descanso (recuperación activa, hipertrofia.md §3).
+     *  Reutiliza EjercicioMovilidad (misma forma: nombre/reps/objetivo). */
+    public static class CoreDia {
+        @SerializedName("titulo")
+        public String titulo;
+        @SerializedName("duracion_min")
+        public int duracionMin;
+        @SerializedName("frecuencia")
+        public String frecuencia;
+        @SerializedName("justificacion")
+        public String justificacion;
+        @SerializedName("ejercicios")
+        public List<EjercicioMovilidad> ejercicios;
+    }
+
     public static class AvisoAusencia {
         @SerializedName("fecha")
         public String fecha;
@@ -170,6 +190,7 @@ public class VistaMañanaResponse {
     public MacrosResumen getMacros() { return macros; }
     public CardioObjetivo getCardio() { return cardio; }
     public MovilidadMatutina getMovilidadMatutina() { return movilidadMatutina; }
+    public CoreDia getCoreDia() { return coreDia; }
     public AvisoAusencia getAvisoAusencia() { return avisoAusencia; }
     public boolean isSesionCompletada() { return sesionCompletada; }
     public ResumenSesionResponse.Resumen getResumenHoy() { return resumenHoy; }

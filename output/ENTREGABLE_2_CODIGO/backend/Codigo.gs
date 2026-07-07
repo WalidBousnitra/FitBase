@@ -9,7 +9,7 @@
 //   §5. AUXILIARES (helpers genéricos)
 //   §6. INICIALIZAR (crear hojas + cabeceras — ejecutar 1 vez)
 //   §7. RELLENAR (pre-generar plan anual, semanal, sesiones)
-//   §7b. RELLENAR DATOS FICTICIOS (histórico de prueba: sueño/peso/entrenos)
+//   §7b. (ELIMINADO) RELLENAR DATOS FICTICIOS — retirado en limpieza 2026
 //   §8. LIMPIAR (borrar logs de test, conservar estructura y planes)
 //   §9. BIOMETRÍA INICIO/FIN (ajeno a la app — checkpoint manual para
 //       comparar antes/después del plan anual, ver knowledge_base/usuario/biometria.md)
@@ -227,8 +227,24 @@ function getSesionHoy_() {
   const plan = getPlanAnual_();
   const objetivoNutri = (plan.fase_actual && plan.fase_actual.str_objetivo_nutri) || 'bulk';
 
+  // Tipo de fase (VOL/FZA/DEF/MNT/DELOAD) para el volumen adaptativo. La hoja
+  // guarda el NOMBRE de la fase en str_fase, no el tipo — se resuelve desde el
+  // plan anual (o VOL por defecto).
+  const tipoFaseSesion = (plan.fase_actual && plan.fase_actual.str_tipo) || 'VOL';
+
   const ejerciciosAjustados = ejercicios.map(function(ej) {
-    var seriesPlan = ramadan ? Math.max(1, Math.round(ej.num_series_plan * 0.7)) : ej.num_series_plan;
+    // CAPA MAV — Volumen Máximo Adaptativo (Schoenfeld 2017 dose-response +
+    // hipertrofia.md §3). Se auto-regula por RECUPERACIÓN: sube series hacia el
+    // techo del grupo cuando la readiness es buena y baja cuando hay fatiga.
+    var vol = ajustarSeriesAdaptativo_(ej, {
+      tipoFase: tipoFaseSesion,
+      semFase: Number(sesion.num_semana_meso) || 1,
+      factorDia: ajuste.factor
+    });
+    var seriesPlan = vol.series;
+    // Ramadán (cultura.md §5): -30% sobre el volumen ya ajustado por MAV.
+    if (ramadan) seriesPlan = Math.max(1, Math.round(seriesPlan * 0.7));
+
     var resultado = calcularPesoSugerido_(ej.ejercicio_id, {
       ajusteDia: ajuste.factor,
       fase: sesion.str_fase || 'VOL',
@@ -239,6 +255,8 @@ function getSesionHoy_() {
     return {
       ...ej,
       num_series_plan: seriesPlan,
+      num_series_base: ej.num_series_plan,
+      volumen_adaptativo: vol.motivo, // 'vol-progresion' | 'vol-recuperacion' | null
       num_peso_sugerido_kg: resultado.peso,
       motor_detalle: resultado.detalle,
       motor_capas: resultado.capas,
@@ -523,9 +541,10 @@ function checkAusencia_() {
 
   var redistribucion = null;
   // excepciones.md §2.1: "NO modificar el plan anual (un día suelto no afecta)"
-  // El motor de pesos (Capa 5) ya contempla gaps automáticamente:
-  //   >7d → ×0.95, >14d → ×0.90
-  // NO se redistribuye volumen — la evidencia no soporta "series extra compensatorias"
+  // Gaps cortos: el motor (Capa 5) reduce ×0.95 si un ejercicio se retrasa a
+  // 8-9 días. Gaps largos: al superar la retención del log (7 días) no queda base
+  // → la app pide "elige tu peso". NO se redistribuye volumen — la evidencia no
+  // soporta "series extra compensatorias".
 
   return {
     dias_perdidos: diasPerdidos,
@@ -542,17 +561,45 @@ function checkAusencia_() {
 function guardarLog_(datos) {
   const hoja = getHoja_(HOJAS.EJERCICIOS_LOG);
   const logId = genId_('LOG');
+  // str_sensacion eliminado: el RIR percibido (0-3) ya codifica la sensación
+  // (los 4 botones de la app fijan RIR 3/2/1/0). El motor usa el RIR.
   hoja.appendRow([
     logId, datos.plan_id || '', datos.sesion_id, datos.ejercicio_id,
     datos.num_serie, datos.num_peso_usado_kg, datos.num_reps_completadas,
-    datos.num_rir_percibido, datos.str_sensacion || 'bien', new Date().toISOString()
+    datos.num_rir_percibido, new Date().toISOString()
   ]);
+
+  // date_inicio de la sesión = timestamp de la PRIMERA serie registrada (antes
+  // quedaba siempre en blanco: no había endpoint de "empezar entreno"). Junto
+  // con date_fin (completarSesion_) da la duración real de la sesión.
+  if (datos.sesion_id) marcarInicioSesion_(datos.sesion_id);
 
   // NO se toca ejercicios_plan. El peso se calcula SIEMPRE dinámicamente
   // desde el último log al servir getSesionHoy_() → calcularPesoSugerido_().
   // Esto elimina O(n) escrituras y hace el POST instantáneo.
   limpiarLogsAntiguos_();
   return { ok: true, log_id: logId };
+}
+
+/**
+ * Marca date_inicio de la sesión con el instante actual si aún está vacío
+ * (idempotente: solo la primera serie de la sesión lo escribe; las siguientes
+ * lo dejan igual). Fuente del arreglo: date_inicio nunca se rellenaba.
+ */
+function marcarInicioSesion_(sesionId) {
+  const hoja = getHoja_(HOJAS.SESIONES_PLAN);
+  if (!hoja) return;
+  const datos = hoja.getDataRange().getValues();
+  const cab = datos[0];
+  const colId = cab.indexOf('sesion_id');
+  const colIni = cab.indexOf('date_inicio');
+  if (colId < 0 || colIni < 0) return;
+  for (let i = 1; i < datos.length; i++) {
+    if (datos[i][colId] === sesionId) {
+      if (!datos[i][colIni]) hoja.getRange(i + 1, colIni + 1).setValue(new Date().toISOString());
+      return;
+    }
+  }
 }
 
 /**
@@ -609,13 +656,25 @@ function guardarMetricas_(datos) {
     const sleepScore = datos.sleep_score != null ? datos.sleep_score : (existente ? existente.num_sleep_score : 0);
     const pasos = datos.pasos != null ? datos.pasos : (existente ? existente.num_pasos : 0);
     const hrReposo = datos.hr_reposo != null ? datos.hr_reposo : (existente ? existente.num_hr_reposo : 0);
-    const pesoKg = datos.peso_kg != null ? datos.peso_kg : (existente ? existente.num_peso_kg : '');
-    const grasaPct = datos.grasa_pct != null ? datos.grasa_pct : (existente ? existente.num_grasa_pct : '');
+
+    // Imputación por arrastre (carry-forward) de peso y % grasa: la báscula no
+    // se usa a diario, pero macros (getMacrosHoy_) y las gráficas de progresión
+    // necesitan un valor cada día. Prioridad: dato de hoy en la llamada →
+    // dato ya guardado de hoy → último valor conocido de un día anterior. Así
+    // ninguna fila queda con el peso/grasa en blanco (biometria.md §11: el peso
+    // se sigue por MEDIA — un hueco de un día sin pesada no debe romper la serie).
+    var heredado = getUltimoPesoGrasaConocido_(fecha);
+    var pesoKg = datos.peso_kg != null ? datos.peso_kg
+        : (existente && existente.num_peso_kg !== '' && existente.num_peso_kg != null) ? existente.num_peso_kg
+        : (heredado.peso != null ? heredado.peso : '');
+    var grasaPct = datos.grasa_pct != null ? datos.grasa_pct
+        : (existente && existente.num_grasa_pct !== '' && existente.num_grasa_pct != null) ? existente.num_grasa_pct
+        : (heredado.grasa != null ? heredado.grasa : '');
 
     const actualizado = upsertPorFecha_(hoja, 'date_fecha', fecha, [
-      id, fecha, sleepScore, pasos, hrReposo, pesoKg, grasaPct, new Date().toISOString()
+      id, fecha, sleepScore, pasos, hrReposo, pesoKg, grasaPct
     ]);
-    return { ok: true, metrica_id: id, actualizado: actualizado };
+    return { ok: true, metrica_id: id, actualizado: actualizado, peso_heredado: (datos.peso_kg == null && heredado.peso != null) };
   } finally {
     lock.releaseLock();
   }
@@ -694,11 +753,11 @@ function registrarAusencia_(datos) {
   // Determinar impacto según excepciones.md §2.2
   var impacto;
   if (diasAusencia <= 7) {
-    impacto = 'Absorción natural (como deload). Motor reducirá peso al volver.';
+    impacto = 'Absorción natural (como deload). Al volver, el motor recalcula desde tu último rendimiento.';
   } else if (diasAusencia <= 21) {
-    impacto = 'Readaptación: primera semana con RIR+1. Motor Capa 5: ×0.90.';
+    impacto = 'Readaptación: primera semana con RIR+1 (más conservador).';
   } else {
-    impacto = 'Ausencia larga: reiniciar mesociclo actual. Motor Capa 5: ×0.90.';
+    impacto = 'Ausencia larga: reiniciar mesociclo actual.';
   }
 
   return {
@@ -706,7 +765,10 @@ function registrarAusencia_(datos) {
     dias_ausencia: diasAusencia,
     sesiones_suspendidas: sesionesAfectadas,
     impacto: impacto,
-    nota: 'Al volver, el motor ajustará automáticamente los pesos a la baja (Capa 5: gap >14d → ×0.90)'
+    // Tras una ausencia larga, ejercicios_log (retención 7 días) ya no tiene
+    // base para esos ejercicios → la app muestra "elige tu peso" y tú reintroduces
+    // la carga (naturalmente más conservadora). No hay un multiplicador mágico.
+    nota: 'Al volver, si el hueco supera la retención del log, la app pedirá elegir el peso de nuevo; si no, el motor ajusta a la baja por el gap (>7d → ×0.95).'
   };
 }
 
@@ -757,6 +819,10 @@ function getVistaMañana_() {
   // 6. Movilidad matutina (programacion.md §14, Ruivo 2017, Hansraj 2014)
   var movilidad = getMovilidadMatutina_(plan.fecha_inicio);
 
+  // 6b. Core del día de descanso (recuperación activa) — sube la frecuencia de
+  // core a 2x/sem para cumplir el objetivo de abdominales (hipertrofia.md §3).
+  var coreDia = getCoreDia_(tipoDia);
+
   // 7. Aviso de día perdido (excepciones.md §2.1)
   var ausencia = checkAusenciaAyer_();
 
@@ -783,6 +849,7 @@ function getVistaMañana_() {
     },
     cardio: cardio,
     movilidad_matutina: movilidad,
+    core_dia: coreDia,
     aviso_ausencia: ausencia,
     sesion_completada: sesionHoyEstado.completada,
     resumen_hoy: sesionHoyEstado.resumen,
@@ -1009,6 +1076,42 @@ function getMovilidadMatutina_(fechaInicioPlan) {
 }
 
 /**
+ * Bloque de core para el día de DESCANSO (recuperación activa).
+ *
+ * PROBLEMA que resuelve: el core solo se entrenaba 1×/sem (Hollow en el día de
+ * Pierna) → ~3 ser/sem, por debajo del objetivo de abdominales 6-10 ser/sem
+ * (hipertrofia.md §3). Añadir un bloque de core el domingo lo sube a 2×/sem
+ * (~9 ser/sem) SIN alargar las sesiones de gym.
+ *
+ * EVIDENCIA:
+ *   - hipertrofia.md §3: abdominales 6-10 ser/sem, frecuencia 1-2×/sem.
+ *   - programacion.md §12 (FLUJO_DESCANSO): el día de descanso es "recuperación
+ *     activa" — el core anti-extensión/anti-rotación es de bajo coste sistémico,
+ *     no compromete la recuperación.
+ *   - P2 Postura (prioridades.md): el trabajo anti-extensión (plancha, hollow,
+ *     dead bug) y anti-rotación (Pallof) corrige hiperlordosis / APT
+ *     (biometria.md §8: inclinación pélvica anterior SEVERA).
+ *
+ * Solo peso corporal + banda → se hace en casa, no necesita gimnasio.
+ * Devuelve null en días que no son de descanso (el core de gym ya va en Pierna).
+ */
+function getCoreDia_(tipoDia) {
+  if (tipoDia !== 'descanso') return null;
+  return {
+    titulo: 'Core — recuperación activa',
+    duracion_min: 8,
+    frecuencia: '2ª sesión de core de la semana (la 1ª es el día de Pierna)',
+    justificacion: 'hipertrofia.md §3 (abdominales 6-10 ser/sem) + programacion.md §12 (recuperación activa) + P2 postura (anti-extensión corrige hiperlordosis/APT).',
+    ejercicios: [
+      { nombre: 'Plancha', reps: '3x40-60s', objetivo: 'Anti-extensión' },
+      { nombre: 'Hollow hold', reps: '3x30s', objetivo: 'Anti-extensión' },
+      { nombre: 'Press Pallof con banda', reps: '3x12/lado', objetivo: 'Anti-rotación' },
+      { nombre: 'Dead bug lento', reps: '3x10/lado', objetivo: 'Control lumbo-pélvico (P2: APT)' }
+    ]
+  };
+}
+
+/**
  * Comprueba si ayer hubo sesión perdida (no abrió la app).
  * Detecta automáticamente según excepciones.md §2.1.
  */
@@ -1146,6 +1249,25 @@ function calcularAjusteDia_() {
     factor *= 0.85;
     razones.push('Estrés subjetivo alto (4-5/5, heurístico)');
   }
+  // Energía baja → reducir intensidad (motor_pesos.md §3: SUB_ENERGIA bajo →
+  // reducir intensidad). Escala app 1-5: ≤2 = energía baja (equivale al "<3/10"
+  // del paper, misma adaptación de escala que el estrés). Antes se registraba
+  // num_energia pero NO se usaba en el ajuste — hueco cerrado.
+  if (subjetiva && subjetiva.num_energia && subjetiva.num_energia <= 2) {
+    factor *= 0.90;
+    razones.push('Energía subjetiva baja (≤2/5, motor_pesos.md §3)');
+  }
+
+  // TECHO DE REDUCCIÓN (fix 2026): por muchas señales de fatiga que se acumulen,
+  // el recorte de carga no baja del nivel "recuperación activa" (0.70) — el mismo
+  // suelo que el early-return por FC ascendente. Sin este tope, apilar FC alta
+  // (×0.80) + sueño (×0.90) + estrés (×0.85) + energía (×0.90) daba 0.55 (−45%):
+  // un recorte MÁS agresivo que un deload que dejaba la sesión demasiado ligera
+  // para estimular nada. Un día realmente malo = día de recuperación, no menos.
+  if (factor < 0.70) {
+    factor = 0.70;
+    razones.push('Recorte limitado al nivel de recuperación activa (tope −30%)');
+  }
 
   return {
     factor: factor,
@@ -1219,13 +1341,36 @@ function calcularPesoSugerido_(ejercicioId, ctx) {
   var datos = hoja.getDataRange().getValues();
   var cab = datos[0];
   var colEj = cab.indexOf('ejercicio_id');
+  var colSes = cab.indexOf('sesion_id');
 
-  // Mann 2010: usar el ÚLTIMO set (refleja fatiga acumulada = realista)
-  var ultimo = null;
+  // FIX (2026): antes se usaba el ÚLTIMO set registrado (el más reciente en la
+  // hoja). Con series RECTAS a un RIR objetivo, el último set siempre tiene
+  // MENOS reps por fatiga acumulada dentro de la sesión → el motor lo leía como
+  // "te has quedado corto" y BAJABA el peso, aunque la sesión hubiera sido
+  // perfecta. Resultado: el peso se erosionaba solo (infraentrenamiento).
+  //
+  // Ahora se toma el MEJOR set (máxima capacidad = reps + RIR) de la sesión
+  // MÁS RECIENTE de ese ejercicio. El mejor set refleja la capacidad real de
+  // ese día sin penalizar la fatiga normal entre series — que es justo lo que
+  // debe guiar la progresión (doble progresión: subes cuando superas el techo
+  // del rango). Sigue anclado en Mann 2010 (rendimiento real vs objetivo), pero
+  // aplicado a series rectas, no a la 4ª serie AMRAP del APRE original.
+  var sesionReciente = null;
   for (var i = datos.length - 1; i >= 1; i--) {
-    if (datos[i][colEj] === ejercicioId) {
-      ultimo = rowToObj_(cab, datos[i]);
-      break;
+    if (datos[i][colEj] === ejercicioId) { sesionReciente = datos[i][colSes]; break; }
+  }
+  if (sesionReciente === null) {
+    resultado.detalle = 'Primer uso — elige tu peso';
+    return resultado;
+  }
+
+  var ultimo = null, mejorCap = -Infinity;
+  for (var j = 1; j < datos.length; j++) {
+    if (datos[j][colEj] === ejercicioId && datos[j][colSes] === sesionReciente) {
+      var fila = rowToObj_(cab, datos[j]);
+      var rCap = (Number(fila.num_reps_completadas) || 0);
+      var rrCap = Number(fila.num_rir_percibido); if (isNaN(rrCap)) rrCap = 2;
+      if (rCap + rrCap > mejorCap) { mejorCap = rCap + rrCap; ultimo = fila; }
     }
   }
 
@@ -1242,17 +1387,11 @@ function calcularPesoSugerido_(ejercicioId, ctx) {
 
   var reps = Number(ultimo.num_reps_completadas) || 0;
   var rir  = Number(ultimo.num_rir_percibido);
-  var sensacion = (ultimo.str_sensacion || 'bien').toLowerCase();
-
-  // Validación cruzada sensación ↔ RIR (Helms 2016: RIR es una habilidad aprendida).
-  // Si hay contradicción, la sensación gana — es más intuitiva para novatos.
-  if (sensacion === 'fallo' && rir > 1) rir = 0;
-  else if (sensacion === 'facil' && rir < 3) rir = 3;
+  if (isNaN(rir)) rir = 2; // fallback si el log no trae RIR
 
   resultado.capas.base = pesoBase;
   resultado.capas.ultimoReps = reps;
   resultado.capas.ultimoRIR = rir;
-  resultado.capas.sensacion = sensacion;
 
   // ── CAPA 3: FASE — check deload primero (Bompa 2019) ────────
   var fase = (ctx.fase || 'VOL').toUpperCase();
@@ -1284,15 +1423,28 @@ function calcularPesoSugerido_(ejercicioId, ctx) {
   //   sem1 RIR 3-4, sem2 RIR 2-3, sem3 RIR 1-2, sem4 deload),
   //   la fórmula se auto-ajusta al microciclo sin lógica extra.
   //
-  var repsObj = Number(ctx.repsObjetivo) || 10;
+  // FIX (2026): repsObjetivo llega como STRING de rango ("8-10", "6-8", "30s").
+  // Antes se hacía Number("8-10") = NaN → || 10, así que TODO objetivo con
+  // rango se comparaba silenciosamente contra 10 reps, corrompiendo el delta
+  // APRE en todos los ejercicios de rango bajo/alto. parseRepsObjetivo_ toma
+  // el TOPE del rango: ACSM 2009 progresa "al completar 1-2 reps MÁS que el
+  // objetivo" — el techo del rango es la meta a superar antes de subir carga.
+  var repsObj = parseRepsObjetivo_(ctx.repsObjetivo);
   var rirObj  = Number(ctx.rirObjetivo)  || 2;
   var deltaCap = (reps + rir) - (repsObj + rirObj);
 
-  // Tabla APRE de 5 niveles (Mann 2010) en porcentaje (ACSM 2009: +2-10%)
+  // Tabla APRE de 5 niveles (Mann 2010) en porcentaje (ACSM 2009: +2-10%).
+  // FIX (2026): el umbral de SUBIDA baja de delta≥2 a delta≥1. ACSM 2009:
+  // "completas 1-2 reps MÁS que el objetivo → subir 2-10%". Antes hacía falta
+  // superar el objetivo por 2 (reps+RIR) para progresar, así que superar el
+  // techo del rango por 1 rep no movía la carga → estancamiento/infra-
+  // entrenamiento. Ahora superar el objetivo por 1 ya sube (doble progresión
+  // real). La banda de "mantener" queda en delta 0 y −1 (justo en el objetivo
+  // o 1 por debajo). Las bajadas NO se tocan (protegen de cargar de más).
   var pctAPRE, nivelAPRE;
   if (deltaCap <= -4)      { pctAPRE = -0.10; nivelAPRE = 'muy_pesado';  }
   else if (deltaCap <= -2) { pctAPRE = -0.05; nivelAPRE = 'pesado';      }
-  else if (deltaCap <= 1)  { pctAPRE =  0;    nivelAPRE = 'correcto';    }
+  else if (deltaCap <= 0)  { pctAPRE =  0;    nivelAPRE = 'correcto';    }
   else if (deltaCap <= 3)  { pctAPRE =  0.05; nivelAPRE = 'facil';       }
   else                     { pctAPRE =  0.10; nivelAPRE = 'muy_facil';   }
 
@@ -1329,20 +1481,21 @@ function calcularPesoSugerido_(ejercicioId, ctx) {
   var pesoProg = pesoBase + ajusteKg;
 
   // ── CAPA 5: DESCANSO INTER-SESIÓN ──────────────────────────
-  // ⚠️ HEURÍSTICO: no hay paper con umbral exacto, pero ACSM 2009
-  // recomienda frecuencia 2-3×/sem. Gaps largos implican desentrenamiento
-  // parcial; reducir por seguridad.
+  // ⚠️ HEURÍSTICO: gaps largos implican desentrenamiento parcial (ACSM 2009
+  // recomienda 2-3×/sem). OJO — ejercicios_log solo retiene 7 días: un hueco
+  // REALMENTE largo hace que ya no exista ningún log de base y el motor devuelve
+  // "elige tu peso" (arriba) antes de llegar aquí. Por eso el único tramo que
+  // puede dispararse es el de borde: un ejercicio de 1×/sem retrasado a 8-9 días
+  // → ×0.95. El antiguo ">14d → ×0.90" era CÓDIGO MUERTO (nunca sobrevive un
+  // log de 14 días para dispararlo) y se eliminó (fix 2026).
   var factorDescanso = 1.0;
   var fechaUltimo = parseDate_(ultimo.date_timestamp);
   if (fechaUltimo) {
     var diasDesde = Math.floor((new Date() - fechaUltimo) / 86400000);
     resultado.capas.diasDesdeUltimo = diasDesde;
-    if (diasDesde > 14) {
-      factorDescanso = 0.90;
-      resultado.capas.gapAlerta = '>14d sin ejercicio → ×0.90';
-    } else if (diasDesde > 7) {
+    if (diasDesde > 7) {
       factorDescanso = 0.95;
-      resultado.capas.gapAlerta = '>7d sin ejercicio → ×0.95';
+      resultado.capas.gapAlerta = '>7d sin este ejercicio → ×0.95';
     }
   }
   resultado.capas.factorDescanso = factorDescanso;
@@ -1384,6 +1537,64 @@ function obtenerConfigFase_(fase) {
   return configs[fase] || configs['VOL'];
 }
 
+// ─── VOLUMEN MÁXIMO ADAPTATIVO (MAV) ──────────────────────────
+// Fuentes: Schoenfeld, Ogborn & Krieger (2017) — relación dosis-respuesta
+// (más series/semana = más hipertrofia hasta el techo del grupo) + rangos por
+// grupo de hipertrofia.md §3 / programacion.md §3. Bompa 2019 — la fatiga
+// acumulada obliga a modular el volumen a la baja (protección del MRV).
+//
+// PROBLEMA que resuelve: antes el volumen era solo PERIODIZADO (plantillas +
+// especialización + deload), nunca se AUTO-REGULABA por recuperación. Ahora sí:
+//   · Buena readiness  → progresión de volumen intra-mesociclo hacia el techo.
+//   · Mala readiness   → recorte de 1 serie (protege recuperación / MRV).
+//
+// Grupos con "alto volumen" = los prioritarios con más margen en la evidencia
+// (hipertrofia.md §3): Hombros/Espalda 14-18 ser/sem, Bíceps 10-14. Son P1
+// (V-taper) y P3. La progresión se aplica SOLO a sus ejercicios de AISLAMIENTO
+// (no compuestos): añadir series de aislamiento sube el volumen con bajo coste
+// de fatiga sistémica y sin disparar la duración de la sesión (preferencias.md
+// §2: ideal 75 min) — los compuestos pesados ya llevan su volumen fijo.
+function esGrupoAltoVolumen_(grupo) {
+  if (!grupo) return false;
+  var g = String(grupo).toLowerCase();
+  return g.indexOf('hombro') === 0 || g.indexOf('espalda') === 0 || g.indexOf('bíceps') === 0 || g.indexOf('biceps') === 0;
+}
+
+/**
+ * Ajuste adaptativo de series para un ejercicio al servir la sesión.
+ * @param {Object} ej  Ejercicio del plan (num_series_plan, str_grupo_principal, bool_compuesto)
+ * @param {Object} ctx { tipoFase, semFase, factorDia }
+ * @returns {Object} { series: Number, motivo: String|null }
+ */
+function ajustarSeriesAdaptativo_(ej, ctx) {
+  var base = Number(ej.num_series_plan) || 0;
+  var fase = (ctx.tipoFase || 'VOL').toUpperCase();
+
+  // FZA (intensidad, no volumen) y DELOAD (ya reducido) no se auto-regulan.
+  if (fase === 'FZA' || fase === 'DELOAD') return { series: base, motivo: null };
+
+  // ── BAJADA: readiness pobre → −1 serie (Bompa 2019: reducir carga de trabajo
+  // cuando la fatiga es alta). Umbral 0.80 = mismo punto donde el motor de
+  // cargas considera la sesión "reducida" (calcularAjusteDia_). Aplica a TODOS
+  // los grupos, no solo prioritarios: proteger la recuperación es transversal.
+  if (ctx.factorDia <= 0.80 && base > 1) {
+    return { series: base - 1, motivo: 'vol-recuperacion' };
+  }
+
+  // ── SUBIDA: readiness plena (factor 1.0, sin banderas de fatiga) + semana ≥2
+  // del mesociclo → progresión de volumen hacia el techo (Schoenfeld 2017).
+  // Solo aislamiento de grupos prioritarios (ver esGrupoAltoVolumen_). +1 en
+  // sem2, +2 desde sem3, tope +2 sobre la base (evita descontrol de duración
+  // y de MRV; el deload/nuevo meso resetea al volver semFase a 1).
+  if (ctx.factorDia >= 1.0 && (Number(ctx.semFase) || 1) >= 2
+      && esGrupoAltoVolumen_(ej.str_grupo_principal) && ej.bool_compuesto !== true) {
+    var extra = Math.min((Number(ctx.semFase) || 1) - 1, 2);
+    return { series: base + extra, motivo: 'vol-progresion' };
+  }
+
+  return { series: base, motivo: null };
+}
+
 /** Resumen legible del cálculo para debug/UI. */
 function construirDetalleMotor_(base, final, nivel, fase, fDesc, fDia, nutri) {
   var p = [base + 'kg'];
@@ -1402,6 +1613,24 @@ function construirDetalleMotor_(base, final, nivel, fase, fDesc, fDia, nutri) {
 
 /** Redondea al 0.25 kg más cercano (placa mínima estándar). */
 function redondear025_(v) { return Math.round(v * 4) / 4; }
+
+/**
+ * Convierte el objetivo de reps (string del plan) a número para el APRE.
+ *   "8-10"    → 10   (tope del rango; ACSM 2009: progresas al superar el techo)
+ *   "6-8"     → 8
+ *   "30s"     → 30   (hold: se compara en segundos, misma lógica de superación)
+ *   "45-60s"  → 60
+ *   "12"      → 12
+ *   number    → tal cual
+ * Fallback 10 solo si no hay ningún dígito (no debería ocurrir).
+ */
+function parseRepsObjetivo_(v) {
+  if (typeof v === 'number' && !isNaN(v)) return v;
+  if (!v) return 10;
+  var nums = String(v).match(/\d+/g);
+  if (!nums || !nums.length) return 10;
+  return Number(nums[nums.length - 1]); // último número = tope del rango
+}
 
 function calcularMediaFC_(dias) {
   const hoja = getHoja_(HOJAS.METRICAS_ZEPP);
@@ -1474,6 +1703,7 @@ function getEjerciciosSesion_(sesionId) {
       ej.nombre = cat.str_nombre;
       ej.str_grupo_principal = cat.str_grupo_principal;
       ej.str_equipamiento = cat.str_equipamiento;
+      ej.bool_compuesto = cat.bool_compuesto === true || cat.bool_compuesto === 'true' || cat.bool_compuesto === 'TRUE';
     }
   });
   return res;
@@ -1532,15 +1762,44 @@ function getPesoActual_() {
   if (datos.length <= 1) return 78.2; // Fallback: biometria.md
   const cab = datos[0];
   const colP = cab.indexOf('num_peso_kg');
-  const colSync = cab.indexOf('date_sync');
   for (let i = datos.length - 1; i >= 1; i--) {
-    // Ignorar filas de rellenarDatosFicticios() (date_sync = 'FICTICIO') — el
-    // peso real usado para calcular macros nunca debe venir de datos de prueba.
-    if (colSync >= 0 && datos[i][colSync] === 'FICTICIO') continue;
     const p = Number(datos[i][colP]);
     if (p > 0) return p;
   }
   return 78.2; // Fallback: biometria.md peso actual
+}
+
+/**
+ * Último peso y % grasa conocidos de un día ESTRICTAMENTE anterior a `fecha`
+ * (imputación carry-forward de guardarMetricas_). Recorre metricas_zepp de
+ * abajo (más reciente) a arriba y devuelve el primer valor no vacío de cada
+ * métrica, de forma independiente (el último peso y la última grasa pueden
+ * venir de días distintos). Devuelve { peso, grasa } con null si no hay dato.
+ */
+function getUltimoPesoGrasaConocido_(fecha) {
+  const hoja = getHoja_(HOJAS.METRICAS_ZEPP);
+  const res = { peso: null, grasa: null };
+  if (!hoja) return res;
+  const datos = hoja.getDataRange().getValues();
+  if (datos.length <= 1) return res;
+  const cab = datos[0];
+  const colFecha = cab.indexOf('date_fecha');
+  const colP = cab.indexOf('num_peso_kg');
+  const colG = cab.indexOf('num_grasa_pct');
+  for (let i = datos.length - 1; i >= 1; i--) {
+    const f = parseDate_(datos[i][colFecha]);
+    if (!f || formatDate_(f) >= fecha) continue; // solo días anteriores
+    if (res.peso === null) {
+      const p = Number(datos[i][colP]);
+      if (p > 0) res.peso = p;
+    }
+    if (res.grasa === null) {
+      const g = Number(datos[i][colG]);
+      if (g > 0) res.grasa = g;
+    }
+    if (res.peso !== null && res.grasa !== null) break;
+  }
+  return res;
 }
 
 function getPasosHoy_() {
@@ -1582,12 +1841,29 @@ function limpiarLogsAntiguos_() {
 function inicializarHojas() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const esquema = {
-    [HOJAS.METRICAS_ZEPP]: ['metrica_id','date_fecha','num_sleep_score','num_pasos','num_hr_reposo','num_peso_kg','num_grasa_pct','date_sync'],
+    // date_sync eliminado (limpieza 2026): su único uso era el centinela
+    // 'FICTICIO' de rellenarDatosFicticios() — al retirar los datos de prueba,
+    // el timestamp de sync no lo lee ninguna función (date_fecha ya identifica
+    // el día). Un solo campo de fecha con utilidad técnica.
+    [HOJAS.METRICAS_ZEPP]: ['metrica_id','date_fecha','num_sleep_score','num_pasos','num_hr_reposo','num_peso_kg','num_grasa_pct'],
     [HOJAS.METRICAS_SUBJETIVAS]: ['subjetiva_id','date_fecha','num_energia','num_estres','str_notas'],
     [HOJAS.PLAN_ANUAL]: ['fase_id','num_año','num_orden','str_nombre_fase','str_tipo','date_inicio','date_fin','num_semanas','num_volumen_objetivo','str_rir_rango','str_foco_muscular','str_objetivo_nutri','str_notas'],
-    [HOJAS.SESIONES_PLAN]: ['sesion_id','date_fecha','str_tipo','num_semana_meso','str_fase','num_ajuste_volumen','num_duracion_est_min','bool_completada','date_inicio','date_fin','date_creado'],
-    [HOJAS.EJERCICIOS_PLAN]: ['plan_id','sesion_id','ejercicio_id','num_orden','num_series_plan','str_reps_plan','num_rir_objetivo','num_descanso_seg','str_notas','bool_es_warmup','str_superset_grupo'],
-    [HOJAS.EJERCICIOS_LOG]: ['log_id','plan_id','sesion_id','ejercicio_id','num_serie','num_peso_usado_kg','num_reps_completadas','num_rir_percibido','str_sensacion','date_timestamp'],
+    // num_ajuste_volumen y date_creado eliminados (limpieza 2026): ninguna
+    // función los leía. num_ajuste_volumen siempre valía 1 — la reducción real
+    // de volumen ya la aplican el deload (menos series al generar) y Ramadán
+    // (-30% al servir); el ajuste diario de readiness modula CARGA, no volumen
+    // (motor_pesos.md §5). date_creado (timestamp de generación de la fila) no
+    // se leía en ningún sitio. date_inicio SÍ se conserva y ahora se rellena
+    // (ver marcarInicioSesion_): date_inicio = 1ª serie registrada, date_fin =
+    // sesión completada → duración real de entreno.
+    [HOJAS.SESIONES_PLAN]: ['sesion_id','date_fecha','str_tipo','num_semana_meso','str_fase','num_duracion_est_min','bool_completada','date_inicio','date_fin'],
+    // bool_es_warmup eliminado (limpieza 2026): siempre false, nunca se leía.
+    // El calentamiento se sirve aparte (getCalentamiento_), no vive aquí.
+    [HOJAS.EJERCICIOS_PLAN]: ['plan_id','sesion_id','ejercicio_id','num_orden','num_series_plan','str_reps_plan','num_rir_objetivo','num_descanso_seg','str_notas','str_superset_grupo'],
+    // str_sensacion eliminado (limpieza 2026): la app solo pide peso/reps/RIR.
+    // Los 4 botones (Fácil/Bien/Duro/Fallo) ya fijan el RIR (3/2/1/0) 1:1, así
+    // que la sensación era el mismo dato duplicado — el motor usa el RIR.
+    [HOJAS.EJERCICIOS_LOG]: ['log_id','plan_id','sesion_id','ejercicio_id','num_serie','num_peso_usado_kg','num_reps_completadas','num_rir_percibido','date_timestamp'],
     [HOJAS.EJERCICIOS_CATALOGO]: ['ejercicio_id','str_nombre','str_nombre_en','str_grupo_principal','arr_grupos_secundarios','str_patron','str_equipamiento','bool_compuesto','bool_favorito','bool_excluido','str_razon_exclusion','str_alternativa']
   };
 
@@ -1878,7 +2154,9 @@ function generarFilasSesiones_(fechaDesde, fechaHasta, horario) {
         sesN++;
         var sesId = 'SES_' + fStr.replace(/-/g, '') + '_' + String(sesN).padStart(3,'0');
 
-        filasSes.push([sesId, fStr, TIPO_DISPLAY[tipoSesion], semFase, fase.nombre, 1.0, 75, false, '', '', new Date().toISOString()]);
+        // [sesion_id, date_fecha, str_tipo, num_semana_meso, str_fase,
+        //  num_duracion_est_min, bool_completada, date_inicio, date_fin]
+        filasSes.push([sesId, fStr, TIPO_DISPLAY[tipoSesion], semFase, fase.nombre, 75, false, '', '']);
 
         // Ejercicios
         var tmplKey = getTemplate(fase.tipo, tipoSesion);
@@ -1908,7 +2186,10 @@ function generarFilasSesiones_(fechaDesde, fechaHasta, horario) {
             // SIN peso — se calcula dinámicamente desde ejercicios_log (APRE Mann 2010)
             // Superserie (ej[6]) se anula en deload: en deload todo va a RIR
             // 4-5 y volumen mínimo, no tiene sentido acelerar el ritmo.
-            filasEj.push([planId, sesId, ej[0], oi+1, series, ej[3], rirNum, ej[4], ej[5], false, esDeload ? '' : (ej[6] || '')]);
+            // [plan_id, sesion_id, ejercicio_id, num_orden, num_series_plan,
+            //  str_reps_plan, num_rir_objetivo, num_descanso_seg, str_notas,
+            //  str_superset_grupo]  (bool_es_warmup eliminado)
+            filasEj.push([planId, sesId, ej[0], oi+1, series, ej[3], rirNum, ej[4], ej[5], esDeload ? '' : (ej[6] || '')]);
           }
         }
       }
@@ -1939,7 +2220,7 @@ function generarSesionTestHoy_(hoy, tipoSesion) {
 
   const fStr = hoy.replace(/-/g, '');
   const sesId = 'SES_' + fStr + '_TEST';
-  const filaSes = [sesId, hoy, TIPO_DISPLAY[tipoSesion], semFase, fase.nombre, 1.0, 75, false, '', '', new Date().toISOString()];
+  const filaSes = [sesId, hoy, TIPO_DISPLAY[tipoSesion], semFase, fase.nombre, 75, false, '', ''];
   hojaSes.appendRow(filaSes);
 
   const tmplKey = getTemplate(fase.tipo, tipoSesion);
@@ -1947,16 +2228,15 @@ function generarSesionTestHoy_(hoy, tipoSesion) {
   if (tmpl && tmpl.length) {
     const filasEj = tmpl.map(function(ej, oi) {
       return ['PLA_' + fStr + '_T' + String(oi + 1).padStart(2, '0'),
-              sesId, ej[0], oi + 1, ej[2], ej[3], rirNum, ej[4], ej[5], false, ej[6] || ''];
+              sesId, ej[0], oi + 1, ej[2], ej[3], rirNum, ej[4], ej[5], ej[6] || ''];
     });
     hojaEj.getRange(hojaEj.getLastRow() + 1, 1, filasEj.length, filasEj[0].length).setValues(filasEj);
   }
 
   return {
     sesion_id: sesId, date_fecha: hoy, str_tipo: TIPO_DISPLAY[tipoSesion],
-    num_semana_meso: semFase, str_fase: fase.nombre, num_ajuste_volumen: 1.0,
-    num_duracion_est_min: 75, bool_completada: false, date_inicio: '', date_fin: '',
-    date_creado: filaSes[10]
+    num_semana_meso: semFase, str_fase: fase.nombre,
+    num_duracion_est_min: 75, bool_completada: false, date_inicio: '', date_fin: ''
   };
 }
 
@@ -2020,9 +2300,11 @@ function rellenarPlanCompleto() {
     if (h && h.getLastRow() > 1) h.deleteRows(2, h.getLastRow() - 1);
   });
 
-  // Plan anual
+  // Plan anual. FIX (2026): num_año se derivaba a 2026 fijo para TODAS las
+  // fases, pese a que el plan cruza a 2027 (FAS_06 en adelante). Se toma el
+  // año real del inicio de cada fase (date_inicio ya es correcto).
   const filasPlan = FASES.map(function(f, i) {
-    return [f.id, 2026, i+1, f.nombre, f.tipo, f.inicio, f.fin, f.sem, 16, f.rir, f.foco, f.nutri, ''];
+    return [f.id, parseInt(f.inicio.substring(0, 4), 10), i+1, f.nombre, f.tipo, f.inicio, f.fin, f.sem, 16, f.rir, f.foco, f.nutri, ''];
   });
   hojaPlan.getRange(2, 1, filasPlan.length, filasPlan[0].length).setValues(filasPlan);
 
@@ -2092,69 +2374,12 @@ function rellenarCatalogo_() {
   hoja.getRange(2, 1, cat.length, cat[0].length).setValues(cat);
 }
 
-// ─── §7b. RELLENAR DATOS FICTICIOS (SOLO PARA TESTING) ────────
-// Genera histórico de prueba en metricas_zepp y ejercicios_log
-// para poder comprobar que Progresión/Home funcionan con datos reales
-// de la BBDD, sin depender de semanas de tracking real.
-//
-// NO se expone por HTTP (doGet/doPost) — se ejecuta manualmente desde
-// el editor de Apps Script, igual que inicializarHojas() y
-// rellenarPlanCompleto(). Los valores son ficticios (marcados con
-// date_sync = 'FICTICIO') — usa limpiarDatosTest() para borrarlos
-// antes de empezar a trackear datos reales.
-
-function rellenarDatosFicticios(dias) {
-  dias = dias || 30;
-  const hoy = new Date();
-  const pesoBase = 78.2; // biometria.md
-  const grasaBase = 18.9; // biometria.md
-  const resultados = {};
-
-  // 1. metricas_zepp: sueño/pasos/FC/peso/grasa de los últimos N días, TODO
-  // en una fila por día (centralizado — ver HOJAS.METRICAS_ZEPP).
-  const hZepp = getHoja_(HOJAS.METRICAS_ZEPP);
-  const filasZepp = [];
-  for (let i = dias - 1; i >= 0; i--) {
-    const fechaStr = formatDate_(new Date(hoy.getTime() - i * 86400000));
-    const progreso = (dias - i) / dias; // 0 → 1 a lo largo del periodo
-    const sleepScore = 65 + Math.round(Math.random() * 25); // 65-90
-    const pasos = 4000 + Math.round(Math.random() * 6000); // 4000-10000
-    const hrReposo = 55 + Math.round(Math.random() * 12); // 55-67
-    const peso = Math.round((pesoBase + progreso * 1.2 + (Math.random() - 0.5) * 0.4) * 10) / 10;
-    const grasa = Math.round((grasaBase - progreso * 0.3 + (Math.random() - 0.5) * 0.3) * 10) / 10;
-    filasZepp.push([genId_('ZEP'), fechaStr, sleepScore, pasos, hrReposo, peso, grasa, 'FICTICIO']);
-  }
-  hZepp.getRange(hZepp.getLastRow() + 1, 1, filasZepp.length, filasZepp[0].length).setValues(filasZepp);
-  resultados[HOJAS.METRICAS_ZEPP] = filasZepp.length + ' filas ficticias añadidas';
-
-  // 2. ejercicios_log: series ficticias cada 2 días — SOLO dentro de la
-  // ventana de retención real (EJERCICIOS_LOG_RETENCION_DIAS), porque en
-  // producción cualquier fila más antigua se borra sola. Generar más días
-  // aquí sería simular algo que nunca pasaría de verdad.
-  const diasLog = Math.min(dias, EJERCICIOS_LOG_RETENCION_DIAS);
-  const hLog = getHoja_(HOJAS.EJERCICIOS_LOG);
-  const ejerciciosFicticios = ['EJE_PRESS_HOMB', 'EJE_DOMINADAS', 'EJE_SENTADILLA', 'EJE_REMO_NEUTRO'];
-  const filasLog = [];
-  for (let i = diasLog - 1; i >= 0; i -= 2) {
-    const fecha = new Date(hoy.getTime() - i * 86400000);
-    const ejercicio = ejerciciosFicticios[Math.floor(Math.random() * ejerciciosFicticios.length)];
-    for (let serie = 1; serie <= 4; serie++) {
-      const peso = 20 + Math.round(Math.random() * 60);
-      const reps = 6 + Math.round(Math.random() * 6);
-      filasLog.push([
-        genId_('LOG'), 'FICTICIO', 'FICTICIO', ejercicio,
-        serie, peso, reps, 2, 'FICTICIO', fecha.toISOString()
-      ]);
-    }
-  }
-  if (filasLog.length > 0) {
-    hLog.getRange(hLog.getLastRow() + 1, 1, filasLog.length, filasLog[0].length).setValues(filasLog);
-  }
-  resultados[HOJAS.EJERCICIOS_LOG] = filasLog.length + ' filas ficticias añadidas (limitado a ' + diasLog + ' días — ventana de retención real)';
-
-  Logger.log(JSON.stringify(resultados, null, 2));
-  return { ok: true, detalle: resultados, dias: dias, timestamp: new Date().toISOString() };
-}
+// ─── §7b. (ELIMINADO) RELLENAR DATOS FICTICIOS ───────────────
+// Se retiró rellenarDatosFicticios() en la limpieza 2026 junto con la columna
+// date_sync (su centinela 'FICTICIO'). El histórico de prueba con pesos/grasa
+// inventados chocaba con la política del proyecto (solo valores reales de
+// Zepp/HC) y obligaba a mantener un campo de fecha sin utilidad técnica. Para
+// probar Progresión/Home con datos reales, sincroniza unos días desde la app.
 
 // ─── §8. LIMPIAR ─────────────────────────────────────────────
 // Borra SOLO datos de test/logs. Conserva estructura + planes.

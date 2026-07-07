@@ -295,7 +295,7 @@ public class WorkoutViewModel extends AndroidViewModel {
      * Registra una serie en el backend y avanza el estado.
      * POST guardar_log → O(1) append en ejercicios_log.
      */
-    public void registrarSerie(int repsCompletadas, int rirPercibido, String sensacion) {
+    public void registrarSerie(int repsCompletadas, int rirPercibido) {
         List<Ejercicio> ejercicios = getEjerciciosActuales();
         if (ejercicios == null) return;
 
@@ -327,8 +327,10 @@ public class WorkoutViewModel extends AndroidViewModel {
         // ciega.
         datos.put("num_peso_usado_kg", ej.getPesoActual());
         datos.put("num_reps_completadas", repsCompletadas);
+        // Solo peso, reps y RIR — str_sensacion se retiró (limpieza 2026): los
+        // botones Fácil/Bien/Duro/Fallo ya fijan el RIR (3/2/1/0), la sensación
+        // era el mismo dato. El motor de cargas usa el RIR.
         datos.put("num_rir_percibido", rirPercibido);
-        datos.put("str_sensacion", sensacion);
 
         ApiClient.getApi().guardarLog(datos).enqueue(new Callback<GenericResponse>() {
             @Override

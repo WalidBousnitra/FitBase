@@ -183,10 +183,13 @@ public class WorkoutActivity extends BaseActivity {
         btnSensacionDuro = findViewById(R.id.btnSensacionDuro);
         btnSensacionFallo = findViewById(R.id.btnSensacionFallo);
 
-        btnSensacionFacil.setOnClickListener(v -> registrarConSensacion("facil", 3));
-        btnSensacionBien.setOnClickListener(v -> registrarConSensacion("bien", 2));
-        btnSensacionDuro.setOnClickListener(v -> registrarConSensacion("duro", 1));
-        btnSensacionFallo.setOnClickListener(v -> registrarConSensacion("fallo", 0));
+        // Los 4 botones son el selector de RIR (Repeticiones en Recámara):
+        // Fácil=3, Bien=2, Duro=1, Fallo=0. Es el único dato de esfuerzo que se
+        // registra — se retiró str_sensacion por ser el mismo dato duplicado.
+        btnSensacionFacil.setOnClickListener(v -> registrarConRir(3));
+        btnSensacionBien.setOnClickListener(v -> registrarConRir(2));
+        btnSensacionDuro.setOnClickListener(v -> registrarConRir(1));
+        btnSensacionFallo.setOnClickListener(v -> registrarConRir(0));
 
         // Swipe derecha = volver al ejercicio sin registrar (cancelar), por si
         // se entra aquí sin querer o el usuario cambia de opinión.
@@ -432,8 +435,13 @@ public class WorkoutActivity extends BaseActivity {
         }
         tvSuperserie.setVisibility(
                 ej.getSupersetGrupo() != null && !ej.getSupersetGrupo().isEmpty() ? View.VISIBLE : View.GONE);
-        tvSerieInfo.setText(String.format(Locale.getDefault(),
-                "Serie %d / %d", serie != null ? serie : 1, ej.getSeriesPlan()));
+        // "Serie X / Y" + indicador de volumen adaptativo (MAV) si el motor
+        // subió/bajó las series de este ejercicio por readiness.
+        String serieInfo = String.format(Locale.getDefault(),
+                "Serie %d / %d", serie != null ? serie : 1, ej.getSeriesPlan());
+        String volTxt = ej.getVolumenAdaptativoTexto();
+        if (volTxt != null) serieInfo += "  ·  " + volTxt;
+        tvSerieInfo.setText(serieInfo);
         tvProgreso.setText(String.format(Locale.getDefault(),
                 "Ejercicio %d / %d", (idx != null ? idx : 0) + 1, total));
 
@@ -463,10 +471,10 @@ public class WorkoutActivity extends BaseActivity {
 
     // ─── Registro de serie ────────────────────────────────
 
-    private void registrarConSensacion(String sensacion, int rir) {
+    private void registrarConRir(int rir) {
         feedback.vibrateLight();
         int reps = pickerReps.getValue();
-        viewModel.registrarSerie(reps, rir, sensacion);
+        viewModel.registrarSerie(reps, rir);
     }
 
     // ─── Timer ────────────────────────────────────────────

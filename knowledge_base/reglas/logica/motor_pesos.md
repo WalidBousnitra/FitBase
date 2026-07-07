@@ -196,33 +196,47 @@ ctx:
 
 | Capa | Fuente | Qué hace |
 |------|--------|----------|
-| 1. BASE | ejercicios_log | Último peso usado para este ejercicio |
+| 1. BASE | ejercicios_log | **Mejor set** (máx reps+RIR) de la sesión más reciente del ejercicio |
 | 2. APRE | Mann 2010 + ACSM 2009 | delta_capacidad → -10% a +10% |
+
+> **Capa 1 — por qué el MEJOR set y no el último**: con series rectas a un RIR
+> objetivo, el último set siempre tiene menos reps por fatiga acumulada. Usar el
+> último set hacía que el motor lo leyera como "te quedaste corto" y bajara el
+> peso aunque la sesión fuera perfecta → el peso se erosionaba solo
+> (infraentrenamiento). El mejor set refleja la capacidad real del día, que es
+> lo que debe guiar la doble progresión.
 | 3. FASE | Bompa 2019 (§7) | Cap de progresión: VOL ±5%, FZA ±10%, DEF ±3%, MNT ±2.5%, DELOAD -12.5% |
 | 4. NUTRICIÓN | Helms 2014 | En cutting, cap subida al 50% |
-| 5. DESCANSO | ACSM 2009 (frecuencia) | >7d gap → ×0.95, >14d → ×0.90 |
-| 6. DÍA | Kiviniemi 2007 | FC/sueño/estrés → factor externo |
+| 5. DESCANSO | ACSM 2009 (frecuencia) | >7d gap → ×0.95 (el tramo >14d→×0.90 se eliminó: con retención de 7 días nunca hay un log tan viejo → era código muerto) |
+| 6. DÍA | Kiviniemi 2007 | FC/sueño/estrés/energía → factor 0.70–1.0, **con suelo en 0.70** |
+
+> **Capa 6 — suelo de 0.70 (fix 2026)**: los factores del día son multiplicativos
+> (FC ×0.80, sueño ×0.90, estrés ×0.85, energía ×0.90). Apilados daban hasta 0.55
+> (−45%), un recorte más agresivo que un deload. Se limita el recorte total a 0.70
+> = nivel "recuperación activa" (el mismo del early-return por FC ascendente). Un
+> día realmente malo se trata como día de recuperación, no menos.
 
 ### Fórmula APRE (Capa 2):
 ```
-delta_capacidad = (reps_hechas + RIR_percibido) − (reps_objetivo + RIR_objetivo)
+delta_capacidad = (reps_mejor_set + RIR_percibido) − (reps_objetivo_tope + RIR_objetivo)
+  reps_objetivo_tope = TOPE del rango ("8-10" → 10) — ACSM: progresas al superar el techo
 
 delta ≤ -4  → -10%  (muy pesado, Mann: reps_0-2)
 delta ≤ -2  → -5%   (pesado, Mann: reps_3-4)
-delta ≤ +1  → 0%    (correcto, Mann: reps_5-7)
-delta ≤ +3  → +5%   (fácil, ACSM: +2-10%, Mann: reps_8-12)
-delta > +3  → +10%  (muy fácil, Mann: reps_13+)
+delta ≤  0  → 0%    (en el objetivo o 1 por debajo → mantener)
+delta 1..3  → +5%   (superas el objetivo por 1-3 → subir. ACSM: "1-2 reps MÁS → subir")
+delta > 3   → +10%  (muy fácil, Mann: reps_13+)
 ```
 
 > **Auto-ajuste semanal**: Como `rirObjetivo` cambia cada semana (Helms 2016:
 > sem1 RIR 3-4, sem2 RIR 2-3, sem3 RIR 1-2, sem4 deload), la fórmula
 > se adapta automáticamente al microciclo sin lógica adicional.
 
-### Validación cruzada sensación ↔ RIR:
+### Registro de esfuerzo (RIR):
 ```yaml
-OVERRIDE:
-  sensacion_fallo + RIR > 1: "RIR se fuerza a 0 (Helms 2016: RIR es habilidad aprendida)"
-  sensacion_facil + RIR < 3: "RIR se fuerza a 3"
+# str_sensacion se retiró (limpieza 2026): los 4 botones de la app
+# (Fácil/Bien/Duro/Fallo) YA fijan el RIR (3/2/1/0) 1:1, así que la sensación
+# era el mismo dato duplicado. El motor usa directamente el RIR registrado.
 ```
 
 ### Cuándo se ejecuta:

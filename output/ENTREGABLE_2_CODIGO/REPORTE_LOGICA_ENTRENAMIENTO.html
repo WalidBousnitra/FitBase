@@ -1,0 +1,793 @@
+<style>
+  :root {
+    --bg: #eceef0;
+    --surface: #f6f7f8;
+    --surface-2: #ffffff;
+    --ink: #171c1f;
+    --ink-2: #48555b;
+    --ink-3: #6f7d83;
+    --line: #d6dbde;
+    --line-soft: #e3e7ea;
+    --accent: #0d8f90;
+    --accent-ink: #086b6c;
+    --accent-wash: #dcefef;
+    --good: #2f9e5f;
+    --good-wash: #dcefe2;
+    --warn: #c9852a;
+    --warn-wash: #f5e9d3;
+    --bad: #cf4b4b;
+    --bad-wash: #f6dfdf;
+    --neutral-chip: #7b878d;
+    --neutral-wash: #e4e8ea;
+    --shadow: 0 1px 2px rgba(20,30,35,.06), 0 8px 24px rgba(20,30,35,.05);
+    --mono: ui-monospace, "SF Mono", "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0d1214;
+      --surface: #141b1e;
+      --surface-2: #182125;
+      --ink: #e9eef0;
+      --ink-2: #a6b3b8;
+      --ink-3: #78868c;
+      --line: #263237;
+      --line-soft: #1e282c;
+      --accent: #2bc4c4;
+      --accent-ink: #7ee0e0;
+      --accent-wash: #0d2e2f;
+      --good: #4cc07c;
+      --good-wash: #123222;
+      --warn: #e0a44a;
+      --warn-wash: #33260f;
+      --bad: #e8706e;
+      --bad-wash: #341a1a;
+      --neutral-chip: #8b979d;
+      --neutral-wash: #202a2e;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #eceef0; --surface: #f6f7f8; --surface-2: #ffffff; --ink: #171c1f; --ink-2: #48555b;
+    --ink-3: #6f7d83; --line: #d6dbde; --line-soft: #e3e7ea; --accent: #0d8f90; --accent-ink: #086b6c;
+    --accent-wash: #dcefef; --good: #2f9e5f; --good-wash: #dcefe2; --warn: #c9852a; --warn-wash: #f5e9d3;
+    --bad: #cf4b4b; --bad-wash: #f6dfdf; --neutral-chip: #7b878d; --neutral-wash: #e4e8ea;
+    --shadow: 0 1px 2px rgba(20,30,35,.06), 0 8px 24px rgba(20,30,35,.05);
+  }
+  :root[data-theme="dark"] {
+    --bg: #0d1214; --surface: #141b1e; --surface-2: #182125; --ink: #e9eef0; --ink-2: #a6b3b8;
+    --ink-3: #78868c; --line: #263237; --line-soft: #1e282c; --accent: #2bc4c4; --accent-ink: #7ee0e0;
+    --accent-wash: #0d2e2f; --good: #4cc07c; --good-wash: #123222; --warn: #e0a44a; --warn-wash: #33260f;
+    --bad: #e8706e; --bad-wash: #341a1a; --neutral-chip: #8b979d; --neutral-wash: #202a2e;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  .page {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    font-size: 16px;
+    padding: clamp(18px, 4vw, 56px) clamp(14px, 4vw, 40px) 72px;
+  }
+  .wrap { max-width: 1000px; margin: 0 auto; }
+
+  /* ── Header ── */
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: .72rem;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--accent-ink);
+    display: flex; align-items: center; gap: .6em;
+    margin: 0 0 14px;
+  }
+  .eyebrow::before {
+    content: ""; width: 26px; height: 2px; background: var(--accent); display: inline-block;
+  }
+  h1 {
+    font-size: clamp(1.85rem, 5.2vw, 3.05rem);
+    line-height: 1.04; letter-spacing: -.02em; font-weight: 800;
+    margin: 0 0 .5em; text-wrap: balance;
+  }
+  h1 .thin { color: var(--ink-3); font-weight: 500; }
+  .lede {
+    font-size: clamp(1rem, 2.4vw, 1.18rem);
+    color: var(--ink-2); max-width: 62ch; margin: 0 0 30px;
+  }
+
+  /* ── Summary tiles ── */
+  .tiles {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px;
+  }
+  @media (max-width: 620px) { .tiles { grid-template-columns: repeat(2, 1fr); } }
+  .tile {
+    background: var(--surface); border: 1px solid var(--line-soft); border-radius: 14px;
+    padding: 16px 16px 14px; box-shadow: var(--shadow);
+  }
+  .tile .num {
+    font-size: 2.1rem; font-weight: 800; letter-spacing: -.03em; line-height: 1;
+    font-variant-numeric: tabular-nums; display: block;
+  }
+  .tile.good .num { color: var(--good); }
+  .tile.accent .num { color: var(--accent); }
+  .tile .lbl {
+    font-family: var(--mono); font-size: .68rem; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--ink-3); margin-top: 8px; display: block;
+  }
+
+  /* ── Legend ── */
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center;
+    padding: 12px 16px; margin-bottom: 38px;
+    background: var(--surface); border: 1px solid var(--line-soft); border-radius: 12px;
+    font-size: .82rem; color: var(--ink-2);
+  }
+  .legend .li { display: inline-flex; align-items: center; gap: 7px; }
+
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  .dot.good { background: var(--good); }
+  .dot.warn { background: var(--warn); }
+  .dot.bad { background: var(--bad); }
+  .dot.neutral { background: var(--neutral-chip); }
+
+  /* ── Section headings ── */
+  section { margin-bottom: 46px; }
+  .sec-head { display: flex; align-items: baseline; gap: 12px; margin: 0 0 20px; }
+  .sec-num {
+    font-family: var(--mono); font-size: .8rem; color: var(--accent-ink);
+    border: 1px solid var(--accent); border-radius: 6px; padding: 2px 7px; flex: none;
+    letter-spacing: .04em;
+  }
+  h2 {
+    font-size: clamp(1.25rem, 3vw, 1.62rem); font-weight: 750; letter-spacing: -.015em;
+    margin: 0; text-wrap: balance;
+  }
+  .sec-sub { color: var(--ink-2); margin: -8px 0 22px; max-width: 68ch; }
+
+  /* ── Principle rows ── */
+  .rows { display: flex; flex-direction: column; gap: 8px; }
+  .row {
+    display: grid;
+    grid-template-columns: 34px 1fr auto;
+    gap: 4px 16px;
+    align-items: start;
+    background: var(--surface); border: 1px solid var(--line-soft); border-radius: 12px;
+    padding: 14px 16px;
+    transition: border-color .15s ease, transform .15s ease;
+  }
+  .row:hover { border-color: var(--line); }
+  .row .idx {
+    font-family: var(--mono); font-size: .82rem; color: var(--ink-3);
+    font-variant-numeric: tabular-nums; padding-top: 1px;
+  }
+  .row .name { font-weight: 650; font-size: 1rem; grid-column: 2; }
+  .row .chip { grid-column: 3; grid-row: 1; }
+  .row .where {
+    grid-column: 2 / -1; font-family: var(--mono); font-size: .76rem; color: var(--accent-ink);
+    margin-top: 3px; word-break: break-word;
+  }
+  .row .note { grid-column: 2 / -1; color: var(--ink-2); font-size: .9rem; margin-top: 5px; }
+  @media (max-width: 560px) {
+    .row { grid-template-columns: 28px 1fr; }
+    .row .chip { grid-column: 1 / -1; grid-row: auto; justify-self: start; margin-top: 8px; order: 5; }
+  }
+
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+    font-family: var(--mono); font-size: .68rem; letter-spacing: .04em; text-transform: uppercase;
+    padding: 4px 9px; border-radius: 999px; font-weight: 600;
+  }
+  .chip.good { background: var(--good-wash); color: var(--good); }
+  .chip.warn { background: var(--warn-wash); color: var(--warn); }
+  .chip.bad { background: var(--bad-wash); color: var(--bad); }
+  .chip.neutral { background: var(--neutral-wash); color: var(--neutral-chip); }
+  .chip .dot { width: 7px; height: 7px; }
+
+  /* ── Gap cards (the 3 closed) ── */
+  .gaps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  @media (max-width: 760px) { .gaps { grid-template-columns: 1fr; } }
+  .gap {
+    background: var(--surface-2); border: 1px solid var(--line); border-radius: 16px;
+    padding: 20px; box-shadow: var(--shadow); position: relative; overflow: hidden;
+  }
+  .gap::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--accent);
+  }
+  .gap .tag {
+    font-family: var(--mono); font-size: .66rem; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--good); display: inline-flex; align-items: center; gap: 6px; margin-bottom: 10px;
+  }
+  .gap h3 { margin: 0 0 4px; font-size: 1.12rem; letter-spacing: -.01em; }
+  .gap .fn { font-family: var(--mono); font-size: .74rem; color: var(--accent-ink); margin-bottom: 12px; }
+  .gap p { margin: 0 0 12px; font-size: .9rem; color: var(--ink-2); }
+  .gap ul { margin: 0 0 12px; padding-left: 1.05em; font-size: .88rem; color: var(--ink-2); }
+  .gap li { margin-bottom: 5px; }
+  .gap li::marker { color: var(--accent); }
+  .cite {
+    font-family: var(--mono); font-size: .68rem; color: var(--ink-3);
+    border-top: 1px dashed var(--line); padding-top: 10px; margin-top: auto;
+  }
+
+  b, strong { color: var(--ink); font-weight: 700; }
+  code {
+    font-family: var(--mono); font-size: .86em; background: var(--neutral-wash);
+    padding: .12em .4em; border-radius: 5px; color: var(--accent-ink);
+  }
+
+  /* ── Two-column detail lists ── */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 720px) { .cols { grid-template-columns: 1fr; } }
+  .panel {
+    background: var(--surface); border: 1px solid var(--line-soft); border-radius: 14px; padding: 18px 20px;
+  }
+  .panel h4 {
+    margin: 0 0 12px; font-size: .95rem; display: flex; align-items: center; gap: 8px;
+  }
+  .panel ul { margin: 0; padding-left: 0; list-style: none; }
+  .panel li {
+    font-size: .89rem; color: var(--ink-2); padding: 8px 0; border-bottom: 1px solid var(--line-soft);
+  }
+  .panel li:last-child { border-bottom: none; }
+  .panel li b { color: var(--ink); }
+
+  /* ── Verdict block ── */
+  .verdict {
+    background: var(--accent-wash); border: 1px solid var(--accent); border-radius: 18px;
+    padding: clamp(20px, 3vw, 32px);
+  }
+  .verdict .badge {
+    font-family: var(--mono); font-size: .7rem; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--accent-ink); margin-bottom: 12px;
+  }
+  .verdict .headline {
+    font-size: clamp(1.15rem, 2.6vw, 1.5rem); font-weight: 750; letter-spacing: -.015em;
+    margin: 0 0 16px; color: var(--ink); text-wrap: balance;
+  }
+  .verdict ol { margin: 0; padding-left: 1.2em; }
+  .verdict li { margin-bottom: 10px; color: var(--ink-2); font-size: .95rem; }
+  .verdict li b { color: var(--ink); }
+  .verdict .rec {
+    margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--accent);
+    font-size: .95rem; color: var(--ink-2);
+  }
+
+  /* ── Flow (nutrition pipeline) ── */
+  .flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; margin: 0 0 22px; }
+  .step {
+    background: var(--surface); border: 1px solid var(--line-soft); border-radius: 11px;
+    padding: 10px 14px; display: flex; flex-direction: column; gap: 3px; position: relative;
+  }
+  .step .k {
+    font-family: var(--mono); font-size: .6rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3);
+  }
+  .step .v { font-weight: 650; color: var(--ink); font-size: .92rem; white-space: nowrap; }
+  .step .v small { font-weight: 500; color: var(--ink-2); font-size: .78rem; }
+  .flow .arw { align-self: center; color: var(--accent); font-weight: 700; }
+  @media (max-width: 560px) { .flow .arw { display: none; } .step { flex: 1 1 100%; } }
+
+  /* ── Worked before/after example ── */
+  .ex { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 4px; }
+  @media (max-width: 680px) { .ex { grid-template-columns: 1fr; } }
+  .ex .panel { border-left: 3px solid var(--line); }
+  .ex .panel.bad { border-left-color: var(--bad); }
+  .ex .panel.good { border-left-color: var(--good); }
+  .ex .tagline {
+    font-family: var(--mono); font-size: .66rem; letter-spacing: .06em; text-transform: uppercase;
+    margin-bottom: 10px; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .ex .panel.bad .tagline { color: var(--bad); }
+  .ex .panel.good .tagline { color: var(--good); }
+  .calc { font-family: var(--mono); font-size: .8rem; color: var(--ink-2); line-height: 2; }
+  .calc b { color: var(--ink); }
+  .calc .rbad { color: var(--bad); font-weight: 700; }
+  .calc .rgood { color: var(--good); font-weight: 700; }
+
+  .layers { display: flex; flex-direction: column; gap: 7px; margin: 0 0 24px; counter-reset: layer; }
+  .layer {
+    display: grid; grid-template-columns: 30px 1fr; gap: 14px; align-items: baseline;
+    background: var(--surface); border: 1px solid var(--line-soft); border-radius: 11px; padding: 12px 16px;
+  }
+  .layer .n {
+    font-family: var(--mono); font-size: .78rem; color: var(--accent-ink);
+    border: 1px solid var(--line); border-radius: 6px; text-align: center; padding: 1px 0;
+  }
+  .layer .t { font-weight: 650; }
+  .layer .d { color: var(--ink-2); font-size: .9rem; display: block; margin-top: 2px; }
+  .layer .src { font-family: var(--mono); font-size: .72rem; color: var(--ink-3); }
+
+  .note-card {
+    background: var(--accent-wash); border: 1px solid var(--accent); border-radius: 12px;
+    padding: 14px 18px; font-size: .92rem; color: var(--ink-2); margin-top: 18px;
+  }
+  .note-card b { color: var(--ink); }
+
+  /* ── Actions footer ── */
+  .actions {
+    background: var(--surface-2); border: 1px solid var(--line); border-radius: 16px; padding: 22px 24px;
+    box-shadow: var(--shadow);
+  }
+  .actions ol { margin: 12px 0 0; padding-left: 1.3em; }
+  .actions li { margin-bottom: 8px; color: var(--ink-2); }
+  .actions li b { color: var(--ink); }
+
+  footer.meta {
+    margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--line-soft);
+    font-family: var(--mono); font-size: .74rem; color: var(--ink-3);
+    display: flex; flex-wrap: wrap; gap: 6px 20px; justify-content: space-between;
+  }
+</style>
+
+<div class="page">
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">FitBase · Auditoría de lógica de entrenamiento</p>
+    <h1>Cada principio de entrenamiento, <span class="thin">contra el código que de verdad lo ejecuta.</span></h1>
+    <p class="lede">Mapeo de 23 principios basados en evidencia a la función o el campo concreto de <code>Codigo.gs</code> y la app. No a lo documentado — a lo implementado. Con dos revisiones a fondo abajo: <b>nutrición</b> (§4) y <b>ajuste de cargas</b> (§5), donde corregí el sesgo que infraentrenaba.</p>
+
+    <div class="tiles">
+      <div class="tile good"><span class="num">21</span><span class="lbl">Cubiertos</span></div>
+      <div class="tile accent"><span class="num">3</span><span class="lbl">Huecos cerrados hoy</span></div>
+      <div class="tile"><span class="num">1</span><span class="lbl">Externo (suplementación)</span></div>
+      <div class="tile"><span class="num">1</span><span class="lbl">Opcional pendiente</span></div>
+    </div>
+
+    <div class="legend">
+      <span class="li"><span class="dot good"></span> Cubierto por la lógica actual</span>
+      <span class="li"><span class="dot warn"></span> Parcial</span>
+      <span class="li"><span class="dot bad"></span> Falta</span>
+      <span class="li"><span class="dot neutral"></span> Fuera de alcance por diseño</span>
+    </div>
+  </header>
+
+  <!-- ── SECTION 1: coverage ── -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">01</span>
+      <h2>Cobertura, principio por principio</h2>
+    </div>
+
+    <div class="rows">
+
+      <div class="row">
+        <span class="idx">01</span>
+        <span class="name">Volumen Máximo Adaptativo (MAV)</span>
+        <span class="chip good"><span class="dot good"></span>Cubierto · nuevo</span>
+        <span class="where">ajustarSeriesAdaptativo_()</span>
+        <span class="note">Además de la periodización, el volumen se <b>auto-regula por recuperación</b>: buena readiness → +1/+2 series de aislamiento en grupos prioritarios; fatiga (factor ≤0.80) → −1 serie (protección MRV).</span>
+      </div>
+
+      <div class="row">
+        <span class="idx">02</span>
+        <span class="name">RIR / RPE (la mayor parte entre 1–3)</span>
+        <span class="chip good"><span class="dot good"></span>Cubierto</span>
+        <span class="where">generarFilasSesiones_ · motor Capa 2</span>
+        <span class="note">RIR progresa por semana de meso (VOL 4→3→2, FZA 2→2→1, DELOAD 5). El motor lo usa en el delta APRE.</span>
+      </div>
+
+      <div class="row">
+        <span class="idx">03</span>
+        <span class="name">Sobrecarga Progresiva Registrada</span>
+        <span class="chip good"><span class="dot good"></span>Cubierto · 3 arreglos</span>
+        <span class="where">calcularPesoSugerido_() — Capa 2 (APRE)</span>
+        <span class="note">Ajusta la carga según el rendimiento real. Se corrigió el sesgo que infraentrenaba: mejor set en vez del último, progresa al superar por 1, y el bug de rangos de reps (ver §5).</span>
+      </div>
+
+      <div class="row">
+        <span class="idx">04</span>
+        <span class="name">Frecuencia de Entrenamiento</span>
+        <span class="chip good"><span class="dot good"></span>Cubierto</span>
+        <span class="where">HORARIO_SEMANAL + split</span>
+        <span class="note">4 días de pesas + 2 natación + 1 descanso. Hombros y bíceps 2×/sem. Configurable.</span>
+      </div>
+
+      <div class="row">
+        <span class="idx">05</span>
+        <span class="name">Tiempos de Descanso (por ejercicio)</span>
+        <span class="chip good"><span class="dot good"></span>Cubierto</span>
+        <span class="where">num_descanso_seg por fila de T[]</span>
+        <span class="note">Compuestos 150–270s, aislamiento 90–120s, correctivos 60s. Superseries saltan el descanso.</span>
+      </div>
+
+      <div class="row">
+        <span class="idx">06</span>
+        <span class="name">Periodización y Descargas (Deloads)</span>
+        <span class="chip good"><span class="dot good"></span>Cubierto</span>
+        <span class="where">FASES + obtenerConfigFase_</span>
+        <span class="note">14 fases / 48 semanas, 6 deloads cada ~6 sem (series ×0.6, intensidad ×0.875).</span>
+      </div>
+
+      <div class="row">
+        <span class="idx">07</span>
+        <span class="name">Ratio Tirón vs. Empuje</span>
+        <span class="chip good"><span class="dot good"></span>Cubierto</span>
+        <span class="where">split semanal + correctivos</span>
+        <span class="note">Día de Push y de Pull dedicados; los correctivos posturales sesgan hacia el tirón (P2).</span>
+      </div>
+
+      <div class="row">
+        <span class="idx">08</span>
+        <span class="name">Movilidad Articular Específica</span>
+        <span class="chip good"><span class="dot good"></span>Cubierto</span>
+        <span class="where">getCalentamiento_ · getMovilidadMatutina_</span>
+        <span class="note">Movilidad dinámica en cada calentamiento + rutina postural diaria progresiva.</span>
+      </div>
+
+      <div class="row">
+        <span class="idx">09</span>
+        <span class="name">Fortalecimiento del Core</span>
+        <span class="chip good"><span class="dot good"></span>Cubierto · mejorado</span>
+        <span class="where">T.PIERNA_VOL (Hollow) + getCoreDia_()</span>
+        <span class="note">Al core del día de pierna se suma un bloque el día de descanso → ~9 series/sem, dentro del objetivo 6–10.</span>
+      </div>
+
+      <div class="row">
+        <span class="idx">10</span>
+        <span class="name">Frecuencia del Core</span>
+        <span class="chip good"><span class="dot good"></span>Cubierto · nuevo</span>
+        <span class="where">getCoreDia_() (día de descanso)</span>
+        <span class="note">De 1×/sem a 2×/sem (Pierna + Descanso), sin alargar las sesiones de gym.</span>
+      </div>
+
+      <div class="row">
+        <span class="idx">11</span>
+        <span class="name">Conciencia Corporal / Control Motor</span>
+        <span class="chip good"><span class="dot good"></span>Cubierto</span>
+        <span class="where">getMovilidadMatutina_ · getEstiramientos_</span>
+        <span class="note">Dead bugs, wall angels, cat-cow, chin tucks, rotación externa = drills de control motor.</span>
+      </div>
+
+      <div class="row">
+        <span class="idx">12</span>
+        <span class="name">Estabilidad en la Selección (compuestos)</span>
+        <span class="chip good"><span class="dot good"></span>Cubierto</span>
+        <span class="where">T[] — compuestos fijos</span>
+        <span class="note">Sentadilla, dominadas, press, RDL, hip thrust fijos todo el año; solo rotan accesorios.</span>
+      </div>
+
+      <div class="row">
+        <span class="idx">13</span>
+        <span class="name">Calorías Controladas (por fase)</span>
+        <span class="chip good"><span class="dot good"></span>Cubierto</span>
+        <span class="where">getMacrosHoy_()</span>
+        <span class="note">bulk ×1.15, cut ×0.80, mantener ×1.0 sobre TDEE (Mifflin-St Jeor). Se muestra en Home.</span>
+      </div>
+
+      <div class="row">
+        <span class="idx">14</span>
+        <span class="name">Control del NEAT</span>
+        <span class="chip good"><span class="dot good"></span>Cubierto</span>
+        <span class="where">getMacrosHoy_ (pasos) · getCardioObjetivo_</span>
+        <span class="note">Factor actividad fijo 1.55; pasos objetivo por fase (8.000–10.000); +175 kcal si &gt;12.000 pasos.</span>
+      </div>
+
+      <div class="row">
+        <span class="idx">15</span>
+        <span class="name">Distribución de Macronutrientes (por fase)</span>
+        <span class="chip good"><span class="dot good"></span>Cubierto</span>
+        <span class="where">getMacrosHoy_()</span>
+        <span class="note">Proteína 2.0–2.4 g/kg, grasa 1.0 g/kg (o 25% kcal en cut), carbos por diferencia.</span>
+      </div>
+
+      <div class="row">
+        <span class="idx">16</span>
+        <span class="name">Estrategia de Hidratación</span>
+        <span class="chip good"><span class="dot good"></span>Cubierto</span>
+        <span class="where">getMacrosHoy_ (agua) · getRamadanInfo_</span>
+        <span class="note">agua = peso×35 + 500 ml si entreno; guía especial en Ramadán. Fijo salvo Ramadán.</span>
+      </div>
+
+      <div class="row">
+        <span class="idx">17</span>
+        <span class="name">Suplementación con Evidencia</span>
+        <span class="chip neutral"><span class="dot neutral"></span>Externo</span>
+        <span class="where">—</span>
+        <span class="note">Gestionado en FatSecret, fuera de la app por diseño.</span>
+      </div>
+
+      <div class="row">
+        <span class="idx">18</span>
+        <span class="name">Higiene / Calidad del Sueño</span>
+        <span class="chip good"><span class="dot good"></span>Cubierto</span>
+        <span class="where">calcularAjusteDia_()</span>
+        <span class="note">Sleep score &lt;60 → ×0.90 sobre la carga. Sueño leve-malo no altera nada — tu criterio exacto.</span>
+      </div>
+
+      <div class="row">
+        <span class="idx">19</span>
+        <span class="name">Gestión del Estrés Psicológico</span>
+        <span class="chip good"><span class="dot good"></span>Cubierto · nuevo</span>
+        <span class="where">calcularAjusteDia_ (estrés + energía)</span>
+        <span class="note">Estrés ≥4/5 → ×0.85. <b>Energía ≤2/5 → ×0.90 (implementado)</b> — antes se registraba pero no se usaba.</span>
+      </div>
+
+      <div class="row">
+        <span class="idx">20</span>
+        <span class="name">Descanso Activo (días de descanso)</span>
+        <span class="chip good"><span class="dot good"></span>Cubierto · mejorado</span>
+        <span class="where">getCardioObjetivo_ · getMovilidadMatutina_ · getCoreDia_</span>
+        <span class="note">Domingo: cardio suave (DEF/MNT) + movilidad diaria + bloque de core (nuevo). Recuperación activa completa.</span>
+      </div>
+
+      <div class="row">
+        <span class="idx">21</span>
+        <span class="name">Diario de Entrenamiento (Logbook)</span>
+        <span class="chip good"><span class="dot good"></span>Cubierto*</span>
+        <span class="where">ejercicios_log · guardarLog_</span>
+        <span class="note">Registra cada serie. *Retención 7 días por diseño explícito: buffer para el motor, no histórico permanente.</span>
+      </div>
+
+      <div class="row">
+        <span class="idx">22</span>
+        <span class="name">Métricas de Progreso Físico</span>
+        <span class="chip good"><span class="dot good"></span>Cubierto</span>
+        <span class="where">metricas_zepp · getProgresionMetricas_ · checkpoints</span>
+        <span class="note">Peso/grasa diarios (con imputación carry-forward); circunferencias en checkpoints Inicio/Fin.</span>
+      </div>
+
+      <div class="row">
+        <span class="idx">23</span>
+        <span class="name">Adherencia a Largo Plazo</span>
+        <span class="chip good"><span class="dot good"></span>Cubierto</span>
+        <span class="where">FASES · getCambioFase_ · checkAusencia_</span>
+        <span class="note">Plan de 48 semanas, resúmenes de cambio de fase, día perdido, cola offline para no perder registros.</span>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── SECTION 2: the three closed gaps ── -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">02</span>
+      <h2>Los tres huecos, cerrados con evidencia</h2>
+    </div>
+    <p class="sec-sub">Cada cambio toca el plan anual, semanal o diario y se ancla en un paper del knowledge base. La app se adaptó para que todo funcione de punta a punta.</p>
+
+    <div class="gaps">
+
+      <div class="gap">
+        <div class="tag"><span class="dot good"></span>Implementado</div>
+        <h3>MAV auto-adaptativo</h3>
+        <div class="fn">ajustarSeriesAdaptativo_()</div>
+        <p>El volumen ya no es solo periodizado: se auto-regula por recuperación al servir cada sesión.</p>
+        <ul>
+          <li><b>Sube</b> hacia el techo del grupo con readiness plena y desde la semana 2 del meso: +1/+2 series de aislamiento en Hombros / Espalda / Bíceps.</li>
+          <li><b>Baja</b> −1 serie cuando hay fatiga (factor ≤0.80 por FC, sueño, estrés o energía) → protege el MRV.</li>
+          <li>Solo aislamiento → no dispara la duración de sesión. La app muestra un badge ▲/▼ Volumen.</li>
+        </ul>
+        <div class="cite">Schoenfeld 2017 (dosis-respuesta) · rangos hipertrofia.md §3 · Bompa 2019</div>
+      </div>
+
+      <div class="gap">
+        <div class="tag"><span class="dot good"></span>Implementado</div>
+        <h3>Core 2×/semana</h3>
+        <div class="fn">getCoreDia_()</div>
+        <p>Al core del día de Pierna (Hollow) se suma un bloque en el día de descanso.</p>
+        <ul>
+          <li>Plancha, Hollow, Press Pallof con banda, Dead bug lento — solo peso corporal, en casa.</li>
+          <li>De ~3 a ~9 series/sem → dentro del objetivo abdominales 6–10.</li>
+          <li>Anti-extensión / anti-rotación: apoya P2 (hiperlordosis / APT severa).</li>
+        </ul>
+        <div class="cite">hipertrofia.md §3 · programacion.md §12 (recuperación activa)</div>
+      </div>
+
+      <div class="gap">
+        <div class="tag"><span class="dot good"></span>Implementado</div>
+        <h3>Energía en el ajuste diario</h3>
+        <div class="fn">calcularAjusteDia_()</div>
+        <p>El dato de energía subjetiva ya modula la sesión, no solo se guarda.</p>
+        <ul>
+          <li><code>num_energia ≤2/5 → ×0.90</code> sobre la carga del día.</li>
+          <li>Mismo patrón que el estrés, adaptado a la escala 1–5 de la app.</li>
+          <li>Antes se registraba en Progresión pero el motor lo ignoraba.</li>
+        </ul>
+        <div class="cite">motor_pesos.md §3 (energía baja → reducir intensidad)</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── SECTION 3: fixes + confirmations ── -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">03</span>
+      <h2>Correcciones y confirmaciones de la auditoría</h2>
+    </div>
+
+    <div class="cols">
+      <div class="panel">
+        <h4><span class="dot bad"></span>Corregido</h4>
+        <ul>
+          <li><b>Bug crítico del motor.</b> <code>Number("8-10")</code> daba <code>NaN</code> → el motor usaba 10 reps para todo rango, corrompiendo el delta APRE. Ahora toma el tope del rango.</li>
+          <li><b>date_inicio de sesión</b> ahora se rellena (1ª serie); con date_fin da la duración real.</li>
+          <li><b>Año del Plan Anual</b> se deriva del inicio de cada fase (2026/2027), ya no 2026 fijo.</li>
+          <li><b>Imputación carry-forward</b> de peso/grasa: días sin pesada heredan el último valor.</li>
+          <li><b>Limpieza de esquema:</b> fuera <code>date_sync</code>, <code>num_ajuste_volumen</code>, <code>date_creado</code>, <code>bool_es_warmup</code>, <code>str_sensacion</code> y <code>rellenarDatosFicticios()</code>.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h4><span class="dot good"></span>Confirmado (no era basura)</h4>
+        <ul>
+          <li><b>num_rir_objetivo</b> — el motor sí lo usa en el delta APRE. Correcto que no salga en la UI.</li>
+          <li><b>str_superset_grupo</b> — lógica real: salta el timer entre ejercicios del mismo grupo.</li>
+          <li><b>str_notas</b> — se renderiza, pero solo los avisos ⚠️ (dolor de codo).</li>
+          <li><b>bool_completada</b> — sí cambia a true vía completar_sesion, con date_fin.</li>
+          <li><b>bulk/cut/mantener</b> altera nutrición; VOL/FZA/DEF/MNT/DELOAD altera volumen, carga y RIR.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SECTION 4: nutrition deep-dive ── -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">04</span>
+      <h2>Nutrición: cómo se calcula y por qué es simple a propósito</h2>
+    </div>
+    <p class="sec-sub">Tu preocupación: que sea "muy basto". Lo revisé a fondo — <b>es fiel a la evidencia y no tiene errores de cálculo</b>. La sencillez es una decisión de diseño, no un descuido. Así se genera cada día, en <code>getMacrosHoy_()</code>:</p>
+
+    <div class="flow">
+      <div class="step"><span class="k">Peso</span><span class="v">78,2 kg <small>carry-forward</small></span></div>
+      <span class="arw">→</span>
+      <div class="step"><span class="k">BMR</span><span class="v">Mifflin-St Jeor <small>~1842</small></span></div>
+      <span class="arw">→</span>
+      <div class="step"><span class="k">TDEE</span><span class="v">× 1,55 <small>~2855</small></span></div>
+      <span class="arw">→</span>
+      <div class="step"><span class="k">Fase</span><span class="v">×1,15 / ×1,0 / ×0,80</span></div>
+      <span class="arw">→</span>
+      <div class="step"><span class="k">NEAT</span><span class="v">+175 si &gt;12k pasos</span></div>
+      <span class="arw">→</span>
+      <div class="step"><span class="k">Macros</span><span class="v">P·G fijos, C = resto</span></div>
+    </div>
+
+    <div class="cols">
+      <div class="panel">
+        <h4><span class="dot good"></span>Por qué es simple (y correcto)</h4>
+        <ul>
+          <li><b>Factor 1,55 conservador a propósito</b> (motor_dieta.md §3): trabajo sedentario + natación de baja intensidad. Mejor infraestimar y ajustar al alza que acumular grasa.</li>
+          <li><b>Mismas calorías cada día</b> = enfoque de media semanal. El 1,55 ya promedia días de gym y de descanso; es el estándar y evita el ruido de cuadrar cada día.</li>
+          <li><b>FatSecret hace el detalle</b> (comidas, fibra, micros). La app solo fija los <b>objetivos</b> del día — duplicar el tracking sería redundante.</li>
+          <li><b>Todo con evidencia:</b> Mifflin 1990 (BMR), Iraki 2019 (bulk: proteína 2,0 g/kg, +15%), Helms 2014 (cut). Los macros están respaldados por papers.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h4><span class="dot warn"></span>Las palancas que SÍ debes mover a mano</h4>
+        <ul>
+          <li><b>Estancamiento en bulk (2+ semanas sin subir):</b> subir el factor de 1,55 → 1,65. Es manual por diseño (motor_dieta.md §3, nota 4) — el motor no toca calorías según tendencia de peso.</li>
+          <li><b>Proteína en cut</b> es 2,4 g/kg de peso total ≈ 2,96 g/kg de masa magra a tu %grasa → dentro del rango Helms (2,3–3,1). Correcto.</li>
+          <li>El único "menos basto" legítimo sería <b>auto-detección de estancamiento de peso</b> para sugerir el ajuste — pero el KB lo deja manual y no invento lógica nueva. Queda como decisión tuya, no como bug.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="note-card"><b>Veredicto nutrición:</b> revisada línea a línea, sin errores de cálculo ni desviación de la evidencia. No he tocado el código porque no hay nada roto — solo es deliberadamente conservador, con una palanca manual clara si el peso se estanca.</div>
+  </section>
+
+  <!-- ── SECTION 5: load engine deep-dive ── -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">05</span>
+      <h2>Ajuste de cargas: tenías razón, infraentrenaba</h2>
+    </div>
+    <p class="sec-sub">Dos preocupaciones tuyas, las dos ciertas: que el motor <b>infraentrenaba</b> y que hubiera ajustes <b>tontos (que no afectan) o drásticos (que se pasan)</b>. Encontré ambos y los corregí. Primero, cómo decide el peso de cada ejercicio — 6 capas multiplicativas en <code>calcularPesoSugerido_()</code>:</p>
+
+    <div class="layers">
+      <div class="layer"><span class="n">1</span><span><span class="t">Base</span> <span class="src">ejercicios_log</span><span class="d">Peso del <b>mejor set</b> de tu última sesión de ese ejercicio.</span></span></div>
+      <div class="layer"><span class="n">2</span><span><span class="t">APRE</span> <span class="src">Mann 2010 · ACSM 2009</span><span class="d">delta = (reps + RIR real) − (reps objetivo + RIR objetivo). Positivo → subir, negativo → bajar.</span></span></div>
+      <div class="layer"><span class="n">3</span><span><span class="t">Fase</span> <span class="src">Bompa 2019</span><span class="d">Tope de progresión por sesión: VOL ±5 %, FZA ±10 %, DEF ±3 %, MNT ±2,5 %, DELOAD −12,5 %.</span></span></div>
+      <div class="layer"><span class="n">4</span><span><span class="t">Nutrición</span> <span class="src">Helms 2014</span><span class="d">En cut, la subida se reduce a la mitad (es difícil ganar fuerza en déficit).</span></span></div>
+      <div class="layer"><span class="n">5</span><span><span class="t">Descanso</span> <span class="src">ACSM 2009</span><span class="d">Gap &gt;7 días → ×0,95; &gt;14 días → ×0,90 (desentrenamiento parcial).</span></span></div>
+      <div class="layer"><span class="n">6</span><span><span class="t">Día</span> <span class="src">Kiviniemi 2007</span><span class="d">FC / sueño / estrés / energía → factor 0,70–1,0 sobre la carga del día.</span></span></div>
+    </div>
+
+    <h3 style="font-size:1.05rem;margin:0 0 6px;">Arreglo 1 · Usar el mejor set, no el último (fatigado)</h3>
+    <p style="color:var(--ink-2);margin:0 0 14px;font-size:.94rem;max-width:70ch;">El motor leía el <b>último</b> set registrado. Con series rectas, el último set siempre tiene menos reps por fatiga acumulada — así que el motor creía que te habías quedado corto y <b>bajaba el peso tras una sesión perfecta</b>. Ejemplo: 4 series de sentadilla con objetivo 10 reps @ RIR 2.</p>
+
+    <div class="ex">
+      <div class="panel bad">
+        <div class="tagline"><span class="dot bad"></span>Antes — leía el último set</div>
+        <div class="calc">
+          Sets: 12 · 10 · 9 · <b>8 reps</b> @ RIR 2<br>
+          Base = <b>último</b> set → 8 + 2 = 10<br>
+          Objetivo → 10 + 2 = 12<br>
+          delta = 10 − 12 = <b>−2</b><br>
+          <span class="rbad">→ −5 % · el peso BAJA</span>
+        </div>
+      </div>
+      <div class="panel good">
+        <div class="tagline"><span class="dot good"></span>Ahora — usa el mejor set</div>
+        <div class="calc">
+          Sets: <b>12</b> · 10 · 9 · 8 reps @ RIR 2<br>
+          Base = <b>mejor</b> set → 12 + 2 = 14<br>
+          Objetivo → 10 + 2 = 12<br>
+          delta = 14 − 12 = <b>+2</b><br>
+          <span class="rgood">→ +5 % · el peso SUBE</span>
+        </div>
+      </div>
+    </div>
+
+    <h3 style="font-size:1.05rem;margin:26px 0 6px;">Arreglo 2 · Progresar al superar el objetivo por 1 (no por 2)</h3>
+    <p style="color:var(--ink-2);margin:0 0 14px;font-size:.94rem;max-width:70ch;">Antes hacía falta superar el objetivo por <b>2</b> para subir; superar el techo del rango por 1 rep no movía nada. ACSM 2009 dice "1-2 reps MÁS → subir". Ahora <b>delta ≥ 1 ya progresa</b>. Se mantiene "mantener" en delta 0 y −1, y <b>las bajadas no se tocaron</b> (siguen protegiendo de cargar de más).</p>
+
+    <div class="note-card">
+      <b>Tercer arreglo, de la auditoría anterior:</b> <code>Number("8-10")</code> daba <code>NaN</code>, así que el motor comparaba <b>todo</b> rango de reps contra 10. Ya se corrigió (usa el tope del rango). Los tres juntos eran la causa de la sensación de infraentrenamiento.
+    </div>
+
+    <h3 style="font-size:1.05rem;margin:30px 0 6px;">Calibración: ni tonto ni drástico</h3>
+    <p style="color:var(--ink-2);margin:0 0 14px;font-size:.94rem;max-width:70ch;">Repasé cada factor de ajuste buscando los que <b>no afectan</b> (código muerto) y los que <b>mueven el peso demasiado</b>. Encontré uno de cada.</p>
+
+    <div class="ex">
+      <div class="panel bad">
+        <div class="tagline"><span class="dot bad"></span>Era drástico → limitado</div>
+        <div class="calc">
+          Factores del día se multiplican:<br>
+          FC ×0,80 · sueño ×0,90<br>
+          estrés ×0,85 · energía ×0,90<br>
+          Apilados = <span class="rbad">0,55 (−45 %)</span><br>
+          <b>Ahora: suelo en 0,70</b> <span class="rgood">(máx −30 %)</span>
+        </div>
+      </div>
+      <div class="panel bad">
+        <div class="tagline"><span class="dot bad"></span>Era tonto → eliminado</div>
+        <div class="calc">
+          Capa 5, tramo <b>&gt;14d → ×0,90</b><br>
+          Pero el log solo dura <b>7 días</b>:<br>
+          si el hueco &gt;14d, no hay base<br>
+          → "elige tu peso" antes de llegar<br>
+          <span class="rbad">Nunca se ejecutaba</span> → <span class="rgood">borrado</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="note-card" style="margin-top:16px;">
+      <b>Lo que sigue conservador a propósito</b> (guardarraíles correctos, no infraentrenamiento): las bajadas de peso, la media subida en cut (Helms), el recorte por mala recuperación del día (ahora topado en −30 %), y los límites por fase (VOL 5 %/sesión). Evitan lesión y sobrecarga — no frenan el progreso real.
+    </div>
+  </section>
+
+  <!-- ── SECTION 6: postural verdict ── -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">06</span>
+      <h2>Decisión arquitectónica postural</h2>
+    </div>
+    <div class="verdict">
+      <div class="badge">Veredicto basado en evidencia</div>
+      <p class="headline">No hace falta un módulo de evaluación postural. Basta la ejecución consistente de los bloques correctivos + el test tangible que ya existe.</p>
+      <ol>
+        <li><b>La corrección viene de la frecuencia, no de medirla.</b> Ruivo 2017: el protocolo correctivo funciona con frecuencia diaria durante 16 semanas — y <code>getMovilidadMatutina_</code> ya se sirve todos los días.</li>
+        <li><b>Ya tienes un test real y binario: el Wall Angel.</b> Es el objetivo postural principal (biometria.md §8), medible sin sensores y re-testeado cada 4 semanas.</li>
+        <li><b>Un evaluador dinámico en móvil sería frágil</b> y produciría un "score" sintético — justo lo que tu política prohíbe. Un self-test real es más honesto y accionable.</li>
+        <li><b>La periodización ya prioriza postura</b> donde toca: FAS_01 "Adaptación + Postura" + correctivos en cada sesión.</li>
+      </ol>
+      <div class="rec"><b>Recomendación ligera:</b> en vez de un módulo, que la app pida el auto-test del Wall Angel cada 4 semanas y lo registre junto a las circunferencias. Cierra el bucle evaluación→ajuste con datos reales y coste mínimo.</div>
+    </div>
+  </section>
+
+  <!-- ── SECTION 7: actions ── -->
+  <section style="margin-bottom:0;">
+    <div class="sec-head">
+      <span class="sec-num">07</span>
+      <h2>Para que surta efecto</h2>
+    </div>
+    <div class="actions">
+      <p style="margin:0;color:var(--ink-2)">Cambiaron los esquemas de 4 hojas y la lógica del backend. Migración:</p>
+      <ol>
+        <li>Redesplegar <code>Codigo.gs</code> (Gestionar implementaciones → Nueva versión).</li>
+        <li>Re-ejecutar <b>inicializarHojas()</b> + <b>rellenarPlanCompleto()</b> desde el editor (las filas viejas tienen el nº de columnas antiguo).</li>
+        <li>Reconstruir e instalar el APK <span style="color:var(--good)">— ya compila correctamente</span>.</li>
+      </ol>
+    </div>
+  </section>
+
+  <footer class="meta">
+    <span>FitBase · Reporte de lógica de entrenamiento</span>
+    <span>23 principios · 21 cubiertos · 3 huecos cerrados</span>
+  </footer>
+
+</div>
+</div>
