@@ -68,12 +68,9 @@ public class HomeActivity extends BaseActivity {
     private ProgressBar progressPasos;
 
     // ─── Vistas: Movilidad matutina ───
-    // Colapsada por defecto (ver vincularVistas) — evita que una rutina larga
-    // empuje el resto de la pantalla fuera de la vista (pantalla sin scroll).
-    private View headerMovilidad;
+    // Siempre visible al completo, no es desplegable (relevante todos los días).
     private LinearLayout layoutMovilidad;
-    private TextView tvMovilidadTitulo, tvMovilidadChevron;
-    private boolean movilidadExpandida = false;
+    private TextView tvMovilidadTitulo;
 
     // Core del día de descanso (recuperación activa) — colapsable, misma lógica
     // que movilidad. La tarjeta entera se oculta si el día no trae core.
@@ -235,16 +232,8 @@ public class HomeActivity extends BaseActivity {
         tvCardioInfo = findViewById(R.id.tvCardioInfo);
         progressPasos = findViewById(R.id.progressPasos);
 
-        headerMovilidad = findViewById(R.id.headerMovilidad);
         layoutMovilidad = findViewById(R.id.layoutMovilidad);
         tvMovilidadTitulo = findViewById(R.id.tvMovilidadTitulo);
-        tvMovilidadChevron = findViewById(R.id.tvMovilidadChevron);
-        headerMovilidad.setOnClickListener(v -> {
-            feedback.vibrateLight();
-            movilidadExpandida = !movilidadExpandida;
-            layoutMovilidad.setVisibility(movilidadExpandida ? View.VISIBLE : View.GONE);
-            tvMovilidadChevron.setText(movilidadExpandida ? "▾" : "▸");
-        });
 
         cardCore = findViewById(R.id.cardCore);
         headerCore = findViewById(R.id.headerCore);
@@ -469,12 +458,11 @@ public class HomeActivity extends BaseActivity {
                 TextView tv = new TextView(this);
                 tv.setText("• " + ej.nombre + " — " + ej.reps);
                 tv.setTextColor(getColor(R.color.text_secondary));
-                tv.setPadding(0, 4, 0, 4);
+                tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+                tv.setPadding(0, 2, 0, 2);
                 layoutMovilidad.addView(tv);
             }
-            // Respeta el estado colapsado/expandido actual — no se fuerza
-            // VISIBLE aquí (colapsada por defecto, ver vincularVistas).
-            layoutMovilidad.setVisibility(movilidadExpandida ? View.VISIBLE : View.GONE);
+            layoutMovilidad.setVisibility(View.VISIBLE);
         }
 
         // ── Core del día de descanso (recuperación activa) ──

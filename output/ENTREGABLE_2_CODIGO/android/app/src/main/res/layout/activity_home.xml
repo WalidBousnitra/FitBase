@@ -385,9 +385,9 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- ═══ MOVILIDAD MATUTINA — colapsada por defecto (toca para ver
-             la lista); solo el título ocupa espacio fijo, así una rutina
-             larga no empuja el resto de la pantalla fuera de la vista. ═══ -->
+        <!-- ═══ MOVILIDAD MATUTINA — SIEMPRE visible al completo (no es
+             desplegable): es relevante todos los días, así que no debe
+             requerir un toque para verse. ═══ -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -396,42 +396,21 @@
             android:background="@drawable/bg_card_flat"
             android:padding="10dp">
 
-            <LinearLayout
-                android:id="@+id/headerMovilidad"
+            <TextView
+                android:id="@+id/tvMovilidadTitulo"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:clickable="true"
-                android:focusable="true"
-                android:background="?attr/selectableItemBackground">
-
-                <TextView
-                    android:id="@+id/tvMovilidadTitulo"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Movilidad matutina"
-                    android:textSize="13sp"
-                    android:fontFamily="sans-serif-medium"
-                    android:textColor="@color/success" />
-
-                <TextView
-                    android:id="@+id/tvMovilidadChevron"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="▸"
-                    android:textSize="13sp"
-                    android:textColor="@color/success" />
-            </LinearLayout>
+                android:text="Movilidad matutina"
+                android:textSize="13sp"
+                android:fontFamily="sans-serif-medium"
+                android:textColor="@color/success" />
 
             <LinearLayout
                 android:id="@+id/layoutMovilidad"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:layout_marginTop="6dp"
-                android:visibility="gone" />
+                android:layout_marginTop="4dp" />
         </LinearLayout>
 
         <!-- ═══ CORE (día de descanso) — colapsable como movilidad. Solo se
