@@ -330,9 +330,9 @@
     <p class="lede">Mapeo de 23 principios basados en evidencia a la función o el campo concreto de <code>Codigo.gs</code> y la app. No a lo documentado — a lo implementado. Con dos revisiones a fondo abajo: <b>nutrición</b> (§4) y <b>ajuste de cargas</b> (§5), donde corregí el sesgo que infraentrenaba.</p>
 
     <div class="tiles">
-      <div class="tile good"><span class="num">21</span><span class="lbl">Cubiertos</span></div>
+      <div class="tile good"><span class="num">20</span><span class="lbl">Cubiertos</span></div>
       <div class="tile accent"><span class="num">3</span><span class="lbl">Huecos cerrados hoy</span></div>
-      <div class="tile"><span class="num">1</span><span class="lbl">Externo (suplementación)</span></div>
+      <div class="tile"><span class="num">2</span><span class="lbl">Externo / solo tracking</span></div>
       <div class="tile"><span class="num">1</span><span class="lbl">Opcional pendiente</span></div>
     </div>
 
@@ -372,9 +372,9 @@
       <div class="row">
         <span class="idx">03</span>
         <span class="name">Sobrecarga Progresiva Registrada</span>
-        <span class="chip good"><span class="dot good"></span>Cubierto · 3 arreglos</span>
-        <span class="where">calcularPesoSugerido_() — Capa 2 (APRE)</span>
-        <span class="note">Ajusta la carga según el rendimiento real. Se corrigió el sesgo que infraentrenaba: mejor set en vez del último, progresa al superar por 1, y el bug de rangos de reps (ver §5).</span>
+        <span class="chip good"><span class="dot good"></span>Cubierto · 4 arreglos</span>
+        <span class="where">calcularPesoSugerido_() — Capas 1-2 + calcularProgresionReps_</span>
+        <span class="note">Ajusta la carga según el rendimiento real. Se corrigió el sesgo que infraentrenaba: mejor set en vez del último, progresa al superar por 1, el bug de rangos de reps, y doble progresión por reps/segundos para ejercicios sin peso externo (ver §5).</span>
       </div>
 
       <div class="row">
@@ -500,9 +500,9 @@
       <div class="row">
         <span class="idx">19</span>
         <span class="name">Gestión del Estrés Psicológico</span>
-        <span class="chip good"><span class="dot good"></span>Cubierto · nuevo</span>
-        <span class="where">calcularAjusteDia_ (estrés + energía)</span>
-        <span class="note">Estrés ≥4/5 → ×0.85. <b>Energía ≤2/5 → ×0.90 (implementado)</b> — antes se registraba pero no se usaba.</span>
+        <span class="chip neutral"><span class="dot neutral"></span>Solo tracking · decisión explícita</span>
+        <span class="where">guardarMetricasSubjetivas_ · getProgresionMetricas_</span>
+        <span class="note">Estrés/energía se guardan y se ven en progresión, pero <b>ya no entran en el cálculo de carga</b> — pedido explícito del usuario: quiere trackearlos, no que el motor decida por ellos.</span>
       </div>
 
       <div class="row">
@@ -681,7 +681,7 @@
       <div class="layer"><span class="n">2</span><span><span class="t">APRE</span> <span class="src">Mann 2010 · ACSM 2009</span><span class="d">delta = (reps + RIR real) − (reps objetivo + RIR objetivo). Positivo → subir, negativo → bajar.</span></span></div>
       <div class="layer"><span class="n">3</span><span><span class="t">Fase</span> <span class="src">Bompa 2019</span><span class="d">Tope de progresión por sesión: VOL ±5 %, FZA ±10 %, DEF ±3 %, MNT ±2,5 %, DELOAD −12,5 %.</span></span></div>
       <div class="layer"><span class="n">4</span><span><span class="t">Nutrición</span> <span class="src">Helms 2014</span><span class="d">En cut, la subida se reduce a la mitad (es difícil ganar fuerza en déficit).</span></span></div>
-      <div class="layer"><span class="n">5</span><span><span class="t">Descanso</span> <span class="src">ACSM 2009</span><span class="d">Gap &gt;7 días → ×0,95; &gt;14 días → ×0,90 (desentrenamiento parcial).</span></span></div>
+      <div class="layer"><span class="n">5</span><span><span class="t">Descanso</span> <span class="src">ACSM 2009</span><span class="d">Gap &gt;7 días → ×0,95. (El tramo &gt;14d se eliminó — ver calibración abajo.)</span></span></div>
       <div class="layer"><span class="n">6</span><span><span class="t">Día</span> <span class="src">Kiviniemi 2007</span><span class="d">FC / sueño / estrés / energía → factor 0,70–1,0 sobre la carga del día.</span></span></div>
     </div>
 
@@ -746,6 +746,35 @@
 
     <div class="note-card" style="margin-top:16px;">
       <b>Lo que sigue conservador a propósito</b> (guardarraíles correctos, no infraentrenamiento): las bajadas de peso, la media subida en cut (Helms), el recorte por mala recuperación del día (ahora topado en −30 %), y los límites por fase (VOL 5 %/sesión). Evitan lesión y sobrecarga — no frenan el progreso real.
+    </div>
+
+    <h3 style="font-size:1.05rem;margin:30px 0 6px;">Doble progresión: peso <i>o</i> reps, no solo peso (ACSM 2009)</h3>
+    <p style="color:var(--ink-2);margin:0 0 14px;font-size:.94rem;max-width:70ch;">Pediste que el motor pudiera subir esfuerzo por dos vías, no solo por kg. Revisé los 25 ejercicios del catálogo: para mancuernas/barra/máquina/polea, la doble progresión <b>ya existía de facto</b> — el rango de reps del plan es fijo ("8-10"), así que subes reps libremente dentro del rango a igual peso, y el motor solo sube KG al superar el techo (Arreglo 2 de arriba). Forzar además una preferencia "reps vs peso" ahí no resuelve nada real.</p>
+    <p style="color:var(--ink-2);margin:0 0 14px;font-size:.94rem;max-width:70ch;">Pero encontré un hueco real: 4 ejercicios (Hollow hold, Wall angels, Band pull-aparts, Rotación externa banda) no usan carga externa — se registran siempre con 0kg. La Capa 1 leía ese 0 como "sin datos" y devolvía "elige tu peso" <b>en cada sesión, para siempre</b> — nunca progresaban.</p>
+
+    <div class="ex">
+      <div class="panel bad">
+        <div class="tagline"><span class="dot bad"></span>Antes — 0kg = sin progresión</div>
+        <div class="calc">
+          Hollow hold: 3×30s, siempre 0kg<br>
+          Capa 1: pesoBase = 0<br>
+          → <span class="rbad">"Elige tu peso" cada sesión</span><br>
+          Da igual cuántas veces se haga bien
+        </div>
+      </div>
+      <div class="panel good">
+        <div class="tagline"><span class="dot good"></span>Ahora — progresión por segundos</div>
+        <div class="calc">
+          Mismo delta_capacidad que la Capa 2<br>
+          (reps/seg + RIR) vs (objetivo + RIR)<br>
+          Sesión fácil (delta 1-3) → <b>+5s</b><br>
+          <span class="rgood">30s → 35s, mismo "peso" (0)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="note-card" style="margin-top:16px;">
+      <code>esProgresionSinPeso_</code> cubre equipamiento Banda/Pared (sin excepción en el catálogo) más <code>EJE_HOLLOW</code> explícito — "Suelo" es ambiguo porque también incluye Plancha lastrada, que sí carga peso real. Se trató como excepción por ID en vez de inventar una columna nueva para un único caso.
     </div>
   </section>
 

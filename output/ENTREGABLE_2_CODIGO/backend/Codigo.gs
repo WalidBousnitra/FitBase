@@ -139,6 +139,7 @@ function doGet(e) {
       case 'cambio_fase':      resultado = getCambioFase_(); break;
       case 'horario_semanal':  resultado = { horario: getHorarioSemanal_() }; break;
       case 'progresion_metricas': resultado = getProgresionMetricas_(e.parameter.dias); break;
+      case 'preview_ramadan':  resultado = getRamadanPreview_(); break;
       default: resultado = { error: 'Acción no reconocida' };
     }
 
@@ -250,7 +251,8 @@ function getSesionHoy_() {
       fase: sesion.str_fase || 'VOL',
       objetivoNutri: objetivoNutri,
       repsObjetivo: ej.str_reps_plan,
-      rirObjetivo: ej.num_rir_objetivo
+      rirObjetivo: ej.num_rir_objetivo,
+      equipamiento: ej.str_equipamiento
     });
     return {
       ...ej,
@@ -260,7 +262,10 @@ function getSesionHoy_() {
       num_peso_sugerido_kg: resultado.peso,
       motor_detalle: resultado.detalle,
       motor_capas: resultado.capas,
-      ajuste_aplicado: ajuste.factor
+      ajuste_aplicado: ajuste.factor,
+      // Doble progresión sin peso (Suelo/Banda/Pared) — ver calcularProgresionReps_.
+      sin_peso: resultado.sinPeso === true,
+      reps_sugeridas: resultado.sinPeso === true ? resultado.repsSugeridas : null
     };
   });
 
@@ -892,6 +897,17 @@ function getRamadanInfo_(hoy) {
 }
 
 /**
+ * Previsualización del banner de Ramadán/Eid para el botón de demo de la app
+ * (Constants.MOSTRAR_BOTONES_DEMO). Ramadán solo cae ~1 mes/año — sin esto no
+ * hay forma de ver el banner en el resto del año. Reutiliza getRamadanInfo_
+ * TAL CUAL, solo con una fecha real dentro de RAMADAN_FECHAS en vez de hoy —
+ * no inventa contenido nuevo, solo evalúa la lógica real en otra fecha real.
+ */
+function getRamadanPreview_() {
+  return { ramadan: getRamadanInfo_(RAMADAN_FECHAS.inicio) };
+}
+
+/**
  * Resumen de cambio de fase — se llama SOLO cuando la app detecta que la
  * fase actual es distinta a la última vista (comparando fase_id en el
  * cliente). Da un cierre a la fase que acaba de terminar y presenta la que
@@ -1192,11 +1208,11 @@ function getResumenSesion_(sesionId) {
 // 1. El PLAN ANUAL define DIRECTRICES inmutables: fase, RIR objetivo, volumen, foco.
 // 2. Los PESOS son dinámicos: se calculan al servir la sesión, no almacenados.
 // 3. La FASE ACTUAL modula la progresión (Bompa: AA=conservador, FZA=agresivo).
-// 4. El AJUSTE DIARIO modula por fatiga (Kiviniemi: FC, sueño, estrés).
+// 4. El AJUSTE DIARIO modula por fatiga (Kiviniemi: FC, sueño).
 // 5. El APRE (Mann 2010) define cuánto subir/bajar basado en rendimiento real.
 
 /**
- * Ajuste global del día basado en fatiga/sueño/estrés.
+ * Ajuste global del día basado en fatiga/sueño.
  *
  * EVIDENCIA:
  *   - Kiviniemi 2007: FC reposo como proxy de HRV para autorregulación
@@ -1204,7 +1220,12 @@ function getResumenSesion_(sesionId) {
  *
  * HEURÍSTICAS (marcadas):
  *   - Sleep score < 60 → ×0.90 (no hay paper que defina umbral exacto)
- *   - Estrés subjetivo > 7 → ×0.85 (no hay paper que defina umbral exacto)
+ *
+ * NOTA (2026): estrés y energía subjetivos (metricas_subjetivas) se SIGUEN
+ * guardando y se muestran en progresión (tracking puro), pero ya NO entran
+ * en este cálculo — decisión explícita del usuario: son datos para
+ * apuntárselos y mirarlos en retrospectiva, no para que el motor los use
+ * para recortar carga automáticamente.
  */
 function calcularAjusteDia_() {
   const hoy = fechaHoy_();
@@ -1237,37 +1258,14 @@ function calcularAjusteDia_() {
     }
   }
 
-  // ⚠️ HEURÍSTICO: estrés subjetivo (escala 1-5). Se pregunta tras las 22:00,
-  // así que lo que hay guardado con fecha de HOY se refiere al desgaste de
-  // AYER-NOCHE→esta mañana — es el dato relevante para ajustar la sesión de
-  // HOY (se pidió anoche, sobre el día que terminaba). Si por lo que sea no
-  // hay dato de ayer, se prueba con el de hoy por si se guardó ya avanzado el día.
-  var ayer = formatDate_(new Date(new Date(hoy).getTime() - 86400000));
-  var subjetiva = getUltimaFila_(HOJAS.METRICAS_SUBJETIVAS, 'date_fecha', ayer)
-      || getUltimaFila_(HOJAS.METRICAS_SUBJETIVAS, 'date_fecha', hoy);
-  if (subjetiva && subjetiva.num_estres >= 4) {
-    factor *= 0.85;
-    razones.push('Estrés subjetivo alto (4-5/5, heurístico)');
-  }
-  // Energía baja → reducir intensidad (motor_pesos.md §3: SUB_ENERGIA bajo →
-  // reducir intensidad). Escala app 1-5: ≤2 = energía baja (equivale al "<3/10"
-  // del paper, misma adaptación de escala que el estrés). Antes se registraba
-  // num_energia pero NO se usaba en el ajuste — hueco cerrado.
-  if (subjetiva && subjetiva.num_energia && subjetiva.num_energia <= 2) {
-    factor *= 0.90;
-    razones.push('Energía subjetiva baja (≤2/5, motor_pesos.md §3)');
-  }
-
-  // TECHO DE REDUCCIÓN (fix 2026): por muchas señales de fatiga que se acumulen,
-  // el recorte de carga no baja del nivel "recuperación activa" (0.70) — el mismo
-  // suelo que el early-return por FC ascendente. Sin este tope, apilar FC alta
-  // (×0.80) + sueño (×0.90) + estrés (×0.85) + energía (×0.90) daba 0.55 (−45%):
-  // un recorte MÁS agresivo que un deload que dejaba la sesión demasiado ligera
-  // para estimular nada. Un día realmente malo = día de recuperación, no menos.
-  if (factor < 0.70) {
-    factor = 0.70;
-    razones.push('Recorte limitado al nivel de recuperación activa (tope −30%)');
-  }
+  // estrés/energía subjetivos (metricas_subjetivas) — retirados del cálculo
+  // (2026): se siguen guardando vía guardarMetricasSubjetivas_ y se ven en
+  // progresión, pero el motor ya no los usa para recortar carga. Petición
+  // explícita del usuario: "solo quiero trackearlo". Esto también deja el
+  // stack máximo en FC(×0.80) × sueño(×0.90) = 0.72, así que el antiguo tope
+  // de −30% (0.70) ya no puede alcanzarse con las señales que quedan — se
+  // quita también para no dejar código muerto (mismo criterio que el fix
+  // de la Capa 5 de calcularPesoSugerido_).
 
   return {
     factor: factor,
@@ -1331,18 +1329,14 @@ function esTendenciaFCAscendente_(dias) {
 function calcularPesoSugerido_(ejercicioId, ctx) {
   var resultado = { peso: 0, detalle: '', capas: {} };
 
-  // ── CAPA 1: BASE — último log de este ejercicio ──────────────
-  var hoja = getHoja_(HOJAS.EJERCICIOS_LOG);
-  if (!hoja || hoja.getLastRow() <= 1) {
-    resultado.detalle = 'Sin historial — elige tu peso';
-    return resultado;
+  // Doble progresión por el OTRO eje (ACSM 2009: sube peso O reps) para
+  // ejercicios sin carga externa controlable — ver calcularProgresionReps_.
+  if (esProgresionSinPeso_(ejercicioId, ctx.equipamiento)) {
+    return calcularProgresionReps_(ejercicioId, ctx);
   }
 
-  var datos = hoja.getDataRange().getValues();
-  var cab = datos[0];
-  var colEj = cab.indexOf('ejercicio_id');
-  var colSes = cab.indexOf('sesion_id');
-
+  // ── CAPA 1: BASE — mejor set de la sesión más reciente ───────
+  //
   // FIX (2026): antes se usaba el ÚLTIMO set registrado (el más reciente en la
   // hoja). Con series RECTAS a un RIR objetivo, el último set siempre tiene
   // MENOS reps por fatiga acumulada dentro de la sesión → el motor lo leía como
@@ -1355,27 +1349,9 @@ function calcularPesoSugerido_(ejercicioId, ctx) {
   // debe guiar la progresión (doble progresión: subes cuando superas el techo
   // del rango). Sigue anclado en Mann 2010 (rendimiento real vs objetivo), pero
   // aplicado a series rectas, no a la 4ª serie AMRAP del APRE original.
-  var sesionReciente = null;
-  for (var i = datos.length - 1; i >= 1; i--) {
-    if (datos[i][colEj] === ejercicioId) { sesionReciente = datos[i][colSes]; break; }
-  }
-  if (sesionReciente === null) {
-    resultado.detalle = 'Primer uso — elige tu peso';
-    return resultado;
-  }
-
-  var ultimo = null, mejorCap = -Infinity;
-  for (var j = 1; j < datos.length; j++) {
-    if (datos[j][colEj] === ejercicioId && datos[j][colSes] === sesionReciente) {
-      var fila = rowToObj_(cab, datos[j]);
-      var rCap = (Number(fila.num_reps_completadas) || 0);
-      var rrCap = Number(fila.num_rir_percibido); if (isNaN(rrCap)) rrCap = 2;
-      if (rCap + rrCap > mejorCap) { mejorCap = rCap + rrCap; ultimo = fila; }
-    }
-  }
-
+  var ultimo = obtenerMejorSetReciente_(ejercicioId);
   if (!ultimo) {
-    resultado.detalle = 'Primer uso — elige tu peso';
+    resultado.detalle = 'Sin historial — elige tu peso';
     return resultado;
   }
 
@@ -1513,6 +1489,118 @@ function calcularPesoSugerido_(ejercicioId, ctx) {
     pesoBase, pesoFinal, nivelAPRE, cfgFase.nombre,
     factorDescanso, factorDia, objNutri
   );
+  return resultado;
+}
+
+/**
+ * Busca el MEJOR set (máx reps+RIR) de la sesión más reciente en la que se
+ * registró este ejercicio. Compartido por calcularPesoSugerido_ (progresión
+ * por peso) y calcularProgresionReps_ (progresión por reps/segundos).
+ * @returns {Object|null} fila de ejercicios_log, o null si no hay historial.
+ */
+function obtenerMejorSetReciente_(ejercicioId) {
+  var hoja = getHoja_(HOJAS.EJERCICIOS_LOG);
+  if (!hoja || hoja.getLastRow() <= 1) return null;
+
+  var datos = hoja.getDataRange().getValues();
+  var cab = datos[0];
+  var colEj = cab.indexOf('ejercicio_id');
+  var colSes = cab.indexOf('sesion_id');
+
+  var sesionReciente = null;
+  for (var i = datos.length - 1; i >= 1; i--) {
+    if (datos[i][colEj] === ejercicioId) { sesionReciente = datos[i][colSes]; break; }
+  }
+  if (sesionReciente === null) return null;
+
+  var mejor = null, mejorCap = -Infinity;
+  for (var j = 1; j < datos.length; j++) {
+    if (datos[j][colEj] === ejercicioId && datos[j][colSes] === sesionReciente) {
+      var fila = rowToObj_(cab, datos[j]);
+      var rCap = (Number(fila.num_reps_completadas) || 0);
+      var rrCap = Number(fila.num_rir_percibido); if (isNaN(rrCap)) rrCap = 2;
+      if (rCap + rrCap > mejorCap) { mejorCap = rCap + rrCap; mejor = fila; }
+    }
+  }
+  return mejor;
+}
+
+/**
+ * ¿Este ejercicio progresa por REPS/segundos en vez de por KG?
+ *
+ * Equipamiento 'Banda'/'Pared' (Band pull-aparts, Rotación externa banda,
+ * Wall angels): no hay carga externa controlable, así que "subir peso" no
+ * existe como palanca — el 100% de los ejercicios con este equipamiento en
+ * el catálogo actual son así, sin excepción.
+ *
+ * 'Suelo' es AMBIGUO: incluye tanto Hollow hold (peso corporal puro) como
+ * Plancha lastrada (con disco encima — sí tiene carga real y kg que subir).
+ * No se puede decidir solo por el string de equipamiento, así que se trata
+ * como excepción explícita por ID en vez de forzar una nueva columna en el
+ * catálogo para un único caso.
+ */
+function esProgresionSinPeso_(ejercicioId, equipamiento) {
+  if (ejercicioId === 'EJE_HOLLOW') return true;
+  if (!equipamiento) return false;
+  var e = String(equipamiento).toLowerCase();
+  return e.indexOf('banda') >= 0 || e.indexOf('pared') >= 0;
+}
+
+/**
+ * Doble progresión por el eje de REPS/segundos (ACSM 2009: sube peso O
+ * reps) para ejercicios sin carga externa controlable.
+ *
+ * PROBLEMA que resuelve: estos ejercicios siempre se registran con
+ * num_peso_usado_kg = 0 (no hay peso que subir). Antes de esto pasaban por
+ * calcularPesoSugerido_ igual que cualquier ejercicio con mancuernas/barra,
+ * y su Capa 1 (`pesoBase <= 0`) devolvía SIEMPRE "elige tu peso" — nunca
+ * progresaban, sesión tras sesión, por muy bien que fueran las series
+ * (código muerto para toda esta categoría de ejercicios).
+ *
+ * Reutiliza la MISMA fórmula delta_capacidad que la Capa 2 (Mann 2010 +
+ * ACSM 2009), aplicada a reps/segundos en vez de a kg. Si el objetivo es
+ * temporal ("30s"), el paso es de 5s (mismo incremento que
+ * getMovilidadMatutina_ usa para escalar hold times).
+ */
+function calcularProgresionReps_(ejercicioId, ctx) {
+  var unidad = /s\s*$/i.test(String(ctx.repsObjetivo || '').trim()) ? 's' : ' reps';
+  var repsObjTope = parseRepsObjetivo_(ctx.repsObjetivo);
+  var resultado = { peso: 0, sinPeso: true, repsSugeridas: repsObjTope, detalle: '', capas: { sinPeso: true } };
+
+  var ultimo = obtenerMejorSetReciente_(ejercicioId);
+  if (!ultimo) {
+    resultado.detalle = 'Peso corporal | primer uso — objetivo ' + repsObjTope + unidad;
+    return resultado;
+  }
+
+  var reps = Number(ultimo.num_reps_completadas) || 0;
+  var rir = Number(ultimo.num_rir_percibido); if (isNaN(rir)) rir = 2;
+  var rirObj = Number(ctx.rirObjetivo) || 2;
+  var deltaCap = (reps + rir) - (repsObjTope + rirObj);
+
+  var paso = unidad === 's' ? 5 : 1;
+  var ajuste;
+  if (deltaCap <= -4)      ajuste = -2 * paso;
+  else if (deltaCap <= -2) ajuste = -1 * paso;
+  else if (deltaCap <= 0)  ajuste = 0;
+  else if (deltaCap <= 3)  ajuste = 1 * paso;
+  else                     ajuste = 2 * paso;
+
+  var minimo = unidad === 's' ? 10 : 1;
+  var repsSugeridas = Math.max(minimo, repsObjTope + ajuste);
+
+  // Capa 6 (Kiviniemi 2007): el factor del día también reduce el objetivo
+  // de reps/segundos en un día de mala recuperación.
+  var factorDia = Number(ctx.ajusteDia) || 1.0;
+  repsSugeridas = Math.max(minimo, Math.round(repsSugeridas * factorDia));
+
+  resultado.repsSugeridas = repsSugeridas;
+  resultado.capas.deltaCap = deltaCap;
+  resultado.capas.ultimoReps = reps;
+  resultado.capas.ultimoRIR = rir;
+  resultado.capas.factorDia = factorDia;
+  resultado.detalle = 'Peso corporal | objetivo ' + repsSugeridas + unidad +
+    (ajuste > 0 ? ' (↑ dobla progresión)' : (ajuste < 0 ? ' (↓ ajustado)' : ''));
   return resultado;
 }
 

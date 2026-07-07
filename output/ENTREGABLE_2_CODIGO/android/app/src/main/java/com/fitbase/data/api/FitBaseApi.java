@@ -52,6 +52,9 @@ public interface FitBaseApi {
     @GET("exec")
     Call<HorarioSemanalResponse> getHorarioSemanal(@Query("accion") String accion);
 
+    @GET("exec")
+    Call<com.fitbase.data.model.RamadanPreviewResponse> getRamadanPreview(@Query("accion") String accion);
+
     // ─── POST ─────────────────────────────────────────────
 
     @POST("exec")

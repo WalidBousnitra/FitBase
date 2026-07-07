@@ -45,12 +45,18 @@ Algoritmo que ajusta las cargas de entrenamiento basándose en fatiga, sueño y 
 > - Sleep Score (calculado desde duración + fases de sueño)
 > - FC reposo elevada (indicador indirecto de estrés/fatiga)
 
-### Métricas Subjetivas (USR-MET-02) - HEURÍSTICAS
-| Variable | Umbral | Acción | Nota |
-|----------|--------|--------|------|
-| `SUB_ENERGIA` | <3/10 | Reducir intensidad | Heurístico |
-| `SUB_ESTRES` | >7/10 | Reducir volumen | Heurístico |
-| `SUB_DOMS` | Severo en grupo | Evitar ese grupo | Sentido común |
+### Métricas Subjetivas (USR-MET-02) — SOLO TRACKING (2026)
+| Variable | Uso |
+|----------|-----|
+| `SUB_ENERGIA` | Se guarda y se muestra en progresión. **NO afecta el cálculo de carga** — decisión explícita del usuario. |
+| `SUB_ESTRES` | Se guarda y se muestra en progresión. **NO afecta el cálculo de carga** — decisión explícita del usuario. |
+| `SUB_DOMS` | Sentido común, no implementado como regla automática. |
+
+> **Cambio (2026)**: Antes `SUB_ENERGIA`/`SUB_ESTRES` recortaban el factor del día
+> (Capa 6, `calcularAjusteDia_`). El usuario pidió retirarlos del motor: los
+> quiere registrar para poder mirarlos en retrospectiva ("apuntármelo"), no
+> que el sistema los use para decidir por él. El motor ahora solo usa FC
+> reposo (Kiviniemi 2007) y Sleep Score (Fullagar 2015) — ver §5 y §6.
 
 ## 4. Protocolo FC Reposo (Adaptado de Evidencia)
 
@@ -101,9 +107,9 @@ def calcular_ajuste(datos_usuario):
     # Sleep Score: calculado desde HC_SLEEP_DURATION + fases
     if datos_usuario.sleep_score < 60:
         ajuste *= 0.90  # ⚠️ HEURÍSTICO
-    if datos_usuario.estres_subjetivo > 7:
-        ajuste *= 0.85  # ⚠️ HEURÍSTICO
-        
+
+    # Estrés/energía subjetivos: NO entran aquí (2026) — solo tracking, ver §3.
+
     return { factor: ajuste, tipo: "normal" si ajuste >= 1 sino "reducida" }
 ```
 
@@ -208,13 +214,14 @@ ctx:
 | 3. FASE | Bompa 2019 (§7) | Cap de progresión: VOL ±5%, FZA ±10%, DEF ±3%, MNT ±2.5%, DELOAD -12.5% |
 | 4. NUTRICIÓN | Helms 2014 | En cutting, cap subida al 50% |
 | 5. DESCANSO | ACSM 2009 (frecuencia) | >7d gap → ×0.95 (el tramo >14d→×0.90 se eliminó: con retención de 7 días nunca hay un log tan viejo → era código muerto) |
-| 6. DÍA | Kiviniemi 2007 | FC/sueño/estrés/energía → factor 0.70–1.0, **con suelo en 0.70** |
+| 6. DÍA | Kiviniemi 2007 + Fullagar 2015 | FC/sueño → factor 0.72–1.0 |
 
-> **Capa 6 — suelo de 0.70 (fix 2026)**: los factores del día son multiplicativos
-> (FC ×0.80, sueño ×0.90, estrés ×0.85, energía ×0.90). Apilados daban hasta 0.55
-> (−45%), un recorte más agresivo que un deload. Se limita el recorte total a 0.70
-> = nivel "recuperación activa" (el mismo del early-return por FC ascendente). Un
-> día realmente malo se trata como día de recuperación, no menos.
+> **Capa 6 — historial (2026)**: llegó a incluir estrés y energía subjetivos
+> (factor mínimo apilado 0.55, −45%, más agresivo que un deload), con un suelo
+> en 0.70 para limitarlo. El usuario pidió sacar estrés/energía del cálculo por
+> completo (quiere solo trackearlos, ver §3) — con solo FC(×0.80) y sueño(×0.90)
+> el mínimo posible ya es 0.72, así que el suelo de 0.70 quedó inalcanzable y se
+> quitó también (código muerto, mismo criterio que el fix de la Capa 5).
 
 ### Fórmula APRE (Capa 2):
 ```
@@ -227,6 +234,54 @@ delta ≤  0  → 0%    (en el objetivo o 1 por debajo → mantener)
 delta 1..3  → +5%   (superas el objetivo por 1-3 → subir. ACSM: "1-2 reps MÁS → subir")
 delta > 3   → +10%  (muy fácil, Mann: reps_13+)
 ```
+
+### Doble progresión real: peso O reps, según el ejercicio (2026)
+
+> ✅ **Fuente**: ACSM (2009) — la sobrecarga progresiva sube por DOS ejes
+> (carga o repeticiones), no solo por kg. Estándar NSCA/ACSM para prescripción
+> de fuerza.
+
+**Antes**: el motor SOLO progresaba en kg, para todos los ejercicios por
+igual — incluidos los de peso corporal/banda (Hollow hold, Wall angels, Band
+pull-aparts, Rotación externa banda). Como esos siempre se registran con
+`num_peso_usado_kg = 0` (no hay disco que añadir), la Capa 1 (`pesoBase <= 0`)
+devolvía **siempre** "elige tu peso" — nunca progresaban, sesión tras sesión,
+por muy bien que salieran las series. Código muerto para toda una categoría
+de ejercicios.
+
+**Ahora** (`esProgresionSinPeso_` + `calcularProgresionReps_` en Codigo.gs):
+para ejercicios con equipamiento `Banda`/`Pared` (sin excepción en el catálogo
+actual) y el caso explícito `EJE_HOLLOW` (`Suelo` es ambiguo: incluye también
+Plancha lastrada, que sí carga peso real — se trata como excepción por ID en
+vez de forzar una columna nueva para un único caso), la doble progresión
+sube el **objetivo de reps/segundos** en vez del peso, usando la MISMA
+fórmula `delta_capacidad` de la Capa 2:
+
+```
+delta_capacidad = (reps_mejor_set + RIR_percibido) − (reps_objetivo_tope + RIR_objetivo)
+
+delta ≤ -4  → -2 unidades  (reps) / -10s (tiempo)
+delta ≤ -2  → -1 unidad    (reps) / -5s  (tiempo)
+delta ≤  0  → mantener
+delta 1..3  → +1 unidad    (reps) / +5s  (tiempo)
+delta > 3   → +2 unidades  (reps) / +10s (tiempo)
+```
+
+El paso de 5s para objetivos temporales ("30s") reutiliza el mismo incremento
+que `getMovilidadMatutina_` usa para escalar hold times por tramo — consistencia
+entre ambos sistemas de progresión sin peso. El factor del día (Capa 6) también
+reduce el objetivo en un día de mala recuperación, igual que con el peso.
+
+**Por qué NO se implementó de forma más amplia** (p. ej. "prefiere reps sobre
+peso en fase VOL para todos los ejercicios de aislamiento"): el resto de
+ejercicios con carga real (mancuernas/barra/máquina/polea) YA hacen doble
+progresión de facto — el rango de reps del plan ("8-10") es fijo, así que el
+usuario sube reps libremente DENTRO del rango a igual peso entre sesiones
+(eso ya lo decide el usuario, no hace falta que el motor lo fuerce), y el
+motor solo sube KG cuando se supera el TECHO del rango (Capa 2). Forzar
+además una preferencia explícita "reps vs peso" en ejercicios con carga real
+añadiría una capa de decisión sin un problema real que resolver — el único
+hueco genuino era la categoría sin carga externa, ya cerrado arriba.
 
 > **Auto-ajuste semanal**: Como `rirObjetivo` cambia cada semana (Helms 2016:
 > sem1 RIR 3-4, sem2 RIR 2-3, sem3 RIR 1-2, sem4 deload), la fórmula

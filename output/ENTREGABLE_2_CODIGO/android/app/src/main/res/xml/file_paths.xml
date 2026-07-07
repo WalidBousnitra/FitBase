@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Rutas expuestas por el FileProvider — solo el subdirectorio de logs de
+     TestRunnerActivity (getExternalFilesDir(null)/test_logs), para compartir
+     el log de test vía el selector de apps sin exponer el resto del storage. -->
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <external-files-path name="test_logs" path="test_logs/" />
+</paths>

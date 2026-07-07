@@ -422,6 +422,11 @@ public class WorkoutActivity extends BaseActivity {
 
         tvNombreEjercicio.setText(ej.getNombreCorto());
         tvPesoSugerido.setText(ej.getPesoTexto());
+        // Sin carga externa (doble progresión por reps) → el stepper +/- de
+        // kg no aplica, se oculta (ver Ejercicio.isSinPeso()).
+        int visibilidadPeso = ej.isSinPeso() ? View.GONE : View.VISIBLE;
+        btnPesoMenos.setVisibility(visibilidadPeso);
+        btnPesoMas.setVisibility(visibilidadPeso);
         tvMotorDetalle.setText(ej.getMotorDetalle() != null ? ej.getMotorDetalle() : "");
         tvRepsObjetivo.setText("Reps: " + ej.getRepsPlan());
         tvRirObjetivo.setText("RIR objetivo: " + ej.getRirObjetivo());

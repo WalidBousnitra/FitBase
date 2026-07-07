@@ -89,13 +89,14 @@ public class HomeActivity extends BaseActivity {
     // ─── Vistas: Navegación ───
     private View btnPlanAnual, btnProgresion;
 
+    // ─── Vistas: botones de desarrollo (Constants.MOSTRAR_BOTONES_DEMO) ───
+    private View btnTest, btnPreviewFase, btnPreviewEntreno, btnPreviewRamadan;
+
     // ─── Vistas: Banners ───
     private View bannerAusencia;
     private TextView tvAusenciaMensaje;
     private View bannerRamadan;
     private TextView tvRamadanTitulo, tvRamadanDetalle;
-    private View bannerPretemporada;
-    private TextView tvPretemporadaDetalle;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -268,13 +269,72 @@ public class HomeActivity extends BaseActivity {
         bannerRamadan = findViewById(R.id.bannerRamadan);
         tvRamadanTitulo = findViewById(R.id.tvRamadanTitulo);
         tvRamadanDetalle = findViewById(R.id.tvRamadanDetalle);
-        bannerPretemporada = findViewById(R.id.bannerPretemporada);
-        tvPretemporadaDetalle = findViewById(R.id.tvPretemporadaDetalle);
 
         // Navegación (el listener de btnEmpezarEntreno se fija en
         // actualizarVistaMañana — cambia según si ya hay sesión completada hoy)
         btnPlanAnual.setOnClickListener(v -> startActivity(new Intent(this, PlanAnualActivity.class)));
         btnProgresion.setOnClickListener(v -> startActivity(new Intent(this, ProgressionActivity.class)));
+
+        vincularBotonesDemo();
+    }
+
+    /**
+     * Botones de desarrollo (TEST/FASE/ENTRENO/RAMADÁN), todos ocultos de una
+     * sola vez si Constants.MOSTRAR_BOTONES_DEMO es false — único punto de
+     * control para desactivarlos antes de un release.
+     */
+    private void vincularBotonesDemo() {
+        btnTest = findViewById(R.id.btnTest);
+        btnPreviewFase = findViewById(R.id.btnPreviewFase);
+        btnPreviewEntreno = findViewById(R.id.btnPreviewEntreno);
+        btnPreviewRamadan = findViewById(R.id.btnPreviewRamadan);
+
+        if (!com.fitbase.util.Constants.MOSTRAR_BOTONES_DEMO) {
+            btnTest.setVisibility(View.GONE);
+            btnPreviewFase.setVisibility(View.GONE);
+            btnPreviewEntreno.setVisibility(View.GONE);
+            btnPreviewRamadan.setVisibility(View.GONE);
+            return;
+        }
+
+        btnTest.setOnClickListener(v ->
+                startActivity(new Intent(this, com.fitbase.ui.test.TestRunnerActivity.class)));
+
+        btnPreviewFase.setOnClickListener(v -> {
+            Intent intent = new Intent(this, com.fitbase.ui.plan.CambioFaseActivity.class);
+            intent.putExtra(com.fitbase.ui.plan.CambioFaseActivity.EXTRA_DEMO, true);
+            startActivity(intent);
+        });
+
+        // Abre el flujo de gym directamente, sin pasar por el gate de tipo_dia
+        // (btnEmpezarEntreno solo aparece si vista.esGym()) — así se puede
+        // probar en descanso/natación o antes del 31/08 sin esperar. La ruta
+        // antigua comprobaba una sesión "demo" completada en SharedPreferences
+        // para saltar a SummaryActivity, pero esa ruta quedó obsoleta: hoy la
+        // finalización de sesión vive en el backend (completar_sesion +
+        // vista_manana.resumen_hoy), no en prefs locales — restaurar esa rama
+        // sería código muerto que nunca se dispara.
+        btnPreviewEntreno.setOnClickListener(v ->
+                startActivity(new Intent(this, WorkoutActivity.class)));
+
+        btnPreviewRamadan.setOnClickListener(v -> {
+            com.fitbase.data.api.ApiClient.getApi().getRamadanPreview("preview_ramadan")
+                    .enqueue(new retrofit2.Callback<com.fitbase.data.model.RamadanPreviewResponse>() {
+                        @Override
+                        public void onResponse(retrofit2.Call<com.fitbase.data.model.RamadanPreviewResponse> call,
+                                                retrofit2.Response<com.fitbase.data.model.RamadanPreviewResponse> response) {
+                            if (response.isSuccessful() && response.body() != null) {
+                                mostrarRamadan(response.body().getRamadan());
+                            } else {
+                                Toast.makeText(HomeActivity.this, "Sin respuesta del backend", Toast.LENGTH_SHORT).show();
+                            }
+                        }
+                        @Override
+                        public void onFailure(retrofit2.Call<com.fitbase.data.model.RamadanPreviewResponse> call, Throwable t) {
+                            Toast.makeText(HomeActivity.this, "Error de red: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
+        });
     }
 
     private void observarDatos() {
@@ -332,27 +392,18 @@ public class HomeActivity extends BaseActivity {
         if (vista == null) return;
 
         // ── Tipo de día ──
+        // El tipo de día real (gym/natación/descanso) se muestra siempre, aunque
+        // estemos en pretemporada — el horario semanal ya es el real (mismo que
+        // regirá cuando arranque el plan) y los botones de demo cubren la
+        // previsualización manual, así que el aviso de pretemporada ya no aporta
+        // nada aparte de ruido.
         String tipoDiaTexto;
-        if (vista.isPreTemporada()) {
-            tipoDiaTexto = "PRETEMPORADA";
-        } else {
-            switch (vista.getTipoDia()) {
-                case "gym": tipoDiaTexto = "DÍA DE GYM"; break;
-                case "natacion": tipoDiaTexto = "NATACIÓN"; break;
-                default: tipoDiaTexto = "DESCANSO"; break;
-            }
+        switch (vista.getTipoDia()) {
+            case "gym": tipoDiaTexto = "DÍA DE GYM"; break;
+            case "natacion": tipoDiaTexto = "NATACIÓN"; break;
+            default: tipoDiaTexto = "DESCANSO"; break;
         }
         tvTipoDia.setText(tipoDiaTexto);
-
-        // ── Aviso pretemporada: el plan de 11 meses aún no ha empezado ──
-        if (vista.isPreTemporada()) {
-            tvPretemporadaDetalle.setText("Tu plan de entrenamiento de 11 meses empieza el "
-                    + formatearFechaLarga(vista.getFechaInicioPlan())
-                    + ". Mientras tanto, la app sigue mostrando sueño, macros, pasos y movilidad matutina con normalidad.");
-            bannerPretemporada.setVisibility(View.VISIBLE);
-        } else {
-            bannerPretemporada.setVisibility(View.GONE);
-        }
 
         // ── Fase ──
         if (vista.getFase() != null) {
@@ -492,7 +543,15 @@ public class HomeActivity extends BaseActivity {
         }
 
         // ── Ramadán / Eid (cultura.md §5-6) ──
-        VistaMañanaResponse.Ramadan ramadan = vista.getRamadan();
+        mostrarRamadan(vista.getRamadan());
+    }
+
+    /**
+     * Pinta el banner de Ramadán/Eid. Reutilizada tanto por el flujo real
+     * (vista_manana, arriba) como por el botón de demo RAMADÁN (llama a
+     * preview_ramadan) — mismo código de render para los dos casos.
+     */
+    private void mostrarRamadan(VistaMañanaResponse.Ramadan ramadan) {
         if (ramadan != null && ramadan.esEid) {
             tvRamadanTitulo.setText("Eid al-Fitr");
             tvRamadanDetalle.setText(ramadan.nota);
@@ -546,16 +605,6 @@ public class HomeActivity extends BaseActivity {
      */
     private void pintarColorSueno(int score) {
         tvSleepScore.setTextColor(getColor(score < 50 ? R.color.error : R.color.text_primary));
-    }
-
-    /** "2026-08-31" → "31 de agosto de 2026" (fecha_inicio_plan viene siempre en yyyy-MM-dd). */
-    private String formatearFechaLarga(String fechaIso) {
-        try {
-            Date fecha = new SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(fechaIso);
-            return new SimpleDateFormat("d 'de' MMMM 'de' yyyy", new Locale("es", "ES")).format(fecha);
-        } catch (Exception e) {
-            return fechaIso;
-        }
     }
 
     private void actualizarPasos() {

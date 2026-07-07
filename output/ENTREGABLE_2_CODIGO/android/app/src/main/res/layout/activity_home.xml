@@ -85,34 +85,6 @@
             android:paddingTop="10dp"
             android:paddingBottom="12dp">
 
-        <!-- ═══ BANNER PRETEMPORADA (el plan de 11 meses aún no ha empezado) ═══ -->
-        <LinearLayout
-            android:id="@+id/bannerPretemporada"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:background="@drawable/bg_card_flat"
-            android:padding="10dp"
-            android:visibility="gone">
-
-            <TextView
-                android:id="@+id/tvPretemporadaTitulo"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Pretemporada"
-                android:textSize="13sp"
-                android:fontFamily="sans-serif-medium"
-                android:textColor="@color/accent" />
-
-            <TextView
-                android:id="@+id/tvPretemporadaDetalle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:textSize="12sp"
-                android:textColor="@color/text_secondary" />
-        </LinearLayout>
-
         <!-- ═══ BANNER AUSENCIA ═══ -->
         <LinearLayout
             android:id="@+id/bannerAusencia"
@@ -567,5 +539,62 @@
         </LinearLayout>
     </LinearLayout>
 </ScrollView>
+
+    <!-- ═══ BOTONES DE DESARROLLO (Constants.MOSTRAR_BOTONES_DEMO) ═══
+         Flotantes, fuera del flujo del ScrollView, para no afectar la
+         composición real. Visibilidad controlada en HomeActivity a partir
+         de un único flag en código. -->
+    <Button
+        android:id="@+id/btnTest"
+        android:layout_width="wrap_content"
+        android:layout_height="36dp"
+        android:layout_gravity="top|end"
+        android:layout_margin="12dp"
+        android:alpha="0.85"
+        android:paddingHorizontal="12dp"
+        android:text="TEST"
+        android:textSize="11sp"
+        android:background="@drawable/button_secondary" />
+
+    <Button
+        android:id="@+id/btnPreviewFase"
+        android:layout_width="wrap_content"
+        android:layout_height="36dp"
+        android:layout_gravity="top|end"
+        android:layout_marginTop="56dp"
+        android:layout_marginEnd="12dp"
+        android:alpha="0.85"
+        android:paddingHorizontal="12dp"
+        android:text="FASE"
+        android:textSize="11sp"
+        android:background="@drawable/button_secondary" />
+
+    <Button
+        android:id="@+id/btnPreviewEntreno"
+        android:layout_width="wrap_content"
+        android:layout_height="36dp"
+        android:layout_gravity="top|end"
+        android:layout_marginTop="100dp"
+        android:layout_marginEnd="12dp"
+        android:alpha="0.85"
+        android:paddingHorizontal="12dp"
+        android:text="ENTRENO"
+        android:textSize="11sp"
+        android:background="@drawable/button_secondary" />
+
+    <!-- Previsualiza el banner de Ramadán/Eid — solo cae ~1 mes/año, sin
+         esto no habría forma de verlo el resto del tiempo. -->
+    <Button
+        android:id="@+id/btnPreviewRamadan"
+        android:layout_width="wrap_content"
+        android:layout_height="36dp"
+        android:layout_gravity="top|end"
+        android:layout_marginTop="144dp"
+        android:layout_marginEnd="12dp"
+        android:alpha="0.85"
+        android:paddingHorizontal="12dp"
+        android:text="RAMADÁN"
+        android:textSize="11sp"
+        android:background="@drawable/button_secondary" />
 
 </FrameLayout>

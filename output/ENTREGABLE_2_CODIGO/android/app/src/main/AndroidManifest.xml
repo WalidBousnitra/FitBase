@@ -80,6 +80,24 @@
             android:name=".ui.progression.ProgressionActivity"
             android:screenOrientation="portrait" />
 
+        <!-- Test Runner de integración real — solo alcanzable desde el botón
+             de demo en Home (Constants.MOSTRAR_BOTONES_DEMO). -->
+        <activity
+            android:name=".ui.test.TestRunnerActivity"
+            android:screenOrientation="portrait" />
+
+        <!-- FileProvider: expone únicamente getExternalFilesDir()/test_logs
+             para que TestRunnerActivity pueda compartir el log de test. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
         <!-- Servicio Timer (Foreground) -->
         <service
             android:name=".service.TimerService"

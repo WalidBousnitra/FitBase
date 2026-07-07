@@ -73,6 +73,16 @@ public class Ejercicio {
     @SerializedName("str_equipamiento")
     private String equipamiento;
 
+    // Doble progresión sin carga externa (Suelo bodyweight/Banda/Pared —
+    // ver esProgresionSinPeso_ en Codigo.gs): cuando sinPeso es true, el
+    // motor progresa por REPS/segundos en vez de por kg, y pesoSugerido
+    // siempre viene a 0 (no es "sin datos", es que no aplica).
+    @SerializedName("sin_peso")
+    private boolean sinPeso;
+
+    @SerializedName("reps_sugeridas")
+    private Integer repsSugeridas;
+
     // ─── Motor capas (detalle de la decisión) ───
     public static class MotorCapas {
         @SerializedName("base")
@@ -143,6 +153,8 @@ public class Ejercicio {
     public String getNombre() { return nombre; }
     public String getGrupoMuscular() { return grupoMuscular; }
     public String getEquipamiento() { return equipamiento; }
+    public boolean isSinPeso() { return sinPeso; }
+    public Integer getRepsSugeridas() { return repsSugeridas; }
 
     /**
      * Salto del +/- de peso según el equipo (usuario/equipamiento.md):
@@ -176,15 +188,28 @@ public class Ejercicio {
 
     public void ajustarPesoActual(float delta) { setPesoActual(getPesoActual() + delta); }
 
-    /** Texto legible del peso actual: "82.5 kg" o "Elige tu peso" si es 0. */
+    /**
+     * Texto legible del peso actual: "82.5 kg", "Elige tu peso" si es 0, o
+     * "Peso corporal · objetivo N reps" para ejercicios sin carga externa
+     * (doble progresión por reps — ver isSinPeso()).
+     */
     public String getPesoTexto() {
+        if (sinPeso) {
+            return repsSugeridas != null
+                    ? "Peso corporal · objetivo " + repsSugeridas + (esObjetivoTiempo() ? "s" : " reps")
+                    : "Peso corporal";
+        }
         float p = getPesoActual();
         if (p <= 0) return "Elige tu peso";
         return String.format("%.1f kg", p).replace(",0 ", " ");
     }
 
+    private boolean esObjetivoTiempo() {
+        return repsPlan != null && repsPlan.trim().toLowerCase(java.util.Locale.ROOT).endsWith("s");
+    }
+
     /** Si aún no hay un peso real fijado (ni sugerido por el motor, ni ajustado a mano). */
-    public boolean necesitaPesoManual() { return getPesoActual() <= 0; }
+    public boolean necesitaPesoManual() { return !sinPeso && getPesoActual() <= 0; }
 
     /** Nombre corto para UI. */
     public String getNombreCorto() {

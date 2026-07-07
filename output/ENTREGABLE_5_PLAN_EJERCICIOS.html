@@ -55,6 +55,19 @@
         .changes-list li strong { color: var(--text); }
 
         .footer { text-align: center; padding: 40px; color: var(--text3); font-size: 0.8rem; border-top: 1px solid var(--surface2); max-width: 900px; margin: 0 auto; }
+
+        /* ── Timeline anual ── */
+        .timeline { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 4px; margin: 16px 0; padding-bottom: 6px; }
+        .timeline .fase-block { flex: 0 0 auto; border-radius: 8px; padding: 10px 10px; font-size: 0.68rem; line-height: 1.35; }
+        .timeline .fase-block .f-nombre { font-weight: 600; font-size: 0.72rem; white-space: nowrap; }
+        .timeline .fase-block .f-fecha { opacity: .85; white-space: nowrap; margin-top: 2px; }
+        .timeline-legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 10px; font-size: 0.72rem; color: var(--text2); }
+        .timeline-legend .sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: middle; }
+
+        /* ── Caso de estudio / progresión ── */
+        .case-table td.up { color: var(--success); }
+        .case-table td.down { color: var(--error); }
+        .case-table td.flat { color: var(--text3); }
     </style>
 </head>
 <body>
@@ -317,6 +330,88 @@ FAS_13,Deload 6,DELOAD,2027-06-28,2027-07-04,1,5-6,Descarga media-temporada peak
 FAS_14,Peak Estético II + Mant.,MNT,2027-07-05,2027-08-01,4,2-3,Ratio cintura/hombros,mantener,2855,156,382,78</pre>
     </div>
     <div class="info-box"><strong>Ramadán 2027 (08 feb – 10 mar):</strong> cae a mitad de Fuerza (FAS_06) y mitad de Hipertrofia III (FAS_08) — automático en Codigo.gs (RAMADAN_FECHAS): -30% volumen esos días, cardio anulado, macros reencuadradas a Iftar/Suhur. Eid al-Fitr (11 mar): día de excepción.</div>
+
+    <h2 style="margin-top:32px;">Timeline: cómo se ve el año completo</h2>
+    <p class="sec-desc">Las mismas 14 fases de arriba, pero en el tiempo — de un vistazo, qué tipo de bloque toca cada mes entre el 31/08/2026 y el 01/08/2027. El ancho de cada bloque es proporcional a sus semanas.</p>
+    <div class="day-block" style="overflow-x:auto;">
+        <div class="timeline">
+            <div class="fase-block" style="width:130px; background:var(--accent); color:#fff;"><div class="f-nombre">FAS_01 Adaptación</div><div class="f-fecha">31 ago – 27 sep · 4 sem</div></div>
+            <div class="fase-block" style="width:190px; background:var(--accent); color:#fff;"><div class="f-nombre">FAS_02 Hipertrofia I (V-Taper)</div><div class="f-fecha">28 sep – 8 nov · 6 sem</div></div>
+            <div class="fase-block" style="width:44px; background:var(--surface2); color:var(--text3);"><div class="f-nombre">D1</div><div class="f-fecha">9-15 nov</div></div>
+            <div class="fase-block" style="width:190px; background:var(--accent); color:#fff;"><div class="f-nombre">FAS_04 Hipertrofia II (Brazos)</div><div class="f-fecha">16 nov – 27 dic · 6 sem</div></div>
+            <div class="fase-block" style="width:44px; background:var(--surface2); color:var(--text3);"><div class="f-nombre">D2</div><div class="f-fecha">28 dic-3 ene</div></div>
+            <div class="fase-block" style="width:190px; background:var(--warning); color:var(--bg);"><div class="f-nombre">FAS_06 Fuerza</div><div class="f-fecha">4 ene – 14 feb · 6 sem<br><b>⌐ Ramadán empieza 8 feb</b></div></div>
+            <div class="fase-block" style="width:44px; background:var(--surface2); color:var(--text3);"><div class="f-nombre">D3</div><div class="f-fecha">15-21 feb<br>(Ramadán)</div></div>
+            <div class="fase-block" style="width:190px; background:var(--accent); color:#fff;"><div class="f-nombre">FAS_08 Hipertrofia III (Balance)</div><div class="f-fecha">22 feb – 4 abr · 6 sem<br><b>Ramadán hasta 10 mar · Eid 11 mar</b></div></div>
+            <div class="fase-block" style="width:44px; background:var(--surface2); color:var(--text3);"><div class="f-nombre">D4</div><div class="f-fecha">5-11 abr</div></div>
+            <div class="fase-block" style="width:190px; background:var(--error); color:#fff;"><div class="f-nombre">FAS_10 Definición</div><div class="f-fecha">12 abr – 23 may · 6 sem · cut</div></div>
+            <div class="fase-block" style="width:44px; background:var(--surface2); color:var(--text3);"><div class="f-nombre">D5</div><div class="f-fecha">24-30 may</div></div>
+            <div class="fase-block" style="width:130px; background:var(--success); color:var(--bg);"><div class="f-nombre">FAS_12 Peak Estético I</div><div class="f-fecha">31 may – 27 jun · 4 sem</div></div>
+            <div class="fase-block" style="width:44px; background:var(--surface2); color:var(--text3);"><div class="f-nombre">D6</div><div class="f-fecha">28 jun-4 jul</div></div>
+            <div class="fase-block" style="width:130px; background:var(--success); color:var(--bg);"><div class="f-nombre">FAS_14 Peak Estético II</div><div class="f-fecha">5 jul – 1 ago · 4 sem</div></div>
+        </div>
+        <div class="timeline-legend">
+            <span><span class="sw" style="background:var(--accent);"></span>VOL — Hipertrofia</span>
+            <span><span class="sw" style="background:var(--warning);"></span>FZA — Fuerza</span>
+            <span><span class="sw" style="background:var(--error);"></span>DEF — Definición (cut)</span>
+            <span><span class="sw" style="background:var(--success);"></span>MNT — Peak / Mantenimiento</span>
+            <span><span class="sw" style="background:var(--surface2);"></span>DELOAD (D1-D6)</span>
+        </div>
+    </div>
+    <div class="info-box">11 meses, 14 fases, 6 deloads repartidos cada 4-6 semanas (periodizacion.md §7 — antes había huecos de 12-17 semanas sin descarga, ya corregido). El único solape real es Ramadán (8 feb-10 mar), que cruza el final de Fuerza y el arranque de Hipertrofia III sin mover ninguna fecha de fase — solo recorta volumen esos días.</div>
+</section>
+
+<!-- CASO DE ESTUDIO: UN EJERCICIO A LO LARGO DEL AÑO -->
+<section>
+    <h2>Caso de estudio: un ejercicio a lo largo del año</h2>
+    <p class="sec-desc">Ejemplo inventado (los números son ilustrativos, no vienen de logs reales) para enseñar cómo el motor de 6 capas (<code>motor_pesos.md</code>) mueve el peso sesión a sesión. Ejercicio elegido: <b>Press hombro mancuernas</b> (EJE_PRESS_HOMB) — aparece en casi todas las fases del año, incluida Fuerza (ahí con menos reps y más peso), así que es el mejor para ver el arco completo.</p>
+
+    <div class="day-block" style="overflow-x:auto;">
+        <table class="ex-table case-table">
+            <tr><th>Fase</th><th>Fecha</th><th>Series×Reps@RIR</th><th>Peso sugerido</th><th>Qué hizo el motor</th></tr>
+            <tr><td>Adaptación</td><td>31 ago</td><td>4×8-10 @ RIR3-4</td><td>—</td><td>Primer uso → "Elige tu peso". El usuario pone <b>22kg</b>.</td></tr>
+            <tr><td>Adaptación</td><td>14 sep</td><td>4×8-10 @ RIR3-4</td><td class="up">23kg</td><td>Mejor set: 11 reps @ RIR3 → delta=(11+3)-(10+3)=<b>+1</b> → +5%. 22×1.05=23.1 → redondeo 23. Mancuernas saltan de 2 en 2 → ajustas a <b>24kg</b> con el stepper.</td></tr>
+            <tr><td>Hipertrofia I</td><td>5 oct</td><td>4×8-10 @ RIR2-3</td><td class="up">26kg</td><td>Racha buena: 12 reps @ RIR2 → delta=+2 → +5%. 24×1.05=25.2→25, stepper a 26.</td></tr>
+            <tr><td>Hipertrofia I</td><td>2 nov</td><td>4×8-10 @ RIR2-3</td><td class="down">24.75kg</td><td>Viaje de trabajo, 9 días sin tocar este ejercicio → Capa 5 (gap &gt;7d) ×0.95. 26×0.95=24.7→24.75. No es un fallo, es el motor protegiendo un desentrenamiento parcial real.</td></tr>
+            <tr><td><b>Deload 1</b></td><td>9-15 nov</td><td>3×8-10 @ RIR5-6</td><td class="down">21.75kg</td><td>Series 4→3 (−40%, redondeado arriba, mín. 2). Peso ×0.875 (Bompa 2019): 24.75×0.875=21.66→21.75. Todo se siente fácil a propósito.</td></tr>
+            <tr><td>Hipertrofia II</td><td>23 nov</td><td>4×8-10 @ RIR2-3</td><td class="up">24.5kg</td><td>Vuelta post-deload: rendimiento sube rápido las 2 primeras semanas (normal, no es "el motor siendo blando"). No es grupo foco de esta fase (Bíceps+Tríceps+Pecho) ni aislamiento → MAV no le toca las series, quedan fijas en 4.</td></tr>
+            <tr><td>Hipertrofia II</td><td>21 dic</td><td>4×8-10 @ RIR2-3</td><td class="up">26kg</td><td>Progresión normal, sin sorpresas. Vuelve al nivel pre-deload y lo supera un poco.</td></tr>
+            <tr><td><b>Deload 2</b></td><td>28 dic-3 ene</td><td>3×8-10 @ RIR5-6</td><td class="down">22.75kg</td><td>Mismo patrón: ×0.875 sobre 26.</td></tr>
+            <tr><td>Fuerza</td><td>11 ene</td><td>4×5-7 @ RIR1-2</td><td class="flat">24kg</td><td>Cambia el objetivo (menos reps, RIR más bajo, cap de subida ±10% en vez de ±5% — Bompa 2019). Recuperando volumen tras el deload.</td></tr>
+            <tr><td>Fuerza</td><td>1 feb</td><td>4×5-7 @ RIR1-2</td><td class="up">26.5kg</td><td>PR real: delta grande → +10% (tope de fase FZA, el mayor del año). 24×1.10=26.4→26.5.</td></tr>
+            <tr><td>Fuerza</td><td>12 feb</td><td>3×5-7 @ RIR1-2</td><td class="flat">26.5kg</td><td>Ramadán activo (desde 8 feb): series 4→3 (-30% volumen), pero <b>el peso NO se toca</b> — cultura.md es explícito: la intensidad se mantiene, solo cambia el volumen y el horario (30-60 min antes de Iftar).</td></tr>
+            <tr><td><b>Deload 3</b></td><td>15-21 feb</td><td>2×5-7 @ RIR5-6</td><td class="down">23.25kg</td><td>Deload dentro de Ramadán: -40% sobre las 3 series ya reducidas → 2 (mínimo). ×0.875 sobre 26.5.</td></tr>
+            <tr><td>Hipertrofia III</td><td>1 mar</td><td>3×8-10 @ RIR2-3</td><td class="flat">24kg</td><td>Vuelve a reps de hipertrofia. Todavía en Ramadán (termina 10 mar) → series aún recortadas -30%.</td></tr>
+            <tr><td>Hipertrofia III</td><td>11 mar</td><td>—</td><td class="flat">—</td><td><b>Eid al-Fitr</b>: día de excepción — "no trackear estrictamente, disfruta con la familia" (cultura.md §6). Sin sesión ni ajuste ese día.</td></tr>
+            <tr><td>Hipertrofia III</td><td>28 mar</td><td>4×8-10 @ RIR2-3</td><td class="up">25kg</td><td>Post-Ramadán, series de vuelta a 4. Progresión normal — no es grupo foco (Piernas+Core), pero al ser compuesto tampoco le habría afectado el MAV aunque lo fuera.</td></tr>
+            <tr><td><b>Deload 4</b></td><td>5-11 abr</td><td>3×8-10 @ RIR5-6</td><td class="down">22kg</td><td>×0.875 sobre 25: 25×0.875=21.875→redondeo 22.</td></tr>
+            <tr><td>Definición</td><td>26 abr</td><td>4×8-10 @ RIR2-3</td><td class="flat">22.25kg</td><td>Sesión fácil (delta+1 → normalmente +5%), pero DEF capa la fase a ±3% Y el cut capa la subida al 50% (Capa 4, Helms 2014) → +1.5% efectivo. Progresión deliberadamente lenta — es la fase, no un fallo del motor.</td></tr>
+            <tr><td>Definición</td><td>17 may</td><td>4×8-10 @ RIR2-3</td><td class="flat">22.25kg</td><td>Se mantiene — en déficit calórico es normal y esperado no progresar en fuerza (motor_dieta.md, Helms 2014). El volumen NO se recorta por estar en cut, solo la subida de peso.</td></tr>
+            <tr><td><b>Deload 5</b></td><td>24-30 may</td><td>3×8-10 @ RIR5-6</td><td class="down">19.5kg</td><td>Transición cut→mantenimiento. 22.25×0.875=19.47→redondeo 19.5.</td></tr>
+            <tr><td>Peak Estético I</td><td>10 jun</td><td>4×8-10 @ RIR2-3</td><td class="up">21kg</td><td>Ya en mantenimiento (isocalórico) — recupera parte de lo bajado en el cut a lo largo de 3 sesiones (cap de fase MNT ±2.5%/sesión, la más conservadora junto a DEF): 19.5→20→20.5→21. El objetivo es conservar, no ganar.</td></tr>
+            <tr><td><b>Deload 6</b></td><td>28 jun-4 jul</td><td>3×8-10 @ RIR5-6</td><td class="down">18.5kg</td><td>Último deload del plan: 21×0.875=18.375→redondeo 18.5.</td></tr>
+            <tr><td>Peak Estético II</td><td>1 ago</td><td>4×8-10 @ RIR2-3</td><td class="up">~24-25kg</td><td>Última sesión del plan de 11 meses. El foco de Peak Estético es el ratio cintura/hombros, no PRs — cierra cerca del pico ya alcanzado en Hipertrofia III.</td></tr>
+        </table>
+    </div>
+    <div class="info-box"><strong>Lectura del año completo:</strong> de 22kg a ~24-25kg en 11 meses (~10-15%) para un ejercicio compuesto de hombro en alguien intermedio-avanzado — realista, ni estancado ni meteórico. El camino no es una línea recta: sube en VOL/FZA, cae en cada deload, se aplana en el cut, y una vez (el viaje de trabajo) baja por un hueco de descanso real. Eso es autorregulación funcionando, no ruido.</div>
+</section>
+
+<!-- PROGRESIÓN MOVILIDAD MATUTINA -->
+<section>
+    <h2>Progresión de movilidad matutina a lo largo del año</h2>
+    <p class="sec-desc">La rutina de movilidad (<code>getMovilidadMatutina_</code>, Ruivo 2017 + Hansraj 2014) es diaria desde el día 1, pero no es estática: cada 4 semanas sube un "tramo" de progresión, hasta un tope de 3 tramos (~12 semanas). Los <b>ejercicios son siempre los mismos</b> — solo suben las reps, los segundos de hold y la duración total.</p>
+
+    <div class="day-block" style="overflow-x:auto;">
+        <table class="ex-table">
+            <tr><th>Semanas</th><th>Tramo</th><th>Duración</th><th>Reps (chin tucks, cat-cow, rotación, dead bugs)</th><th>Hold (extensión torácica)</th></tr>
+            <tr><td>1-4</td><td>0 (inicial)</td><td>6 min</td><td>10 reps</td><td>30s</td></tr>
+            <tr><td>5-8</td><td>1</td><td>7 min</td><td>12 reps</td><td>35s</td></tr>
+            <tr><td>9-12</td><td>2</td><td>8 min</td><td>14 reps</td><td>40s</td></tr>
+            <tr><td>13 en adelante</td><td>3 (tope)</td><td>9 min</td><td>16 reps</td><td>45s</td></tr>
+        </table>
+        <p class="sec-desc" style="margin-top:8px;">Con el plan empezando el 31/08/2026, el tramo 3 se alcanza hacia el <b>23 de noviembre de 2026</b> (semana 13) y se mantiene ahí <b>los 8 meses restantes</b> del plan — progresar más allá no tiene respaldo en Ruivo 2017 (el protocolo original no escala indefinidamente, la progresión gradual es para las primeras 12-16 semanas).</p>
+    </div>
+    <div class="info-box"><strong>Por qué se mantiene el mismo ejercicio:</strong> Ruivo 2017 evalúa un protocolo correctivo fijo con frecuencia diaria — el resultado del paper viene de la consistencia, no de variar el ejercicio. Cambiar de ejercicio cada mes rompería la comparabilidad con la evidencia sin ninguna ganancia real.</div>
 </section>
 
 <!-- CATÁLOGO -->
