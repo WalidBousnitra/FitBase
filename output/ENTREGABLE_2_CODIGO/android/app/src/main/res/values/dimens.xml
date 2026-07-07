@@ -35,4 +35,17 @@
     <dimen name="text_hero">64sp</dimen>
     <!-- Timer (número hero, cuenta atrás) -->
     <dimen name="text_timer_hero">72sp</dimen>
+
+    <!-- Tipografía propia de Home (escala bespoke del dashboard matutino,
+         no coincide con TextAppearance.FitBase genérico) — en su propio
+         dimen para que values-sw600dp pueda escalarla en tablet. -->
+    <dimen name="home_text_greeting">23sp</dimen>
+    <dimen name="home_text_meta">13sp</dimen>
+    <dimen name="home_text_chip">12sp</dimen>
+    <dimen name="home_text_label">10sp</dimen>
+    <dimen name="home_text_label_xs">9sp</dimen>
+    <dimen name="home_text_value_sm">16sp</dimen>
+    <dimen name="home_text_value_md">18sp</dimen>
+    <dimen name="home_text_value_lg">20sp</dimen>
+    <dimen name="home_text_value_xl">28sp</dimen>
 </resources>

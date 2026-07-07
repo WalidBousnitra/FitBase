@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Overrides para pantallas anchas (sw600dp+: tablets 7"+ y plegables
+         abiertos). Mismos NOMBRES que values/dimens.xml — el sistema elige
+         este set automáticamente por ancho de pantalla, sin tocar layouts
+         ni código. Escala ~1.25x en espaciado, ~1.15x en tipografía (el
+         texto no necesita crecer tanto como el espaciado para seguir
+         viéndose bien). -->
+
+    <dimen name="radius_card">24dp</dimen>
+    <dimen name="radius_button">20dp</dimen>
+
+    <dimen name="space_xxs">5dp</dimen>
+    <dimen name="space_xs">8dp</dimen>
+    <dimen name="space_sm">10dp</dimen>
+    <dimen name="space_md">16dp</dimen>
+    <dimen name="space_lg">20dp</dimen>
+    <dimen name="space_xl">26dp</dimen>
+    <dimen name="space_xxl">30dp</dimen>
+    <dimen name="space_xxxl">40dp</dimen>
+
+    <dimen name="screen_padding">28dp</dimen>
+    <dimen name="card_padding">22dp</dimen>
+    <dimen name="tile_padding">14dp</dimen>
+
+    <!-- El área táctil mínima Material no debe encogerse nunca, pero en
+         tablet puede crecer un poco (dedos a mayor distancia de la pantalla). -->
+    <dimen name="touch_target_min">52dp</dimen>
+
+    <dimen name="text_display_metric">40sp</dimen>
+    <dimen name="text_header">25sp</dimen>
+    <dimen name="text_hero">70sp</dimen>
+    <dimen name="text_timer_hero">80sp</dimen>
+
+    <dimen name="home_text_greeting">27sp</dimen>
+    <dimen name="home_text_meta">15sp</dimen>
+    <dimen name="home_text_chip">14sp</dimen>
+    <dimen name="home_text_label">12sp</dimen>
+    <dimen name="home_text_label_xs">10sp</dimen>
+    <dimen name="home_text_value_sm">18sp</dimen>
+    <dimen name="home_text_value_md">20sp</dimen>
+    <dimen name="home_text_value_lg">23sp</dimen>
+    <dimen name="home_text_value_xl">32sp</dimen>
+</resources>

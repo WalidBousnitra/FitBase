@@ -4,9 +4,20 @@
     android:layout_height="match_parent"
     android:background="@color/background">
 
-<ScrollView
+<!-- ═══ STACK RAÍZ: ocupa el 100% vertical disponible (insets de barra de
+     estado/gestos ya aplicados como padding en InsetsHelper). El scroll de
+     arriba se estira o encoge con el contenido del día; el bloque de
+     acción de abajo queda siempre anclado al borde inferior real de la
+     pantalla, en vez de flotar con hueco vacío debajo. ═══ -->
+<LinearLayout
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical">
+
+<ScrollView
+    android:layout_width="match_parent"
+    android:layout_height="0dp"
+    android:layout_weight="1"
     android:fillViewport="true">
 
     <LinearLayout
@@ -20,16 +31,16 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:background="@drawable/bg_hero_panel"
-            android:paddingHorizontal="18dp"
-            android:paddingTop="12dp"
-            android:paddingBottom="12dp">
+            android:paddingHorizontal="@dimen/screen_padding"
+            android:paddingTop="@dimen/space_md"
+            android:paddingBottom="@dimen/space_md">
 
             <TextView
                 android:id="@+id/tvSaludo"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Buenos días"
-                android:textSize="23sp"
+                android:textSize="@dimen/home_text_greeting"
                 android:textColor="@color/text_primary"
                 android:fontFamily="sans-serif-black"
                 android:letterSpacing="-0.01" />
@@ -39,7 +50,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="miércoles 2 de julio"
-                android:textSize="13sp"
+                android:textSize="@dimen/home_text_meta"
                 android:textColor="@color/text_secondary"
                 android:layout_marginTop="2dp" />
 
@@ -47,7 +58,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:layout_marginTop="10dp"
+                android:layout_marginTop="@dimen/space_sm"
                 android:gravity="center_vertical">
 
                 <TextView
@@ -55,24 +66,24 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="—"
-                    android:textSize="12sp"
+                    android:textSize="@dimen/home_text_chip"
                     android:fontFamily="sans-serif-medium"
                     android:textColor="@color/accent"
                     android:background="@drawable/bg_chip_accent"
-                    android:paddingHorizontal="12dp"
-                    android:paddingVertical="6dp" />
+                    android:paddingHorizontal="@dimen/space_md"
+                    android:paddingVertical="@dimen/space_xs" />
 
                 <TextView
                     android:id="@+id/tvFaseNombre"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
+                    android:layout_marginStart="@dimen/space_sm"
                     android:text="Hipertrofia I"
-                    android:textSize="12sp"
+                    android:textSize="@dimen/home_text_chip"
                     android:textColor="@color/text_secondary"
                     android:background="@drawable/bg_badge_actual"
-                    android:paddingHorizontal="12dp"
-                    android:paddingVertical="6dp"
+                    android:paddingHorizontal="@dimen/space_md"
+                    android:paddingVertical="@dimen/space_xs"
                     android:visibility="gone" />
             </LinearLayout>
         </LinearLayout>
@@ -81,9 +92,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingHorizontal="18dp"
-            android:paddingTop="10dp"
-            android:paddingBottom="12dp">
+            android:paddingHorizontal="@dimen/screen_padding"
+            android:paddingTop="@dimen/space_sm"
+            android:paddingBottom="@dimen/space_md">
 
         <!-- ═══ BANNER AUSENCIA ═══ -->
         <LinearLayout
@@ -92,15 +103,15 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:background="@drawable/bg_card_flat"
-            android:padding="12dp"
-            android:layout_marginTop="8dp"
+            android:padding="@dimen/space_md"
+            android:layout_marginTop="@dimen/space_sm"
             android:visibility="gone">
 
             <TextView
                 android:id="@+id/tvAusenciaMensaje"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textSize="12sp"
+                android:textSize="@dimen/home_text_chip"
                 android:textColor="@color/text_secondary" />
         </LinearLayout>
 
@@ -111,15 +122,15 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:background="@drawable/bg_card_flat"
-            android:padding="12dp"
-            android:layout_marginTop="8dp"
+            android:padding="@dimen/space_md"
+            android:layout_marginTop="@dimen/space_sm"
             android:visibility="gone">
 
             <TextView
                 android:id="@+id/tvRamadanTitulo"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textSize="13sp"
+                android:textSize="@dimen/home_text_meta"
                 android:fontFamily="sans-serif-medium"
                 android:textColor="@color/accent" />
 
@@ -127,8 +138,8 @@
                 android:id="@+id/tvRamadanDetalle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:textSize="12sp"
+                android:layout_marginTop="@dimen/space_xxs"
+                android:textSize="@dimen/home_text_chip"
                 android:textColor="@color/text_secondary" />
         </LinearLayout>
 
@@ -138,8 +149,8 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:background="@drawable/bg_card_flat"
-            android:padding="12dp"
-            android:layout_marginTop="10dp">
+            android:padding="@dimen/space_md"
+            android:layout_marginTop="@dimen/space_sm">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -155,7 +166,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="SUEÑO"
-                        android:textSize="10sp"
+                        android:textSize="@dimen/home_text_label"
                         android:fontFamily="sans-serif-medium"
                         android:letterSpacing="0.04"
                         android:textColor="@color/text_tertiary" />
@@ -164,7 +175,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="—"
-                        android:textSize="20sp"
+                        android:textSize="@dimen/home_text_value_lg"
                         android:fontFamily="sans-serif-black"
                         android:textColor="@color/text_primary" />
                 </LinearLayout>
@@ -179,12 +190,12 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:orientation="vertical"
-                    android:paddingStart="14dp">
+                    android:paddingStart="@dimen/space_md">
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="FC REPOSO"
-                        android:textSize="10sp"
+                        android:textSize="@dimen/home_text_label"
                         android:fontFamily="sans-serif-medium"
                         android:letterSpacing="0.04"
                         android:textColor="@color/text_tertiary" />
@@ -193,7 +204,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="—"
-                        android:textSize="20sp"
+                        android:textSize="@dimen/home_text_value_lg"
                         android:fontFamily="sans-serif-black"
                         android:textColor="@color/text_primary" />
                 </LinearLayout>
@@ -204,17 +215,17 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Sueño pobre — sesión reducida"
-                android:textSize="12sp"
+                android:textSize="@dimen/home_text_chip"
                 android:textColor="@color/warning"
-                android:layout_marginTop="6dp"
+                android:layout_marginTop="@dimen/space_xs"
                 android:visibility="gone" />
 
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
                 android:background="@color/colorSeparator"
-                android:layout_marginTop="10dp"
-                android:layout_marginBottom="10dp" />
+                android:layout_marginTop="@dimen/space_sm"
+                android:layout_marginBottom="@dimen/space_sm" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -227,7 +238,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="0"
-                    android:textSize="18sp"
+                    android:textSize="@dimen/home_text_value_md"
                     android:fontFamily="sans-serif-black"
                     android:textColor="@color/text_primary" />
 
@@ -236,9 +247,9 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="/ — pasos"
-                    android:textSize="13sp"
+                    android:textSize="@dimen/home_text_meta"
                     android:textColor="@color/text_tertiary"
-                    android:layout_marginStart="4dp" />
+                    android:layout_marginStart="@dimen/space_xxs" />
             </LinearLayout>
 
             <ProgressBar
@@ -246,7 +257,7 @@
                 style="@android:style/Widget.ProgressBar.Horizontal"
                 android:layout_width="match_parent"
                 android:layout_height="8dp"
-                android:layout_marginTop="6dp"
+                android:layout_marginTop="@dimen/space_xs"
                 android:progressDrawable="@drawable/progress_pasos"
                 android:max="8000" />
 
@@ -255,9 +266,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="20 min bici post-gym"
-                android:textSize="12sp"
+                android:textSize="@dimen/home_text_chip"
                 android:textColor="@color/text_secondary"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="@dimen/space_sm"
                 android:visibility="gone" />
         </LinearLayout>
 
@@ -266,18 +277,18 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="MACROS RESTANTES"
-            android:textSize="10sp"
+            android:textSize="@dimen/home_text_label"
             android:fontFamily="sans-serif-medium"
             android:letterSpacing="0.04"
             android:textColor="@color/text_tertiary"
-            android:layout_marginTop="10dp" />
+            android:layout_marginTop="@dimen/space_sm" />
 
         <TextView
             android:id="@+id/tvCaloriasRestantes"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="—"
-            android:textSize="28sp"
+            android:textSize="@dimen/home_text_value_xl"
             android:textColor="@color/accent"
             android:fontFamily="sans-serif-black"
             android:letterSpacing="-0.02" />
@@ -287,7 +298,7 @@
             style="@android:style/Widget.ProgressBar.Horizontal"
             android:layout_width="match_parent"
             android:layout_height="10dp"
-            android:layout_marginTop="6dp"
+            android:layout_marginTop="@dimen/space_xs"
             android:progressDrawable="@drawable/progress_calorias"
             android:max="3280" />
 
@@ -295,7 +306,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginTop="8dp">
+            android:layout_marginTop="@dimen/space_sm">
 
             <LinearLayout
                 android:layout_width="0dp"
@@ -304,18 +315,18 @@
                 android:orientation="vertical"
                 android:gravity="center"
                 android:background="@drawable/bg_macro_card"
-                android:padding="8dp">
+                android:padding="@dimen/tile_padding">
                 <View
                     android:layout_width="6dp"
                     android:layout_height="6dp"
-                    android:layout_marginBottom="4dp"
+                    android:layout_marginBottom="@dimen/space_xxs"
                     android:background="@drawable/shape_dot"
                     android:backgroundTint="@color/colorProteina" />
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="PROT" android:textSize="9sp" android:fontFamily="sans-serif-medium" android:textColor="@color/text_tertiary" />
+                    android:text="PROT" android:textSize="@dimen/home_text_label_xs" android:fontFamily="sans-serif-medium" android:textColor="@color/text_tertiary" />
                 <TextView android:id="@+id/tvProtRestante" android:layout_width="wrap_content"
                     android:layout_height="wrap_content" android:text="—"
-                    android:textSize="16sp" android:fontFamily="sans-serif-medium" android:textColor="@color/colorProteina" />
+                    android:textSize="@dimen/home_text_value_sm" android:fontFamily="sans-serif-medium" android:textColor="@color/colorProteina" />
             </LinearLayout>
 
             <LinearLayout
@@ -325,19 +336,19 @@
                 android:orientation="vertical"
                 android:gravity="center"
                 android:background="@drawable/bg_macro_card"
-                android:padding="10dp"
-                android:layout_marginStart="8dp">
+                android:padding="@dimen/tile_padding"
+                android:layout_marginStart="@dimen/space_sm">
                 <View
                     android:layout_width="6dp"
                     android:layout_height="6dp"
-                    android:layout_marginBottom="4dp"
+                    android:layout_marginBottom="@dimen/space_xxs"
                     android:background="@drawable/shape_dot"
                     android:backgroundTint="@color/colorCarbos" />
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="CARBOS" android:textSize="9sp" android:fontFamily="sans-serif-medium" android:textColor="@color/text_tertiary" />
+                    android:text="CARBOS" android:textSize="@dimen/home_text_label_xs" android:fontFamily="sans-serif-medium" android:textColor="@color/text_tertiary" />
                 <TextView android:id="@+id/tvCarbosRestantes" android:layout_width="wrap_content"
                     android:layout_height="wrap_content" android:text="—"
-                    android:textSize="16sp" android:fontFamily="sans-serif-medium" android:textColor="@color/colorCarbos" />
+                    android:textSize="@dimen/home_text_value_sm" android:fontFamily="sans-serif-medium" android:textColor="@color/colorCarbos" />
             </LinearLayout>
 
             <LinearLayout
@@ -347,19 +358,19 @@
                 android:orientation="vertical"
                 android:gravity="center"
                 android:background="@drawable/bg_macro_card"
-                android:padding="10dp"
-                android:layout_marginStart="8dp">
+                android:padding="@dimen/tile_padding"
+                android:layout_marginStart="@dimen/space_sm">
                 <View
                     android:layout_width="6dp"
                     android:layout_height="6dp"
-                    android:layout_marginBottom="4dp"
+                    android:layout_marginBottom="@dimen/space_xxs"
                     android:background="@drawable/shape_dot"
                     android:backgroundTint="@color/colorGrasa" />
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="GRASA" android:textSize="9sp" android:fontFamily="sans-serif-medium" android:textColor="@color/text_tertiary" />
+                    android:text="GRASA" android:textSize="@dimen/home_text_label_xs" android:fontFamily="sans-serif-medium" android:textColor="@color/text_tertiary" />
                 <TextView android:id="@+id/tvGrasasRestantes" android:layout_width="wrap_content"
                     android:layout_height="wrap_content" android:text="—"
-                    android:textSize="16sp" android:fontFamily="sans-serif-medium" android:textColor="@color/colorGrasa" />
+                    android:textSize="@dimen/home_text_value_sm" android:fontFamily="sans-serif-medium" android:textColor="@color/colorGrasa" />
             </LinearLayout>
 
             <LinearLayout
@@ -369,19 +380,19 @@
                 android:orientation="vertical"
                 android:gravity="center"
                 android:background="@drawable/bg_macro_card"
-                android:padding="10dp"
-                android:layout_marginStart="8dp">
+                android:padding="@dimen/tile_padding"
+                android:layout_marginStart="@dimen/space_sm">
                 <View
                     android:layout_width="6dp"
                     android:layout_height="6dp"
-                    android:layout_marginBottom="4dp"
+                    android:layout_marginBottom="@dimen/space_xxs"
                     android:background="@drawable/shape_dot"
                     android:backgroundTint="@color/colorAgua" />
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="AGUA" android:textSize="9sp" android:fontFamily="sans-serif-medium" android:textColor="@color/text_tertiary" />
+                    android:text="AGUA" android:textSize="@dimen/home_text_label_xs" android:fontFamily="sans-serif-medium" android:textColor="@color/text_tertiary" />
                 <TextView android:id="@+id/tvAgua" android:layout_width="wrap_content"
                     android:layout_height="wrap_content" android:text="—"
-                    android:textSize="16sp" android:fontFamily="sans-serif-medium" android:textColor="@color/colorAgua" />
+                    android:textSize="@dimen/home_text_value_sm" android:fontFamily="sans-serif-medium" android:textColor="@color/colorAgua" />
             </LinearLayout>
         </LinearLayout>
 
@@ -392,16 +403,16 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="@dimen/space_sm"
             android:background="@drawable/bg_card_flat"
-            android:padding="10dp">
+            android:padding="@dimen/space_sm">
 
             <TextView
                 android:id="@+id/tvMovilidadTitulo"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Movilidad matutina"
-                android:textSize="13sp"
+                android:textSize="@dimen/home_text_meta"
                 android:fontFamily="sans-serif-medium"
                 android:textColor="@color/success" />
 
@@ -410,7 +421,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:layout_marginTop="4dp" />
+                android:layout_marginTop="@dimen/space_xxs" />
         </LinearLayout>
 
         <!-- ═══ CORE (día de descanso) — colapsable como movilidad. Solo se
@@ -421,9 +432,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="@dimen/space_sm"
             android:background="@drawable/bg_card_flat"
-            android:padding="10dp"
+            android:padding="@dimen/space_sm"
             android:visibility="gone">
 
             <LinearLayout
@@ -442,7 +453,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="Core"
-                    android:textSize="13sp"
+                    android:textSize="@dimen/home_text_meta"
                     android:fontFamily="sans-serif-medium"
                     android:textColor="@color/success" />
 
@@ -451,7 +462,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="▸"
-                    android:textSize="13sp"
+                    android:textSize="@dimen/home_text_meta"
                     android:textColor="@color/success" />
             </LinearLayout>
 
@@ -460,15 +471,29 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:layout_marginTop="6dp"
+                android:layout_marginTop="@dimen/space_xs"
                 android:visibility="gone" />
         </LinearLayout>
+
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>
+
+    <!-- ═══ BLOQUE DE ACCIÓN FIJO — fuera del scroll, siempre anclado al
+         borde inferior real de la pantalla (ver comentario del stack raíz
+         arriba). Mismo padding horizontal que el contenido de scroll. ═══ -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="@dimen/screen_padding"
+        android:paddingBottom="@dimen/space_md">
 
         <!-- ═══ BOTÓN EMPEZAR ENTRENO ═══ -->
         <Button
             android:id="@+id/btnEmpezarEntreno"
             style="@style/Widget.FitBase.Button.Primary"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="@dimen/space_md"
             android:text="EMPEZAR ENTRENO"
             android:visibility="visible" />
 
@@ -477,8 +502,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
-            android:layout_marginTop="4dp"
-            android:textSize="13sp"
+            android:layout_marginTop="@dimen/space_xxs"
+            android:textSize="@dimen/home_text_meta"
             android:textColor="@color/text_tertiary"
             android:visibility="gone" />
 
@@ -493,7 +518,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginTop="8dp">
+            android:layout_marginTop="@dimen/space_sm">
 
             <Button
                 android:id="@+id/btnPlanAnual"
@@ -501,28 +526,28 @@
                 android:layout_width="0dp"
                 android:layout_weight="1"
                 android:text="Plan Anual"
-                android:textSize="13sp" />
+                android:textSize="@dimen/home_text_meta" />
 
             <ImageButton
                 android:id="@+id/btnProgresion"
-                android:layout_width="52dp"
-                android:layout_height="52dp"
-                android:layout_marginStart="10dp"
+                android:layout_width="@dimen/touch_target_min"
+                android:layout_height="@dimen/touch_target_min"
+                android:layout_marginStart="@dimen/space_sm"
                 android:contentDescription="Progresión"
-                android:padding="14dp"
+                android:padding="@dimen/space_md"
                 android:scaleType="fitCenter"
                 android:src="@drawable/ic_chart"
                 android:background="@drawable/button_secondary" />
         </LinearLayout>
-
-        </LinearLayout>
     </LinearLayout>
-</ScrollView>
+
+</LinearLayout>
 
     <!-- ═══ BOTONES DE DESARROLLO (Constants.MOSTRAR_BOTONES_DEMO) ═══
-         Flotantes, fuera del flujo del ScrollView, para no afectar la
+         Flotantes, fuera del flujo del stack raíz, para no afectar la
          composición real. Visibilidad controlada en HomeActivity a partir
-         de un único flag en código. -->
+         de un único flag en código. Tamaño fijo a propósito (solo
+         desarrollo, no forman parte del diseño responsive). -->
     <Button
         android:id="@+id/btnTest"
         android:layout_width="wrap_content"
