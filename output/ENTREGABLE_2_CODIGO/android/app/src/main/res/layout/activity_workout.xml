@@ -236,8 +236,15 @@
                  (pantalla minimalista, ver ui.md). -->
             <TextView android:id="@+id/tvMotorDetalle" android:layout_width="wrap_content"
                 android:layout_height="wrap_content" android:visibility="gone" />
-            <TextView android:id="@+id/tvRirObjetivo" android:layout_width="wrap_content"
-                android:layout_height="wrap_content" android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/tvRirObjetivo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="RIR objetivo: 2"
+                android:textSize="14sp"
+                android:textColor="@color/text_tertiary"
+                android:layout_marginTop="4dp" />
         </LinearLayout>
 
         <TextView
