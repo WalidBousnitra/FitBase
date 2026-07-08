@@ -25,9 +25,6 @@ public class Fase {
     @SerializedName("num_semanas")
     public int semanas;
 
-    @SerializedName("num_volumen_objetivo")
-    public int volumenObjetivo;
-
     @SerializedName("str_rir_rango")
     public String rirRango;
 

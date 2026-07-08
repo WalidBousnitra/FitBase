@@ -71,7 +71,7 @@ Gustos y preferencias personales que guían la programación del entrenamiento.
 
 | Grupo Muscular | Ejercicios Favoritos | Notas |
 |----------------|---------------------|-------|
-| Pecho | Press inclinado, Fondos, Cruces polea alta | Fondos: sin fuerza aún |
+| Pecho | Press inclinado, Cruces polea alta | Fondos quitado (auditoría 2026-c, KB-01): biometria.md §9/seleccion_ejercicios.md §6 lo excluyen explícitamente por el dolor de codo — esta tabla se contradecía a sí misma con el resto de la KB |
 | Espalda | Remo polea agarre neutro, Dominadas, Remo unilateral con rotación, Kelso shrug | Dominadas: pocas reps |
 | Hombros | Elevaciones laterales sentado, Elevaciones laterales polea media altura | Prefiere sentado |
 | Bíceps | Curl barra Z de pie, Zottman, Curl predicador | — |
@@ -85,14 +85,11 @@ Gustos y preferencias personales que guían la programación del entrenamiento.
 
 ## 7. Ejercicios que NO Le Gustan
 
-| Ejercicio | Razón |
-|-----------|-------|
-| Ejercicios que duelen el codo | ⚠️ Dolor crónico codo |
-| Press banca plano | Evita |
-| Prensas en máquina | No efectivos |
-| Agarres cerrados espalda | No le gustan |
-| Curl martillo | Evita |
-| Peso muerto sumo | No le gusta |
+> Lista completa y autoritativa en [preferencias_ejercicios.md](../../usuario/preferencias_ejercicios.md) §2-3 —
+> consolidado ahí (auditoría 2026-c, KB-02) para no mantener la misma tabla
+> duplicada en dos archivos. Resumen: ejercicios que duelen el codo (⚠️ dolor
+> crónico), Press banca plano, Prensas en máquina, Agarres cerrados espalda,
+> Curl martillo, Peso muerto sumo.
 
 ---
 

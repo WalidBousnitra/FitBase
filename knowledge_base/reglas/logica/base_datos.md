@@ -50,7 +50,10 @@ Todo lo que se recoge de Health Connect, una fila por dia.
 | num_hr_reposo | NUMBER | Pulsaciones en reposo |
 | num_peso_kg | NUMBER | Peso corporal (bascula Zepp/Xiaomi via HC) |
 | num_grasa_pct | NUMBER | Porcentaje de grasa |
-| date_sync | DATETIME | Timestamp de sincronizacion, o `'FICTICIO'` si la fila viene de rellenarDatosFicticios() |
+
+> `date_sync` eliminado (limpieza 2026, resincronizado en auditoria 2026-c):
+> su unico uso era el centinela `'FICTICIO'` de `rellenarDatosFicticios()`,
+> retirada junto con los datos de prueba. `date_fecha` ya identifica el dia.
 
 `guardarMetricas_` hace upsert por fecha con MERGE de campos: si solo llega
 el peso ese dia, no borra el sueno/pasos/FC ya guardados (y viceversa) —
@@ -67,10 +70,14 @@ Entrada manual, una vez al dia tras las 22:00 (selector de 5 niveles en la app).
 | num_estres | NUMBER | Nivel de estres (1-5) |
 | str_notas | STRING | Notas libres opcionales |
 
-El motor de ajuste diario (`calcularAjusteDia_`) mira primero el estres de
-AYER (la pregunta se hace de noche, sobre el dia que termina — es el dato
-relevante para la sesion de HOY), y si no hay dato de ayer prueba con el de
-hoy. Umbral: `num_estres >= 4` (escala 1-5) reduce el factor del dia.
+**SOLO TRACKING (2026), NO entra en `calcularAjusteDia_`** — resincronizado en
+auditoria 2026-c (DATA-02): esta seccion describia en detalle un umbral
+(`num_estres >= 4`) y un fallback ayer/hoy que ya no existen en el motor. Por
+peticion explicita del usuario ("solo quiero trackearlo") el motor de ajuste
+diario ya no lee METRICAS_SUBJETIVAS en absoluto — solo METRICAS_ZEPP (FC
+reposo, sleep score). Ver motor_pesos.md §3 (ya corregido) para el detalle.
+Energia/estres se siguen guardando aqui y se pueden consultar en Progresion,
+simplemente no mueven ningun calculo.
 
 ### 3.3 PLAN_ANUAL
 Fases del macrociclo definidas por prioridades del usuario. Imprescindible:
@@ -87,11 +94,17 @@ de pasos, y el modulador de fase del motor de cargas.
 | date_inicio | DATE | Inicio |
 | date_fin | DATE | Fin |
 | num_semanas | NUMBER | Duracion |
-| num_volumen_objetivo | NUMBER | Series objetivo |
 | str_rir_rango | STRING | RIR |
 | str_foco_muscular | STRING | Foco muscular |
 | str_objetivo_nutri | STRING | bulk/cut/mantener |
 | str_notas | STRING | Notas |
+
+> `num_volumen_objetivo` eliminado (auditoria 2026-c, DATA-01): estaba
+> hardcodeado a 16 para las 14 fases sin excepcion (incluida deload, que en
+> realidad corre a -40%/-58% con Ramadan) y ninguna funcion lo leia — dato
+> fabricado en la hoja real, mismo criterio que las columnas ya limpiadas
+> abajo. El volumen real vive en `ejercicios_plan.num_series_plan` + el
+> ajuste MAV/deload/Ramadan al servir la sesion.
 
 ### 3.4 SESIONES_PLAN
 Sesiones ya calendarizadas para cada fecha — tabla ancla: `getSesionHoy_()`
@@ -105,12 +118,16 @@ aqui sale el aviso de "dia perdido".
 | str_tipo | STRING | Push/Pierna/Pull/Hombros+Brazos |
 | num_semana_meso | NUMBER | Semana de mesociclo |
 | str_fase | STRING | Fase |
-| num_ajuste_volumen | NUMBER | Ajuste del dia |
 | num_duracion_est_min | NUMBER | Duracion estimada |
 | bool_completada | BOOLEAN | Estado |
-| date_inicio | DATETIME | Inicio real |
-| date_fin | DATETIME | Fin real |
-| date_creado | DATETIME | Creacion |
+| date_inicio | DATETIME | Inicio real (1a serie registrada) |
+| date_fin | DATETIME | Fin real (sesion completada) |
+
+> `num_ajuste_volumen` y `date_creado` eliminados (limpieza 2026,
+> resincronizado en auditoria 2026-c): ninguna funcion los leia.
+> `num_ajuste_volumen` siempre valia 1 — la reduccion real de volumen la
+> aplican el deload (menos series al generar) y Ramadan (-30% al servir); el
+> ajuste diario de readiness modula CARGA, no volumen (motor_pesos.md §5).
 
 ### 3.5 EJERCICIOS_PLAN
 Ejercicios de cada sesion. NO almacena pesos (son dinamicos via motor).
@@ -126,7 +143,12 @@ Ejercicios de cada sesion. NO almacena pesos (son dinamicos via motor).
 | num_rir_objetivo | NUMBER | RIR |
 | num_descanso_seg | NUMBER | Descanso |
 | str_notas | STRING | Notas |
-| bool_es_warmup | BOOLEAN | Serie calentamiento |
+| str_superset_grupo | STRING | Grupo de superserie (ej. "SS1") — ejercicios con el mismo valor van seguidos sin descanso |
+
+> `bool_es_warmup` eliminado (limpieza 2026, resincronizado en auditoria
+> 2026-c): siempre false, nunca se leia — el calentamiento se sirve aparte
+> (`getCalentamiento_`), no vive aqui. `str_superset_grupo` faltaba en esta
+> tabla pese a usarse activamente (logica de superseries).
 
 ### 3.6 EJERCICIOS_LOG (RETENCION 7 DIAS)
 Registro de series realizadas — SOLO para el reajuste dinamico del motor de
@@ -145,8 +167,12 @@ pero eso ya lo captura el peso recalculado — no hace falta guardar meses de lo
 | num_peso_usado_kg | NUMBER | Peso real |
 | num_reps_completadas | NUMBER | Reps reales |
 | num_rir_percibido | NUMBER | RIR percibido |
-| str_sensacion | STRING | facil/bien/duro/fallo |
 | date_timestamp | DATETIME | Timestamp |
+
+> `str_sensacion` eliminado (limpieza 2026, resincronizado en auditoria
+> 2026-c): la app solo pide peso/reps/RIR — los 4 botones (Facil/Bien/Duro/
+> Fallo) ya fijan el RIR (3/2/1/0) 1:1, asi que la sensacion era el mismo
+> dato duplicado.
 
 Regla de retencion (`limpiarLogsAntiguos_`, constante `EJERCICIOS_LOG_RETENCION_DIAS`):
 - Al insertar un log nuevo (`guardarLog_`), se eliminan registros con fecha
@@ -168,9 +194,13 @@ legible ("Press inclinado mancuernas") y grupo muscular.
 
 2. Motor de cargas usa:
 - Último registro por ejercicio dentro de ventana 7 dias (ejercicios_log)
-- Metricas Zepp del dia (sleep score, pasos, FC reposo)
-- Estres subjetivo de ayer (metricas_subjetivas)
-- Composicion corporal reciente (metricas_zepp: peso, % grasa)
+- Metricas Zepp del dia (sleep score, FC reposo)
+- Composicion corporal reciente (metricas_zepp: peso, % grasa — usada tambien
+  por el motor de dieta para la proteina de cut sobre masa magra real)
+
+> Energia/estres subjetivos (metricas_subjetivas) NO entran aqui (resincronizado
+> en auditoria 2026-c) — decision explicita del usuario: "solo quiero
+> trackearlo". Se siguen guardando y se pueden consultar en Progresion.
 
 3. Nutricion:
 - Se calculan objetivos del dia para interfaz.

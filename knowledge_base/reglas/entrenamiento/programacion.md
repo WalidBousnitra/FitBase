@@ -213,6 +213,43 @@ SEMANA_TIPO:
   domingo: DESCANSO
 ```
 
+### Rebalanceo de Volumen (2026-b)
+
+> Los 4 días de gym (arriba) son fijos, pero la distribución de series
+> DENTRO de cada día se auditó contra §3 usando el `str_grupo_principal`
+> real del catálogo de Codigo.gs — no una clasificación aproximada.
+
+**Hallazgo**: Hombros llegaba a 28 ser/sem (Push 14 + Hombros 14), 55-80% por
+encima de su propio techo ya-elevado-por-prioridad (14-18). Causa: Press
+hombro mancuernas y Elev. laterales sentado se repetían SIN variar ángulo en
+AMBOS días de gym que tocan hombro. El hombro es además sinergista en Press
+inclinado (pecho) y en Dominadas/Remo (espalda) — la fatiga sistémica real es
+mayor que el recuento de series directas. La prioridad (hombros > pecho, etc.)
+debe fijar DÓNDE te sitúas dentro de tu propio rango de la tabla de §3, no
+multiplicar ese rango sin límite.
+
+**Ajuste**: se quitó la redundancia (Elev. laterales polea sale de PUSH; Press
+hombro mancuernas y Elev. laterales sentado salen de HOMBR), dejando cada día
+con ángulos/funciones distintas del hombro. El tiempo liberado se usó para
+subir Pecho (4→7 ser/sem, cruza el mínimo efectivo de 5) reintroduciendo
+Cruces polea alta (ya en el catálogo, favorito, solo se había quitado por
+presupuesto de tiempo de sesión). Core NO se tocó: `T.PIERNA_VOL` (Hollow, 3
+ser) + `getCoreDia_()` del día de descanso (Hollow+Pallof, 6 contadas) ya
+suman ~9 ser/sem, dentro de 6-10 — añadir Pallof también en Pierna habría
+duplicado el mismo ejercicio en 2 días sin necesidad.
+
+| Grupo | Antes | Después | Rango evidencia (§3) |
+|---|---|---|---|
+| Hombros | 28 | 16 (18 con MAV) | 14-18 |
+| Espalda | 15 | 15 (sin cambio) | 14-18 |
+| Bíceps | 12 | 12 (sin cambio) | 10-14 |
+| Tríceps | 9 | 9 (sin cambio) | 10-14 |
+| Pecho | 4 | 7 | 10-14 (deliberadamente bajo — prioridades.md: no priorizar sobre hombros) |
+| Core | ~9 (gym+descanso) | ~9 (sin cambio) | 6-10 |
+
+Ver Codigo.gs — comentario sobre `const T` — para el detalle ejercicio por
+ejercicio y el razonamiento completo.
+
 > **Nota**: Este split es FIJO todo el año. Lo que cambia por fase son los ejercicios específicos, series, reps y RIR (ver base_datos.md §7 - Pre-Generación).
 
 ---

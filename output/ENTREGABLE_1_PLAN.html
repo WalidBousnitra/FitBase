@@ -317,22 +317,22 @@
 <!-- ═══ VOLUMEN REAL ═══ -->
 <section>
     <h2>Volumen Semanal (Fase Hipertrofia)</h2>
-    <p class="desc">Series directas/semana por grupo — calculado desde templates reales del código</p>
+    <p class="desc">Series directas/semana por grupo — calculado desde templates reales del código (rediseño 2026-b, ver programacion.md §11)</p>
 
     <div style="margin:16px 0;">
-        <div class="vol-item"><span class="vol-label">Hombros</span><div class="vol-bar-bg"><div class="vol-bar" style="width:100%; background:var(--accent);"></div></div><span class="vol-val">25 ser</span></div>
-        <div class="vol-item"><span class="vol-label">Espalda</span><div class="vol-bar-bg"><div class="vol-bar" style="width:68%; background:var(--success);"></div></div><span class="vol-val">17 ser</span></div>
-        <div class="vol-item"><span class="vol-label">Bíceps</span><div class="vol-bar-bg"><div class="vol-bar" style="width:48%; background:var(--chart);"></div></div><span class="vol-val">12 ser</span></div>
-        <div class="vol-item"><span class="vol-label">Tríceps</span><div class="vol-bar-bg"><div class="vol-bar" style="width:36%; background:var(--purple);"></div></div><span class="vol-val">9 ser</span></div>
-        <div class="vol-item"><span class="vol-label">Pecho</span><div class="vol-bar-bg"><div class="vol-bar" style="width:28%; background:var(--warning);"></div></div><span class="vol-val">7 ser</span></div>
-        <div class="vol-item"><span class="vol-label">Cuádriceps</span><div class="vol-bar-bg"><div class="vol-bar" style="width:40%; background:var(--success);"></div></div><span class="vol-val">10 ser</span></div>
-        <div class="vol-item"><span class="vol-label">Isquios</span><div class="vol-bar-bg"><div class="vol-bar" style="width:28%; background:var(--success);"></div></div><span class="vol-val">7 ser</span></div>
-        <div class="vol-item"><span class="vol-label">Core</span><div class="vol-bar-bg"><div class="vol-bar" style="width:24%; background:var(--text3);"></div></div><span class="vol-val">6 ser</span></div>
-        <div class="vol-item"><span class="vol-label">Glúteos</span><div class="vol-bar-bg"><div class="vol-bar" style="width:12%; background:var(--text3);"></div></div><span class="vol-val">3 ser</span></div>
+        <div class="vol-item"><span class="vol-label">Hombros</span><div class="vol-bar-bg"><div class="vol-bar" style="width:100%; background:var(--accent);"></div></div><span class="vol-val">16 ser</span></div>
+        <div class="vol-item"><span class="vol-label">Espalda</span><div class="vol-bar-bg"><div class="vol-bar" style="width:94%; background:var(--success);"></div></div><span class="vol-val">15 ser</span></div>
+        <div class="vol-item"><span class="vol-label">Bíceps</span><div class="vol-bar-bg"><div class="vol-bar" style="width:75%; background:var(--chart);"></div></div><span class="vol-val">12 ser</span></div>
+        <div class="vol-item"><span class="vol-label">Cuádriceps</span><div class="vol-bar-bg"><div class="vol-bar" style="width:63%; background:var(--success);"></div></div><span class="vol-val">10 ser</span></div>
+        <div class="vol-item"><span class="vol-label">Tríceps</span><div class="vol-bar-bg"><div class="vol-bar" style="width:56%; background:var(--purple);"></div></div><span class="vol-val">9 ser</span></div>
+        <div class="vol-item"><span class="vol-label">Pecho</span><div class="vol-bar-bg"><div class="vol-bar" style="width:44%; background:var(--warning);"></div></div><span class="vol-val">7 ser</span></div>
+        <div class="vol-item"><span class="vol-label">Isquios</span><div class="vol-bar-bg"><div class="vol-bar" style="width:44%; background:var(--success);"></div></div><span class="vol-val">7 ser</span></div>
+        <div class="vol-item"><span class="vol-label">Core (gym)</span><div class="vol-bar-bg"><div class="vol-bar" style="width:19%; background:var(--text3);"></div></div><span class="vol-val">3 ser</span></div>
+        <div class="vol-item"><span class="vol-label">Glúteos</span><div class="vol-bar-bg"><div class="vol-bar" style="width:19%; background:var(--text3);"></div></div><span class="vol-val">3 ser</span></div>
     </div>
 
     <div class="card">
-        <p><strong>Prioridad (prioridades.md):</strong> Hombros &gt; Bíceps &gt; Espalda &gt; Tríceps &gt; Pecho. El volumen refleja esto — hombros tienen 3.5× más series que pecho porque P1 (Estética/V-taper) domina.</p>
+        <p><strong>Prioridad (prioridades.md):</strong> Hombros &gt; Bíceps &gt; Espalda &gt; Tríceps &gt; Pecho. Rediseño 2026-b: Hombros bajó de 28 a 16 ser/sem (real; estaba muy por encima incluso de su propio techo elevado de 14-18, hipertrofia.md §3, por redundancia entre los días Push y Hombros) — el tiempo liberado subió Pecho (de 4 a 7 ser/sem). Core (fila de arriba) es solo el bloque de gym (Hollow, día de Pierna) — sumando el bloque del día de descanso (<code>getCoreDia_</code>) el total real es ~9 ser/sem, ya dentro de 6-10; no se tocó. Ver programacion.md §11 para el detalle completo.</p>
     </div>
 </section>
 
@@ -353,7 +353,7 @@
         <h3>Ajuste por fase (automático)</h3>
         <p>
             <strong>Bulk (VOL/FZA):</strong> TDEE × 1.15 = 3283 kcal · Proteína 2.0g/kg<br>
-            <strong>Cutting (DEF):</strong> TDEE × 0.80 = 2284 kcal · Proteína 2.4g/kg (preservar músculo, Helms 2014)<br>
+            <strong>Cutting (DEF):</strong> TDEE × 0.80 = 2284 kcal · Proteína 2.7g/kg de masa magra real (~171g, Helms 2014: preservar músculo en déficit)<br>
             <strong>Mantener (MNT/DELOAD):</strong> TDEE × 1.0 = 2855 kcal · Proteína 2.0g/kg
         </p>
     </div>
@@ -490,7 +490,7 @@
     </div>
     <div class="card">
         <h3>UC5: Ausencia / Sesión Perdida</h3>
-        <p>GET <code>check_ausencia</code> → Si perdiste días, calcula redistribución de volumen: series extra/sesión para compensar. Respeta máximo de +4 series extra para evitar fatiga.</p>
+        <p>GET <code>check_ausencia</code> → Si perdiste días, informa el impacto (según cuántos: absorción natural ≤7d, readaptación con RIR+1 hasta 21d, o reinicio de mesociclo si es más largo). No redistribuye volumen — decisión consciente (<code>checkAusencia_()</code>: "la evidencia no soporta series extra compensatorias"); un hueco corto ya lo amortigua el factor de descanso de la Capa 5 (×0.95 sobre el peso), y uno largo simplemente hace que el motor pida "elige tu peso" de nuevo.</p>
     </div>
     <div class="card">
         <h3>UC6: Timer de Descanso</h3>

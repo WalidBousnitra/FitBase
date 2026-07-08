@@ -470,7 +470,7 @@
         <span class="name">Distribución de Macronutrientes (por fase)</span>
         <span class="chip good"><span class="dot good"></span>Cubierto</span>
         <span class="where">getMacrosHoy_()</span>
-        <span class="note">Proteína 2.0–2.4 g/kg, grasa 1.0 g/kg (o 25% kcal en cut), carbos por diferencia.</span>
+        <span class="note">Proteína 2.0 g/kg peso total (bulk/mantener) o 2.7 g/kg de masa magra real en cut (fix 2026-c: antes asumía %BF fijo), grasa 1.0 g/kg (o 25% kcal en cut), carbos por diferencia.</span>
       </div>
 
       <div class="row">
@@ -478,7 +478,7 @@
         <span class="name">Estrategia de Hidratación</span>
         <span class="chip good"><span class="dot good"></span>Cubierto</span>
         <span class="where">getMacrosHoy_ (agua) · getRamadanInfo_</span>
-        <span class="note">agua = peso×35 + 500 ml si entreno; guía especial en Ramadán. Fijo salvo Ramadán.</span>
+        <span class="note">agua = peso×35 + 500 ml si entreno, +15% si es Ramadán (hidratación prioritaria, cultura.md §8) — <b>fix 2026-c (NUT-01)</b>: antes <code>getMacrosHoy_</code> no comprobaba Ramadán en absoluto (solo <code>getRamadanInfo_</code>, usado en la vista matutina, daba la guía cualitativa); ahora el propio número de agua también sube.</span>
       </div>
 
       <div class="row">
@@ -556,8 +556,8 @@
         <div class="fn">ajustarSeriesAdaptativo_()</div>
         <p>El volumen ya no es solo periodizado: se auto-regula por recuperación al servir cada sesión.</p>
         <ul>
-          <li><b>Sube</b> hacia el techo del grupo con readiness plena y desde la semana 2 del meso: +1/+2 series de aislamiento en Hombros / Espalda / Bíceps.</li>
-          <li><b>Baja</b> −1 serie cuando hay fatiga (factor ≤0.80 por FC, sueño, estrés o energía) → protege el MRV.</li>
+          <li><b>Sube</b> hacia el techo del grupo con readiness plena y desde la semana 2 del meso: +1/+2 series de aislamiento en Hombros / Espalda / Bíceps — <b>fix 2026-c (MAV-01)</b>: el tope +2 es ahora del GRUPO muscular acumulado en la sesión, no de cada ejercicio por separado (antes, con 4 ejercicios de aislamiento elegibles a la vez, Bíceps podía llegar a 20 ser/sem y Hombros a 24 — el tope nunca se cumplía en la práctica).</li>
+          <li><b>Baja</b> −1 serie cuando hay fatiga (factor ≤0.80 por FC reposo y sueño) → protege el MRV.</li>
           <li>Solo aislamiento → no dispara la duración de sesión. La app muestra un badge ▲/▼ Volumen.</li>
         </ul>
         <div class="cite">Schoenfeld 2017 (dosis-respuesta) · rangos hipertrofia.md §3 · Bompa 2019</div>
@@ -607,7 +607,7 @@
           <li><b>date_inicio de sesión</b> ahora se rellena (1ª serie); con date_fin da la duración real.</li>
           <li><b>Año del Plan Anual</b> se deriva del inicio de cada fase (2026/2027), ya no 2026 fijo.</li>
           <li><b>Imputación carry-forward</b> de peso/grasa: días sin pesada heredan el último valor.</li>
-          <li><b>Limpieza de esquema:</b> fuera <code>date_sync</code>, <code>num_ajuste_volumen</code>, <code>date_creado</code>, <code>bool_es_warmup</code>, <code>str_sensacion</code> y <code>rellenarDatosFicticios()</code>.</li>
+          <li><b>Limpieza de esquema:</b> fuera <code>date_sync</code>, <code>num_ajuste_volumen</code>, <code>date_creado</code>, <code>bool_es_warmup</code>, <code>str_sensacion</code>, <code>num_volumen_objetivo</code> (fix 2026-c: hardcodeado a 16 para las 14 fases, nunca leído) y <code>rellenarDatosFicticios()</code>.</li>
         </ul>
       </div>
       <div class="panel">
@@ -659,13 +659,13 @@
         <h4><span class="dot warn"></span>Las palancas que SÍ debes mover a mano</h4>
         <ul>
           <li><b>Estancamiento en bulk (2+ semanas sin subir):</b> subir el factor de 1,55 → 1,65. Es manual por diseño (motor_dieta.md §3, nota 4) — el motor no toca calorías según tendencia de peso.</li>
-          <li><b>Proteína en cut</b> es 2,4 g/kg de peso total ≈ 2,96 g/kg de masa magra a tu %grasa → dentro del rango Helms (2,3–3,1). Correcto.</li>
+          <li><b>Proteína en cut</b> ahora es 2,7 g/kg de masa magra REAL (~171g a tu 18,9% de grasa) → dentro del rango Helms (2,3–3,1) — <b>fix 2026-c (NUT-02)</b>: la versión anterior aplicaba 2,4 g/kg al peso total asumiendo un 15%BF fijo en un comentario, que ya no coincidía con tu %grasa real documentado (18,9%) y nunca se recalculaba si tu composición cambia. El número que salía seguía cayendo dentro del rango Helms por casualidad, pero el supuesto era frágil — ahora calcula la masa magra real desde tu %grasa más reciente de Health Connect.</li>
           <li>El único "menos basto" legítimo sería <b>auto-detección de estancamiento de peso</b> para sugerir el ajuste — pero el KB lo deja manual y no invento lógica nueva. Queda como decisión tuya, no como bug.</li>
         </ul>
       </div>
     </div>
 
-    <div class="note-card"><b>Veredicto nutrición:</b> revisada línea a línea, sin errores de cálculo ni desviación de la evidencia. No he tocado el código porque no hay nada roto — solo es deliberadamente conservador, con una palanca manual clara si el peso se estanca.</div>
+    <div class="note-card"><b>Veredicto nutrición (actualizado 2026-c):</b> una auditoría posterior encontró y corrigió el supuesto de %BF fijo en la proteína de cut (arriba) y añadió cobertura de Ramadán a <code>getMacrosHoy_</code> (antes ausente — ver "Estrategia de Hidratación" más arriba). El resto sigue limpio: deliberadamente conservador, con una palanca manual clara si el peso se estanca.</div>
   </section>
 
   <!-- ── SECTION 5: load engine deep-dive ── -->
@@ -775,6 +775,9 @@
 
     <div class="note-card" style="margin-top:16px;">
       <code>esProgresionSinPeso_</code> cubre equipamiento Banda/Pared (sin excepción en el catálogo) más <code>EJE_HOLLOW</code> explícito — "Suelo" es ambiguo porque también incluye Plancha lastrada, que sí carga peso real. Se trató como excepción por ID en vez de inventar una columna nueva para un único caso.
+    </div>
+    <div class="note-card" style="margin-top:16px;">
+      <b>Fix 2026-c (MOTOR-01)</b>: <code>calcularProgresionReps_</code> solo aplicaba el equivalente de Capas 1/2/6 — le faltaban las Capas 3 (fase/deload), 4 (cut) y 5 (gap de descanso) que sí tiene el camino con peso. El caso más grave: podía sugerir "sube reps" en plena semana de deload, justo cuando todo debería sentirse fácil (RIR 5-6). Ahora aplica las 6 capas igual que el camino con peso, adaptadas a reps/segundos.
     </div>
   </section>
 

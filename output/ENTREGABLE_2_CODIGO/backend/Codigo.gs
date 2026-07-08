@@ -233,6 +233,10 @@ function getSesionHoy_() {
   // plan anual (o VOL por defecto).
   const tipoFaseSesion = (plan.fase_actual && plan.fase_actual.str_tipo) || 'VOL';
 
+  // Acumulador COMPARTIDO entre todos los ejercicios de esta sesión — ver
+  // grupoAltoVolumenId_/ajustarSeriesAdaptativo_ (fix MAV-01): el tope de +2
+  // es del GRUPO muscular en la sesión, no de cada ejercicio por separado.
+  const bonoGrupoUsado = {};
   const ejerciciosAjustados = ejercicios.map(function(ej) {
     // CAPA MAV — Volumen Máximo Adaptativo (Schoenfeld 2017 dose-response +
     // hipertrofia.md §3). Se auto-regula por RECUPERACIÓN: sube series hacia el
@@ -240,11 +244,17 @@ function getSesionHoy_() {
     var vol = ajustarSeriesAdaptativo_(ej, {
       tipoFase: tipoFaseSesion,
       semFase: Number(sesion.num_semana_meso) || 1,
-      factorDia: ajuste.factor
+      factorDia: ajuste.factor,
+      bonoGrupoUsado: bonoGrupoUsado
     });
     var seriesPlan = vol.series;
     // Ramadán (cultura.md §5): -30% sobre el volumen ya ajustado por MAV.
-    if (ramadan) seriesPlan = Math.max(1, Math.round(seriesPlan * 0.7));
+    // FIX (2026-c, auditoría RAM-01): NO aplicar en DELOAD — el deload ya
+    // recorta -40% al generar el plan (generarFilasSesiones_); sumar el -30%
+    // de Ramadán encima daba ~58% de reducción combinada sin que nadie lo
+    // hubiera decidido así. Mismo criterio que ajustarSeriesAdaptativo_ ya
+    // usa para MAV ("FZA/DELOAD no se auto-regulan, ya reducido").
+    if (ramadan && tipoFaseSesion !== 'DELOAD') seriesPlan = Math.max(1, Math.round(seriesPlan * 0.7));
 
     var resultado = calcularPesoSugerido_(ej.ejercicio_id, {
       ajusteDia: ajuste.factor,
@@ -422,8 +432,9 @@ function getMacrosHoy_() {
   let obj = 'bulk', mult = 1.15, protRatio = 2.0;
   if (plan.fase_actual) {
     const n = plan.fase_actual.str_objetivo_nutri || 'bulk';
-    // Cut: 2.4 g/kg total ≈ 2.8 g/kg LBM @ ~15%BF (Helms 2014: 2.3-3.1 rango)
-    if (n === 'cut') { mult = 0.80; protRatio = 2.4; obj = 'cut'; }
+    // Cut: proteína se calcula sobre LBM real más abajo (fix NUT-02) — protRatio
+    // no aplica aquí, solo mult (déficit) y obj.
+    if (n === 'cut') { mult = 0.80; obj = 'cut'; }
     // Mantener: TDEE×1.0 (motor_dieta.md §4)
     else if (n === 'mantener') { mult = 1.0; protRatio = 2.0; obj = 'mantener'; }
     // Bulk: TDEE×1.15 = +15% (Iraki 2019: rango 1.10-1.20, elegido 1.15 = punto medio)
@@ -434,10 +445,28 @@ function getMacrosHoy_() {
   // Ajuste por actividad diaria (motor_dieta.md §6): pasos extra por encima
   // del objetivo de NEAT queman calorías reales no capturadas por el factor
   // de actividad fijo (1.55) — se compensan con carbos extra (van al remainder).
+  // NOTA (auditoría NUT-03): motor_dieta.md §6 también sugiere repartir carbos
+  // extra pre/post-entreno — la app solo fija el TOTAL diario, sin reparto
+  // horario (no hay tracking de comidas para poder aplicarlo). Alcance real,
+  // no un hueco pendiente: no hay forma de hacer cumplir un timing intra-día
+  // sin una función de registro de comidas que este proyecto no tiene.
   const pasos = getPasosHoy_();
   if (pasos > 12000) calorias += 175; // +150-200 kcal (motor_dieta.md §6), 175 = punto medio
 
-  const protG = Math.round(peso * protRatio);
+  // FIX (2026-c, auditoría NUT-02): Helms 2014 especifica la proteína de cut
+  // en g/kg de MASA MAGRA (2.3-3.1), no peso total — antes se aplicaba un
+  // 2.4 g/kg al peso total con un comentario que asumía "~15%BF" fijo, que
+  // ya no coincide con el %BF real documentado (18.9%, biometria.md) y nunca
+  // se recalculaba si la composición corporal cambia. Ahora se usa el %grasa
+  // MÁS RECIENTE de metricas_zepp (getGrasaActual_) para calcular la LBM real.
+  var protG;
+  if (obj === 'cut') {
+    var grasaPctActual = getGrasaActual_();
+    var lbm = peso * (1 - grasaPctActual / 100);
+    protG = Math.round(lbm * 2.7); // 2.7 g/kg LBM = punto medio Helms 2014 (2.3-3.1)
+  } else {
+    protG = Math.round(peso * protRatio);
+  }
   // Grasas: Iraki 2019 (bulk: 0.5-1.5 g/kg, ~20-30% kcal). Usar 1.0 g/kg (punto medio)
   // En cut: mínimo 0.5 g/kg para función hormonal (Helms 2014), usamos ~25% kcal
   var grasaG;
@@ -451,13 +480,33 @@ function getMacrosHoy_() {
   const sesionHoy = getSesionHoy_();
   const esEntreno = sesionHoy.sesion !== null;
   // Agua: 35 ml/kg/día (evidencia/vitalidad.md) + 500ml extra en día entreno (compensar sudor)
-  const agua = Math.round(peso * 35) + (esEntreno ? 500 : 0);
+  var agua = Math.round(peso * 35) + (esEntreno ? 500 : 0);
 
   // Pasos objetivo por fase (programacion.md §13, Wilson 2012)
   var pasosPorFase = { VOL: 8000, FZA: 8000, DEF: 10000, MNT: 9000, DELOAD: 7000 };
   var tipoFase = 'VOL';
   if (plan.fase_actual && plan.fase_actual.str_tipo) tipoFase = plan.fase_actual.str_tipo;
   var pasosObj = pasosPorFase[tipoFase] || 8000;
+
+  // FIX (2026-c, auditoría NUT-01): el motor de dieta no tenía NINGUNA rama de
+  // Ramadán — cultura.md §8 lo especifica en detalle y es una fecha real del
+  // plan (RAMADAN_FECHAS), no algo hipotético. cultura.md §8 NO pide cambiar
+  // el total diario de kcal/macros durante Ramadán — solo colapsar la ventana
+  // de comidas a Iftar-Suhur, concentrar la proteína en menos tomas, y
+  // priorizar hidratación en la ventana nocturna. La app no controla horarios
+  // de comida (nutrición es de solo lectura, FatSecret/Health Connect), así
+  // que el fix correcto es advisory — igual que ya hace getSesionHoy_() con
+  // ramadan_nota — no fabricar un reparto de macros que la app no puede hacer
+  // cumplir. Además, la hidratación SÍ es accionable aquí (agua_ml), así que
+  // se prioriza subiéndola sobre el mínimo normal.
+  var hoy = fechaHoy_();
+  var ramadanActivo = esRamadan_(hoy);
+  if (ramadanActivo) {
+    // Prioridad #1 de cultura.md §8 durante Ramadán: hidratación crítica en
+    // la ventana Iftar-Suhur — sube el objetivo un 15% sobre el normal
+    // (mismo agua total, concentrada en menos horas de ventana abierta).
+    agua = Math.round(agua * 1.15);
+  }
 
   return {
     fecha: fechaHoy_(), es_dia_entreno: esEntreno, fase: obj,
@@ -466,6 +515,10 @@ function getMacrosHoy_() {
     calorias_consumidas: 0, proteina_consumida_g: 0,
     carbos_consumidos_g: 0, grasas_consumidas_g: 0,
     agua_consumida_ml: 0, bmr: Math.round(bmr), tdee: tdee,
+    ramadan_activo: ramadanActivo,
+    ramadan_nota: ramadanActivo
+      ? 'Ramadán: mismas kcal/macros totales, concentradas entre Iftar y Suhur. Reparte la proteína en 2-3 tomas (Iftar, cena, Suhur) en vez de todo en una — el total diario no cambia, solo cuándo comes. Hidratación crítica: 2-3L entre Iftar y Suhur.'
+      : null,
     origen_datos: 'backend', es_fallback: false
   };
 }
@@ -499,11 +552,22 @@ function getProgresionMetricas_(dias) {
   });
 
   // Volumen entrenamiento
+  // FIX (2026-c, auditoría SYNC-01): sin clave de idempotencia en guardarLog_,
+  // una respuesta HTTP perdida tras un POST que sí tuvo éxito hace que
+  // SyncManager reintente y duplique la fila. Un duplicado idéntico no afecta
+  // a la mejor-serie (Capa 1 del motor), pero SÍ inflaba en silencio el
+  // volumen diario aquí. Se dedupe por (sesion_id, ejercicio_id, num_serie) —
+  // esa combinación identifica una serie real única; si aparece dos veces,
+  // es un reintento, no dos series distintas.
   const logData = leerDatosDesdeFecha_(HOJAS.EJERCICIOS_LOG, 'date_timestamp', desde, function(row) { return row; });
+  const seriesVistas = {};
   const volPorDia = {};
   logData.forEach(function(r) {
     const d = r.date_timestamp ? formatDate_(parseDate_(r.date_timestamp)) : null;
     if (!d) return;
+    const claveSerie = r.sesion_id + '|' + r.ejercicio_id + '|' + r.num_serie;
+    if (seriesVistas[claveSerie]) return; // reintento duplicado — ya contado
+    seriesVistas[claveSerie] = true;
     volPorDia[d] = (volPorDia[d] || 0) + ((r.num_peso_usado_kg || 0) * (r.num_reps_completadas || 0));
   });
   const volumenData = Object.keys(volPorDia).map(function(f) { return { fecha: f, volumen_kg: Math.round(volPorDia[f]) }; });
@@ -1067,11 +1131,18 @@ function getCardioObjetivo_(tipoFase, tipoDia) {
  * cada 4 semanas, tope en el tramo 4 (semana 16) — Ruivo 2017 solo validó su
  * protocolo correctivo durante 16 semanas, así que no hay evidencia para
  * seguir progresando pasado ese punto; se mantiene en el nivel máximo.
+ *
+ * FIX (2026-c, auditoría MOV-01): el código topaba en tramo 3 (semana 12),
+ * un tramo menos de lo que este mismo comentario y Ruivo 2017 respaldan —
+ * `Math.min(3, ...)` en vez de `Math.min(4, ...)`. Se corrige al tramo que
+ * la evidencia realmente permite en vez de recortar el comentario para que
+ * coincida con el código: más semanas de progresión real es la opción más
+ * óptima dado que Ruivo 2017 la sostiene.
  */
 function getMovilidadMatutina_(fechaInicioPlan) {
   var inicio = parseDate_(fechaInicioPlan);
   var semanas = inicio ? Math.floor((new Date() - inicio) / (7 * 86400000)) : 0;
-  var tramo = Math.min(3, Math.max(0, Math.floor(semanas / 4)));
+  var tramo = Math.min(4, Math.max(0, Math.floor(semanas / 4)));
   var reps = 10 + tramo * 2;   // +2 reps por tramo de 4 semanas
   var seg = 30 + tramo * 5;    // +5s por tramo de 4 semanas
 
@@ -1562,14 +1633,37 @@ function esProgresionSinPeso_(ejercicioId, equipamiento) {
  * temporal ("30s"), el paso es de 5s (mismo incremento que
  * getMovilidadMatutina_ usa para escalar hold times).
  */
+// FIX (2026-c, auditoría MOTOR-01): esta función solo aplicaba las Capas 1
+// (base), 2 (APRE) y 6 (día) del motor — nunca las Capas 3 (fase/deload), 4
+// (cut) ni 5 (gap de descanso), que sí tiene el camino CON peso
+// (calcularPesoSugerido_). El caso más grave: un ejercicio sin peso podía
+// recibir "sube reps" en plena semana de deload (RIR 5-6, cuando todo debería
+// sentirse fácil), porque nada comprobaba cfgFase.esDeload. Ahora aplica las
+// 6 capas igual que el camino con peso, adaptando cada una a reps/segundos en
+// vez de a kg.
 function calcularProgresionReps_(ejercicioId, ctx) {
   var unidad = /s\s*$/i.test(String(ctx.repsObjetivo || '').trim()) ? 's' : ' reps';
   var repsObjTope = parseRepsObjetivo_(ctx.repsObjetivo);
   var resultado = { peso: 0, sinPeso: true, repsSugeridas: repsObjTope, detalle: '', capas: { sinPeso: true } };
 
+  var fase = (ctx.fase || 'VOL').toUpperCase();
+  var cfgFase = obtenerConfigFase_(fase);
+
   var ultimo = obtenerMejorSetReciente_(ejercicioId);
   if (!ultimo) {
     resultado.detalle = 'Peso corporal | primer uso — objetivo ' + repsObjTope + unidad;
+    return resultado;
+  }
+
+  // ── CAPA 3: FASE — deload primero (Bompa 2019), igual que en el camino con
+  // peso: en deload todo debe sentirse fácil, nunca "sube reps". Sin carga
+  // que reducir, el equivalente correcto es NO progresar — mantener el
+  // objetivo plano (RIR 5-6 esa semana ya viene del propio plan, ver §3 de
+  // motor_pesos.md, así que ya se siente ligero sin tocar reps).
+  if (cfgFase.esDeload) {
+    resultado.repsSugeridas = repsObjTope;
+    resultado.detalle = 'Peso corporal | DELOAD: mantener ' + repsObjTope + unidad + ' (no progresar, Bompa 2019)';
+    resultado.capas.deload = true;
     return resultado;
   }
 
@@ -1586,8 +1680,34 @@ function calcularProgresionReps_(ejercicioId, ctx) {
   else if (deltaCap <= 3)  ajuste = 1 * paso;
   else                     ajuste = 2 * paso;
 
+  // Cap por fase (Capa 3, igual que pctAPRE en el camino con peso): el % de
+  // capSubida/capBajada de cada fase (calibrados sobre el paso ±2×paso de
+  // VOL: capSubida 0.05, capBajada 0.10) se traduce a fracción del mismo
+  // paso máximo, para que FZA/DEF/MNT sean más/menos agresivos aquí igual
+  // que lo son en kg.
+  var ajusteMaxSubida = 2 * paso * (cfgFase.capSubida / 0.05);
+  var ajusteMaxBajada = 2 * paso * (cfgFase.capBajada / 0.10);
+  if (ajuste > 0) ajuste = Math.min(ajuste, ajusteMaxSubida);
+  if (ajuste < 0) ajuste = Math.max(ajuste, -ajusteMaxBajada);
+
+  // ── CAPA 4: NUTRICIÓN (Helms 2014) — en cut, recorta la SUBIDA al 50%,
+  // igual que el camino con peso: en déficit calórico la recuperación está
+  // reducida y no se puede progresar al mismo ritmo.
+  if (ajuste > 0 && ctx.objetivoNutri === 'cut') ajuste = ajuste * 0.5;
+
   var minimo = unidad === 's' ? 10 : 1;
-  var repsSugeridas = Math.max(minimo, repsObjTope + ajuste);
+  var repsSugeridas = Math.max(minimo, Math.round(repsObjTope + ajuste));
+
+  // ── CAPA 5: DESCANSO INTER-SESIÓN — mismo criterio que el camino con peso
+  // (gap >7 días → ×0.95): un hueco de una semana justifica un pelín menos
+  // de exigencia, no tocarlo sería inconsistente entre los dos caminos.
+  var factorDescanso = 1.0;
+  var fechaUltimo = parseDate_(ultimo.date_timestamp);
+  if (fechaUltimo) {
+    var diasDesde = Math.floor((new Date() - fechaUltimo) / 86400000);
+    if (diasDesde > 7) factorDescanso = 0.95;
+  }
+  repsSugeridas = Math.max(minimo, Math.round(repsSugeridas * factorDescanso));
 
   // Capa 6 (Kiviniemi 2007): el factor del día también reduce el objetivo
   // de reps/segundos en un día de mala recuperación.
@@ -1598,6 +1718,7 @@ function calcularProgresionReps_(ejercicioId, ctx) {
   resultado.capas.deltaCap = deltaCap;
   resultado.capas.ultimoReps = reps;
   resultado.capas.ultimoRIR = rir;
+  resultado.capas.factorDescanso = factorDescanso;
   resultado.capas.factorDia = factorDia;
   resultado.detalle = 'Peso corporal | objetivo ' + repsSugeridas + unidad +
     (ajuste > 0 ? ' (↑ dobla progresión)' : (ajuste < 0 ? ' (↓ ajustado)' : ''));
@@ -1643,15 +1764,36 @@ function obtenerConfigFase_(fase) {
 // de fatiga sistémica y sin disparar la duración de la sesión (preferencias.md
 // §2: ideal 75 min) — los compuestos pesados ya llevan su volumen fijo.
 function esGrupoAltoVolumen_(grupo) {
-  if (!grupo) return false;
+  return grupoAltoVolumenId_(grupo) !== null;
+}
+
+// FIX (2026-c, auditoría MAV-01): antes esGrupoAltoVolumen_ solo decía SÍ/NO,
+// así que ajustarSeriesAdaptativo_ no tenía forma de agrupar varios ejercicios
+// del MISMO grupo bajo un único tope — cada ejercicio de aislamiento elegible
+// recibía su propio +1/+2 de forma independiente. Con 4 ejercicios de
+// aislamiento de bíceps o de hombros en la plantilla (la norma, no la
+// excepción), el "tope +2 sobre la base" que promete el comentario de más
+// abajo nunca se cumplía: Bíceps podía llegar a 20 ser/sem (techo real: 14) y
+// Hombros a 24 (techo: 18) en cualquier semana normal de buena recuperación.
+// grupoAltoVolumenId_ devuelve la clave de agrupación para que el llamador
+// (getSesionHoy_) pueda acumular cuánto bono ya se ha repartido a ESE grupo
+// en ESTA sesión, y ajustarSeriesAdaptativo_ pueda negarlo una vez agotado.
+function grupoAltoVolumenId_(grupo) {
+  if (!grupo) return null;
   var g = String(grupo).toLowerCase();
-  return g.indexOf('hombro') === 0 || g.indexOf('espalda') === 0 || g.indexOf('bíceps') === 0 || g.indexOf('biceps') === 0;
+  if (g.indexOf('hombro') === 0) return 'hombros';
+  if (g.indexOf('espalda') === 0) return 'espalda';
+  if (g.indexOf('bíceps') === 0 || g.indexOf('biceps') === 0) return 'biceps';
+  return null;
 }
 
 /**
  * Ajuste adaptativo de series para un ejercicio al servir la sesión.
  * @param {Object} ej  Ejercicio del plan (num_series_plan, str_grupo_principal, bool_compuesto)
- * @param {Object} ctx { tipoFase, semFase, factorDia }
+ * @param {Object} ctx { tipoFase, semFase, factorDia, bonoGrupoUsado }
+ *   bonoGrupoUsado: objeto COMPARTIDO entre todas las llamadas de la misma
+ *   sesión (mismo objeto pasado por referencia desde getSesionHoy_) — así el
+ *   tope de +2 es del GRUPO acumulado en la sesión, no de cada ejercicio.
  * @returns {Object} { series: Number, motivo: String|null }
  */
 function ajustarSeriesAdaptativo_(ej, ctx) {
@@ -1665,18 +1807,35 @@ function ajustarSeriesAdaptativo_(ej, ctx) {
   // cuando la fatiga es alta). Umbral 0.80 = mismo punto donde el motor de
   // cargas considera la sesión "reducida" (calcularAjusteDia_). Aplica a TODOS
   // los grupos, no solo prioritarios: proteger la recuperación es transversal.
+  // Sin tope conjunto a propósito — varios recortes del mismo grupo en una
+  // semana de mala recuperación protegen más, nunca sobrepasan un techo.
   if (ctx.factorDia <= 0.80 && base > 1) {
     return { series: base - 1, motivo: 'vol-recuperacion' };
   }
 
   // ── SUBIDA: readiness plena (factor 1.0, sin banderas de fatiga) + semana ≥2
   // del mesociclo → progresión de volumen hacia el techo (Schoenfeld 2017).
-  // Solo aislamiento de grupos prioritarios (ver esGrupoAltoVolumen_). +1 en
-  // sem2, +2 desde sem3, tope +2 sobre la base (evita descontrol de duración
-  // y de MRV; el deload/nuevo meso resetea al volver semFase a 1).
+  // Solo aislamiento de grupos prioritarios. +1 en sem2, +2 desde sem3, tope
+  // +2 sobre la base — y ahora ese tope es del GRUPO completo (todos sus
+  // ejercicios de aislamiento elegibles suman contra el mismo +2), no de cada
+  // ejercicio por separado (evita descontrol de duración y de MRV; el
+  // deload/nuevo meso resetea al volver semFase a 1).
   if (ctx.factorDia >= 1.0 && (Number(ctx.semFase) || 1) >= 2
-      && esGrupoAltoVolumen_(ej.str_grupo_principal) && ej.bool_compuesto !== true) {
-    var extra = Math.min((Number(ctx.semFase) || 1) - 1, 2);
+      && ej.bool_compuesto !== true) {
+    var grupoId = grupoAltoVolumenId_(ej.str_grupo_principal);
+    if (!grupoId) return { series: base, motivo: null };
+
+    var TOPE_BONO_GRUPO = 2;
+    var bonoGrupoUsado = ctx.bonoGrupoUsado || {};
+    var yaUsado = bonoGrupoUsado[grupoId] || 0;
+    var disponible = TOPE_BONO_GRUPO - yaUsado;
+    if (disponible <= 0) return { series: base, motivo: null };
+
+    var deseado = Math.min((Number(ctx.semFase) || 1) - 1, 2);
+    var extra = Math.min(deseado, disponible);
+    if (extra <= 0) return { series: base, motivo: null };
+
+    bonoGrupoUsado[grupoId] = yaUsado + extra;
     return { series: base + extra, motivo: 'vol-progresion' };
   }
 
@@ -1858,6 +2017,27 @@ function getPesoActual_() {
 }
 
 /**
+ * % de grasa corporal más reciente (metricas_zepp), con fallback al dato
+ * documentado en biometria.md. Añadida en la auditoría 2026-c (NUT-02) para
+ * que getMacrosHoy_() calcule la proteína de cut sobre MASA MAGRA real
+ * (Helms 2014 la especifica en g/kg LBM, no peso total) en vez de asumir un
+ * %BF fijo en un comentario que no se recalcula si la composición cambia.
+ */
+function getGrasaActual_() {
+  const hoja = getHoja_(HOJAS.METRICAS_ZEPP);
+  if (!hoja) return 18.9; // Fallback: biometria.md % grasa actual
+  const datos = hoja.getDataRange().getValues();
+  if (datos.length <= 1) return 18.9;
+  const cab = datos[0];
+  const colG = cab.indexOf('num_grasa_pct');
+  for (let i = datos.length - 1; i >= 1; i--) {
+    const g = Number(datos[i][colG]);
+    if (g > 0) return g;
+  }
+  return 18.9; // Fallback: biometria.md
+}
+
+/**
  * Último peso y % grasa conocidos de un día ESTRICTAMENTE anterior a `fecha`
  * (imputación carry-forward de guardarMetricas_). Recorre metricas_zepp de
  * abajo (más reciente) a arriba y devuelve el primer valor no vacío de cada
@@ -1935,7 +2115,14 @@ function inicializarHojas() {
     // el día). Un solo campo de fecha con utilidad técnica.
     [HOJAS.METRICAS_ZEPP]: ['metrica_id','date_fecha','num_sleep_score','num_pasos','num_hr_reposo','num_peso_kg','num_grasa_pct'],
     [HOJAS.METRICAS_SUBJETIVAS]: ['subjetiva_id','date_fecha','num_energia','num_estres','str_notas'],
-    [HOJAS.PLAN_ANUAL]: ['fase_id','num_año','num_orden','str_nombre_fase','str_tipo','date_inicio','date_fin','num_semanas','num_volumen_objetivo','str_rir_rango','str_foco_muscular','str_objetivo_nutri','str_notas'],
+    // num_volumen_objetivo eliminado (auditoría 2026-c, DATA-01): estaba
+    // hardcodeado a 16 para las 14 fases sin excepción (incluida deload, que
+    // en realidad corre a -40%/-58% con Ramadán) — dato fabricado que ninguna
+    // función leía jamás (confirmado por grep), viola el mismo principio que
+    // ya llevó a limpiar bool_es_warmup/date_creado/str_sensacion. El volumen
+    // real vive en ejercicios_plan (num_series_plan) + el ajuste MAV/deload/
+    // Ramadán al servir la sesión — no tiene sentido un "objetivo" fijo aquí.
+    [HOJAS.PLAN_ANUAL]: ['fase_id','num_año','num_orden','str_nombre_fase','str_tipo','date_inicio','date_fin','num_semanas','str_rir_rango','str_foco_muscular','str_objetivo_nutri','str_notas'],
     // num_ajuste_volumen y date_creado eliminados (limpieza 2026): ninguna
     // función los leía. num_ajuste_volumen siempre valía 1 — la reducción real
     // de volumen ya la aplican el deload (menos series al generar) y Ramadán
@@ -2034,38 +2221,54 @@ const FASES = [
 ];
 
 // --- TEMPLATES EJERCICIOS (por tipo sesión × tipo fase) ---
-// Volumen semanal por grupo (Schoenfeld 2017 + programacion.md §3):
-//   Hombros: 14-18 ser/sem → Push(11) + Hombros(11) = 22 ✓ (Prioridad #1: V-taper — SIN TOCAR)
-//   Espalda: 14-18 ser/sem → Dominadas+Remo neutro+Remo rotación = 11 directo + correctivos ✓
-//            (P1 V-taper: Dominadas es el que da ANCHURA — intacto)
-//   Bíceps: 10-14 ser/sem → Pull(6) + Hombros(6) = 12 ✓ (P3, sin tocar)
-//   Tríceps: 10-14 ser/sem → Push(6 directo) + press(8 indirecto) = ~10 ✓ (sin tocar)
-//   Pecho: 4 ser/sem (antes 7) → Trade-off MÁS FUERTE por duración de sesión
-//          (ver revisión 2026: PUSH_VOL rondaba 81min, por encima del ideal
-//          75min de preferencias.md). Pecho NO es prioridad (programacion.md
-//          §2: "no priorizar sobre hombros") — se eliminó Cruces polea alta
-//          (aislamiento puro), Press inclinado se mantiene como único directo.
-//          Por debajo del "mínimo efectivo 5 ser/sem" (programacion.md §3) —
-//          trade-off consciente y máximo dado que hombros/espalda/postura no
-//          se tocan; si en la práctica notas estancamiento de pecho, revisar.
-//   Pierna: Pierna(4+4+3+3+3+3) = 20 directo, cuádriceps ~10 (Sentadilla+Leg
-//           press+Ext.) ✓ — se quitó Pallof (core anti-rotación, sin
-//           prioridad ninguna) para bajar de ~90min a ~85min en FAS_08.
-//   Postura (P2): Kelso shrug y Band pull-aparts bajan de 3→2 series (Wall
-//           Angels, el objetivo postural PRINCIPAL de biometria.md §8, se
-//           mantiene intacto en 3) — recorte mínimo, repartido entre 2
-//           ejercicios en vez de eliminar ninguno, para bajar PULL_VOL de
-//           ~79min a ~75min sin tocar Dominadas/Remo neutro (espalda P1) ni
-//           Curl Z/Curl predicador (bíceps P3).
+// REDISEÑO DE VOLUMEN (2026-b): auditoría contra hipertrofia.md §3 usando el
+// str_grupo_principal REAL del catálogo (rellenarCatalogo_), no una
+// clasificación ad-hoc. Hallazgo: Hombros llegaba a 28 ser/sem (Push 14 +
+// Hombros 14) — 55-80% POR ENCIMA de su propio techo ya-elevado-por-P1
+// (14-18, hipertrofia.md §3). El hombro además es sinergista en Press
+// inclinado (pecho) y en Dominadas/Remo (espalda), aparte de sus 2 días
+// directos — la fatiga sistémica real es mayor que el recuento de series
+// directas. Schoenfeld 2017 documenta el salto grande de <5 a 10+ series,
+// pero no valida que duplicar otra vez el volumen (a 28) siga sumando — la
+// prioridad (prioridades.md: hombros > pecho, etc.) debe fijar DÓNDE te
+// sitúas dentro de tu propio rango, no multiplicar el rango sin límite.
 //
-// Revisión de duración de sesión (2026): 3 de las 4 sesiones VOL superaban
-// el ideal de 75min (preferencias.md §2) y PIERNA_VOL llegaba a ~90-91min
-// en semanas de especialización (FAS_08) — por encima incluso del máximo.
-// Los recortes de arriba se hicieron SIEMPRE sobre grupos sin prioridad
-// (pecho, core, pierna) o repartidos en accesorios menores (postura), nunca
-// sobre hombros, espalda-anchura (Dominadas), bíceps ni el ejercicio
-// postural principal — ver prioridades.md (P1 V-taper hombros+espalda, P2
-// postura, P3 hipertrofia hombros>bíceps>espalda).
+// Volumen semanal por grupo tras el rediseño:
+//   Hombros: 14-18 ser/sem → Push(10) + Hombros(6) = 16 ✓ (antes 28 — se
+//            quitó la redundancia de Press hombro mancuernas y Elev.
+//            laterales sentado, ambos repetidos SIN variar ángulo en los
+//            2 días; Wakahara 2013: la hipertrofia sigue la variedad de
+//            activación, no repetir el idéntico estímulo). Con el techo de
+//            MAV (+2 series máx, ajustarSeriesAdaptativo_) el máximo real
+//            ahora es 18 — coincide EXACTO con el techo de la evidencia;
+//            antes el +2 de MAV partía ya de una base sobre-inflada (28→30).
+//   Espalda: 14-18 ser/sem → Pull(15) ✓ (sin cambios, ya en rango).
+//            Frecuencia 1x/sem en vez del 2x recomendado — aceptable:
+//            Schoenfeld 2019 ("la frecuencia NO afecta la hipertrofia si el
+//            volumen está igualado") la trata como herramienta de reparto,
+//            no un requisito independiente, y 15 series caben en 1 sesión
+//            sin problema de duración (a diferencia de hombros, donde
+//            concentrar 16-18 en 1 solo día sí sería inviable en tiempo).
+//   Bíceps: 10-14 ser/sem → Pull(6) + Hombros(6) = 12 ✓ (sin cambios).
+//   Tríceps: 10-14 ser/sem → Push(6) + Hombros(3) = 9 (sin cambios; recibe
+//            además estímulo indirecto real de Press hombro/Press inclinado
+//            como sinergista).
+//   Pecho: 7 ser/sem (antes 4, por debajo del mínimo efectivo 5 —
+//          hipertrofia.md §3) → se reintroduce Cruces polea alta (ya en
+//          catálogo, favorito, solo se había quitado por presupuesto de
+//          tiempo) ahora que Push libera minutos al perder 1 serie de
+//          laterales redundante. Sigue por debajo de 10-14 A PROPÓSITO
+//          (prioridades.md: "no priorizar pecho sobre hombros") pero ya
+//          cruza el mínimo efectivo.
+//   Piernas/Core: Cuádriceps 10 e Isquios 7 sin cambios (ya en rango o
+//          cerca, sin prioridad). Core NO se toca aquí — Pierna(Hollow 3) +
+//          getCoreDia_() del día de descanso (Hollow+Pallof, 6 contadas) ya
+//          suman ~9 ser/sem, dentro de 6-10 (hipertrofia.md §3); añadir
+//          Pallof también en Pierna duplicaría el mismo ejercicio en 2 días
+//          sin necesidad real.
+//   Postura/Manguito (Wall angels, Rotación externa): sin cambios — es
+//          trabajo correctivo P2, no volumen de hipertrofia (no le aplican
+//          los rangos de Schoenfeld 2017).
 //
 // Descansos (programacion.md §5, Schoenfeld 2016):
 //   Compuestos pesados: 150-270s (evidencia: 3-5 min = 180-300s)
@@ -2083,12 +2286,14 @@ const T = {
     PUSH_VOL: [
       ['EJE_PRESS_HOMB','Press hombro mancuernas',4,'8-10',150,'Compuesto hombros',''],
       ['EJE_PRESS_INC','Press inclinado mancuernas',4,'8-10',150,'Pecho',''],
-      ['EJE_LAT_SENT','Elev. laterales sentado',4,'12-15',90,'P1: V-taper','SS1'],
-      ['EJE_LAT_POLEA','Elev. laterales polea',3,'12-15',90,'','SS1'],
-      // Cruces polea alta ELIMINADO (revisión 2026): PUSH_VOL rondaba ~81min,
-      // por encima del ideal 75min (preferencias.md §2). Pecho es la prioridad
-      // más baja de hipertrofia (prioridades.md: "hombros > pecho") — Press
-      // inclinado se mantiene como único directo de pecho.
+      // Elev. laterales polea SALE de este día (rediseño 2026-b): se hacía
+      // sin variar ángulo en Push Y Hombros (2x/sem el MISMO estímulo) —
+      // redundancia sin beneficio extra (Wakahara 2013: la hipertrofia
+      // sigue la variedad de activación). Se libera la serie y se
+      // reintroduce Cruces polea alta (pecho, favorito del catálogo, solo
+      // se había quitado por presupuesto de tiempo — ver comentario arriba).
+      ['EJE_CRUCES','Cruces polea alta',3,'12-15',90,'Pecho','SS1'],
+      ['EJE_LAT_SENT','Elev. laterales sentado',3,'12-15',90,'P1: V-taper','SS1'],
       ['EJE_FRANC','Press francés 30°',3,'10-12',120,'⚠️ Dolor codo: NO completar extensión total (biometria.md §9)',''],
       ['EJE_EXT_POLEA','Extensión unilateral polea',3,'12-15',90,'⚠️ Dolor codo: rango controlado, NO extensión completa',''],
       ['EJE_FACE_PULL','Face pulls',3,'15-20',90,'P2: Postura','']
@@ -2097,7 +2302,7 @@ const T = {
       ['EJE_SENTADILLA','Sentadilla barra',4,'6-8',180,'Compuesto',''],
       ['EJE_RDL','RDL',4,'8-10',150,'Isquios+glúteo',''],
       ['EJE_HIP_THRUST','Hip thrust',3,'10-12',120,'',''],
-      // Cuádriceps (P7, secundario) se quedaba corto (10-12 ser/sem objetivo,
+      // Cuádriceps (secundario) se quedaba corto (10-12 ser/sem objetivo,
       // solo llegaba con sentadilla+extensión) — se necesitaba un compuesto
       // extra de cuádriceps. Revisión anterior añadió "Leg press", pero eso
       // SÍ viola una exclusión explícita del usuario (usuario/
@@ -2111,12 +2316,13 @@ const T = {
       ['EJE_HACK_SQUAT','Hack squat',3,'10-12',120,'Cuádriceps extra',''],
       ['EJE_EXT_QUAD','Extensión cuádriceps',3,'12-15',90,'','SS1'],
       ['EJE_CURL_FEM','Curl femoral',3,'10-12',90,'','SS1'],
-      // Press Pallof (core anti-rotación) ELIMINADO (revisión 2026): PIERNA_VOL
-      // llegaba a ~90-91min en FAS_08 (especialización), por encima incluso
-      // del máximo 90min (preferencias.md §2). Pierna/core no son prioridad
-      // (prioridades.md: "mantener piernas pero priorizar upper" — P1
-      // V-taper) — el candidato más seguro para recortar sin tocar hombros,
-      // espalda, bíceps ni postura.
+      // Press Pallof (core anti-rotación) sigue FUERA de este día — no es un
+      // hueco real: getCoreDia_() ya lo cubre en el día de descanso (junto
+      // con Hollow, Plancha y Dead bug), sin lo cual el Core total (gym +
+      // descanso) ya está en ~9 ser/sem contadas, dentro del objetivo 6-10
+      // (hipertrofia.md §3) — añadirlo aquí también duplicaría el mismo
+      // ejercicio en 2 días sin necesidad, el mismo tipo de redundancia que
+      // se acaba de quitar de Hombros.
       ['EJE_HOLLOW','Hollow hold',3,'30s',90,'Core anti-extensión','']
     ],
     PULL_VOL: [
@@ -2134,18 +2340,42 @@ const T = {
       ['EJE_BAND_PULL','Band pull-aparts',2,'15-20',60,'P2: Postura','SS2'],
       ['EJE_WALL_ANGEL','Wall angels',3,'8-10',60,'P2: Test postural','SS2']
     ],
+    // HOMBR_VOL rediseñado (2026-b): fuera Press hombro mancuernas y Elev.
+    // laterales sentado — ambos ya se hacen en PUSH_VOL, mismo ejercicio,
+    // mismo ángulo, sin variación (Wakahara 2013: la hipertrofia sigue la
+    // variedad de activación, no repetir el idéntico estímulo 2x/sem). Este
+    // día se queda con lo que aporta ángulo/función distinta: laterales a
+    // media altura (trayectoria distinta a sentado), rear delt (Pájaro, no
+    // cubierto en Push), brazos y manguito rotador.
+    //
+    // FIX (2026-c, auditoría DUR-01): el rediseño 2026-b dejó esta sesión en
+    // ~39-50min, por debajo del mínimo aceptable de 60min (preferencias.md
+    // §2) — se llevó ~20min de Press hombro/Lat sentado sin compensar nada.
+    // Arreglo SIN tocar hombros/bíceps (su techo de volumen ya está ajustado):
+    //   1. Lat polea y Pájaro salen de la superserie SS1 y su descanso sube de
+    //      90 a 120s (sigue dentro del rango aislamiento 90-120s de
+    //      hipertrofia.md §6) — descanso real en vez de saltado, y Schoenfeld
+    //      2016 (misma evidencia ya citada en el proyecto) muestra que MÁS
+    //      descanso da MÁS hipertrofia, así que esto no es solo relleno de
+    //      tiempo, es la evidencia empujando en la misma dirección.
+    //   2. Rotación externa (Manguito, correctivo P2 — no cuenta contra el
+    //      techo de hipertrofia de ningún grupo) sube de 3 a 4 series.
+    //   3. Se añade Wall angels (P2: el objetivo postural CONCRETO de
+    //      prioridades.md/biometria.md §2) como 2ª exposición semanal —
+    //      correctivo, tampoco compite por el presupuesto de series de
+    //      hipertrofia, y da más frecuencia al ejercicio que más importa
+    //      para el objetivo de postura.
     HOMBR_VOL: [
-      ['EJE_PRESS_HOMB','Press hombro mancuernas',4,'8-10',150,'',''],
-      ['EJE_LAT_SENT','Elev. laterales sentado',4,'12-15',90,'P1: V-taper extra','SS1'],
-      ['EJE_LAT_POLEA','Elev. laterales polea (media altura)',3,'12-15',90,'','SS1'],
-      ['EJE_PAJARO','Pájaro inclinado',3,'12-15',90,'Rear delt',''],
+      ['EJE_LAT_POLEA','Elev. laterales polea (media altura)',3,'12-15',120,'',''],
+      ['EJE_PAJARO','Pájaro inclinado',3,'12-15',120,'Rear delt',''],
       ['EJE_ZOTTMAN','Curl Zottman',3,'10-12',90,'Bíceps+Antebrazo','SS2'],
       ['EJE_CURL_INC','Curl inclinado 45°',3,'10-12',90,'','SS2'],
       // Extensión overhead polea EXCLUIDA (biometria.md §9 + seleccion_ejercicios.md
       // §6: rango de estiramiento profundo, alto riesgo para dolor codo) — se
       // sustituye por la variante ya aprobada de rango controlado (ver catálogo).
       ['EJE_EXT_POLEA','Extensión unilateral polea',3,'10-12',90,'⚠️ Dolor codo: rango controlado, NO extensión completa',''],
-      ['EJE_ROT_EXT','Rotación externa banda',3,'15/lado',60,'P2: Manguito rotador','']
+      ['EJE_ROT_EXT','Rotación externa banda',4,'15/lado',60,'P2: Manguito rotador',''],
+      ['EJE_WALL_ANGEL','Wall angels',3,'8-10',60,'P2: Test postural — 2ª exposición/sem','']
     ],
     // FZA sin superseries: el objetivo es fuerza máxima, cada serie pesada
     // necesita su descanso completo (ACSM 2009: 3-5min) — mezclar con
@@ -2166,19 +2396,34 @@ const T = {
       ['EJE_HIP_THRUST','Hip thrust',3,'6-8',150,'',''],
       ['EJE_PLANCHA','Plancha lastrada',3,'45-60s',90,'Core','']
     ],
+    // FIX (2026-c, auditoría VOL-01): Bíceps en FZA caía a 7 ser/sem (Curl Z 3
+    // + Curl predicador 4) — 30-40% bajo el suelo de evidencia (10-14,
+    // hipertrofia.md §3), inconsistente con que Bíceps es la prioridad #2
+    // (por encima de Espalda #3, prioridades.md), y sin documentar como
+    // trade-off consciente (a diferencia de Pecho). Curl Z y Curl predicador
+    // suben al TOPE permitido por ejercicio (5, seleccion_ejercicios.md §4)
+    // en vez de añadir un ejercicio nuevo — Bíceps pasa a 10, dentro de
+    // rango, sin tocar el resto de la plantilla FZA (menos ejercicios, más
+    // carga, es la filosofía correcta de esta fase — Bompa 2019).
     PULL_FZA: [
       ['EJE_DOMINADAS','Dominadas lastradas',5,'4-6',210,'Pesado',''],
       ['EJE_REMO_NEUTRO','Remo neutro',4,'6-8',180,'',''],
       ['EJE_REMO_ROT','Remo unilateral',3,'8-10',150,'',''],
-      ['EJE_CURL_Z','Curl Z',3,'6-8',120,'Pesado',''],
+      ['EJE_CURL_Z','Curl Z',5,'6-8',120,'Pesado',''],
       ['EJE_FACE_PULL','Face pulls',2,'15',60,'Postura mantenimiento','']
     ],
     HOMBR_FZA: [
       ['EJE_PRESS_MIL','Press militar barra',4,'5-7',180,'Compuesto pesado',''],
       ['EJE_LAT_POLEA','Elev. laterales polea',4,'10-12',90,'Volumen medial',''],
-      ['EJE_CURL_PRED','Curl predicador',4,'6-8',120,'Pesado',''],
+      ['EJE_CURL_PRED','Curl predicador',5,'6-8',120,'Pesado',''],
       // Mismo criterio que en PUSH_FZA: rango hipertrofia, no fuerza, por el
       // dolor de codo (seleccion_ejercicios.md §6 + biometria.md §9).
+      // Tríceps se queda en 6 ser/sem (Francés 3 + Ext. polea 3) A PROPÓSITO
+      // — sin subir, a diferencia de Bíceps: son los 2 únicos ejercicios de
+      // tríceps con aviso ⚠️codo, y FZA ya implica cargas relativas más altas
+      // (aunque en rango de reps hipertrofia). Priorizar la seguridad del
+      // codo sobre cerrar el rango de volumen en la fase más pesada del año
+      // es la decisión correcta dado el historial del usuario (biometria.md §9).
       ['EJE_EXT_POLEA','Extensión unilateral polea',3,'10-12',120,'⚠️ Dolor codo: NO completar extensión total, carga moderada (biometria.md §9)','']
     ]
   };
@@ -2195,7 +2440,12 @@ function getTemplate(faseTipo, sesionTipo) {
 // Formato: { ejercicio_id: series_extra }
 const ESPECIALIZACION = {
   'FAS_02': { 'EJE_LAT_SENT':1, 'EJE_LAT_POLEA':1, 'EJE_DOMINADAS':1, 'EJE_REMO_NEUTRO':1 }, // V-Taper: +hombros +espalda
-  'FAS_04': { 'EJE_CURL_Z':1, 'EJE_CURL_PRED':1, 'EJE_ZOTTMAN':1, 'EJE_FRANC':1, 'EJE_EXT_POLEA':1 }, // Brazos: +bíceps +tríceps
+  // FIX (2026-c, auditoría VOL-02): con los 3 bonos de bíceps (Curl Z, Curl
+  // predicador, Zottman) a la vez, Bíceps subía a 15 ser/sem — 1 por encima
+  // del techo de evidencia (14, hipertrofia.md §3). Se quita el bono de
+  // Zottman (Curl Z y Curl predicador ya son los 2 ejercicios "foco" del
+  // nombre de la fase); Bíceps queda en 14, justo en el techo.
+  'FAS_04': { 'EJE_CURL_Z':1, 'EJE_CURL_PRED':1, 'EJE_FRANC':1, 'EJE_EXT_POLEA':1 }, // Brazos: +bíceps +tríceps
   'FAS_08': { 'EJE_SENTADILLA':1, 'EJE_RDL':1, 'EJE_HIP_THRUST':1, 'EJE_HOLLOW':1 }  // Balance: +pierna +core (EJE_PALLOF ya no está en el template, ver PIERNA_VOL)
 };
 
@@ -2392,7 +2642,7 @@ function rellenarPlanCompleto() {
   // fases, pese a que el plan cruza a 2027 (FAS_06 en adelante). Se toma el
   // año real del inicio de cada fase (date_inicio ya es correcto).
   const filasPlan = FASES.map(function(f, i) {
-    return [f.id, parseInt(f.inicio.substring(0, 4), 10), i+1, f.nombre, f.tipo, f.inicio, f.fin, f.sem, 16, f.rir, f.foco, f.nutri, ''];
+    return [f.id, parseInt(f.inicio.substring(0, 4), 10), i+1, f.nombre, f.tipo, f.inicio, f.fin, f.sem, f.rir, f.foco, f.nutri, ''];
   });
   hojaPlan.getRange(2, 1, filasPlan.length, filasPlan[0].length).setValues(filasPlan);
 

@@ -61,6 +61,15 @@ public class MacrosResponse {
     @SerializedName("es_fallback")
     public boolean esFallback;
 
+    // Ramadán (cultura.md §8) — advisory únicamente: las kcal/macros totales
+    // NO cambian, solo se reparten distinto (ver ramadanNota). Mismo patrón
+    // que SesionResponse.ramadanActivo/ramadanNota para entreno.
+    @SerializedName("ramadan_activo")
+    public boolean ramadanActivo;
+
+    @SerializedName("ramadan_nota")
+    public String ramadanNota;
+
     // Helpers
     public int getCaloriasRestantes() { return Math.max(0, caloriasObjetivo - caloriasConsumidas); }
     public int getProteinaRestante() { return Math.max(0, proteinaG - proteinaConsumidaG); }

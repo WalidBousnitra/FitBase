@@ -354,6 +354,13 @@ COMIDA_COMPARTIDA:
 ## 8. Adaptaciones para el Sistema
 
 ### Filtros de Alimentos
+
+> **N/A para el código actual** (auditoría 2026-c, NUT-04): la app no genera
+> ni sugiere alimentos — la nutrición es de solo lectura desde FatSecret/
+> Health Connect (macros objetivo, nunca platos concretos). Esta lista queda
+> como referencia para el propio usuario, no como una función que el motor
+> deba implementar.
+
 ```yaml
 FILTROS_HALAL:
   excluir_siempre:

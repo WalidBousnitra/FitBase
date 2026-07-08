@@ -291,7 +291,7 @@
             <li><strong>Notas opcionales</strong> — campo de texto libre por si quieres apuntar algo del día.</li>
             <li>Solo se pregunta una vez al día. Si no respondes, no vuelve a insistir hasta el día siguiente.</li>
         </ol>
-        <p>Esto alimenta la Capa 6 del motor de cargas (ajuste diario): estrés alto (4-5/5) reduce el factor del día siguiente. También aparece en Progresión, junto a energía/estrés de días anteriores.</p>
+        <p>Esto es <strong>solo tracking</strong> (decisión explícita, 2026): energía y estrés ya NO alimentan la Capa 6 del motor de cargas — se guardan y se ven en Progresión, junto a los días anteriores, pero no mueven ningún cálculo de peso/volumen. La Capa 6 usa solo FC reposo y sleep score (Kiviniemi 2007, Fullagar 2015).</p>
     </div>
 </section>
 
@@ -377,8 +377,8 @@
         <h3>Capas adicionales</h3>
         <p>
             <strong>Nutrición (Helms 2014):</strong> En fase de cutting, la subida se reduce al 50%. Porque es fisiológicamente difícil ganar fuerza en déficit calórico.<br><br>
-            <strong>Descanso inter-sesión:</strong> Si no hiciste este ejercicio en &gt;7 días → ×0.95 (conservador). &gt;14 días → ×0.90 (desentrenamiento parcial).<br><br>
-            <strong>Ajuste diario (Kiviniemi 2007):</strong> FC reposo alta (+10 vs media) → ×0.80. FC en tendencia ascendente 2+ días → ×0.70 (recuperación activa). Sleep score &lt;60 → ×0.90. Estrés &gt;7/10 → ×0.85.
+            <strong>Descanso inter-sesión:</strong> Si no hiciste este ejercicio en &gt;7 días → ×0.95 (conservador). El tramo &gt;14 días se eliminó (2026) — con retención de log de 7 días nunca sobrevive un log lo bastante viejo para dispararlo, era código muerto.<br><br>
+            <strong>Ajuste diario (Kiviniemi 2007, Fullagar 2015):</strong> FC reposo alta (+10 vs media) → ×0.80. FC en tendencia ascendente 2+ días → ×0.70 (recuperación activa, corta el resto de factores). Sleep score &lt;60 → ×0.90. Estrés/energía subjetivos ya NO entran aquí (2026) — se siguen guardando y se ven en Progresión, pero es solo tracking, decisión explícita tuya.
         </p>
     </div>
 
@@ -441,10 +441,10 @@
     <div class="card">
         <h3>Macros</h3>
         <p>
-            <strong>Proteína:</strong> 2.0 g/kg (bulk/mantener) o 2.4 g/kg (cut — preservar músculo, Helms 2014)<br>
+            <strong>Proteína:</strong> 2.0 g/kg de peso total (bulk/mantener) o 2.7 g/kg de <strong>masa magra real</strong> (cut — preservar músculo, Helms 2014: rango 2.3-3.1 g/kg LBM). Se calcula sobre tu %grasa más reciente de Health Connect, no un supuesto fijo.<br>
             <strong>Grasa:</strong> 1.0 g/kg (salud hormonal), 25% de las kcal en cut<br>
             <strong>Carbos:</strong> Resto de calorías ÷ 4 (aquí absorbe el bonus de pasos)<br>
-            <strong>Agua:</strong> peso × 35ml + 500ml si entrenas
+            <strong>Agua:</strong> peso × 35ml + 500ml si entrenas, +15% si es Ramadán (hidratación prioritaria)
         </p>
     </div>
 
