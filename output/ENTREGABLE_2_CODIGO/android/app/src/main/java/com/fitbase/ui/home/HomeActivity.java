@@ -53,7 +53,7 @@ public class HomeActivity extends BaseActivity {
                     granted -> { if (viewModel != null) viewModel.cargarDatosDelDia(); });
 
     // ─── Vistas: Header ───
-    private TextView tvSaludo, tvFecha, tvTipoDia, tvFaseNombre;
+    private TextView tvSaludo, tvFecha, tvTipoDia, tvTipoSesion, tvFaseNombre;
 
     // ─── Vistas: Sueño ───
     private TextView tvSleepScore, tvFcReposo, tvAvisoFatiga;
@@ -214,6 +214,7 @@ public class HomeActivity extends BaseActivity {
         tvSaludo = findViewById(R.id.tvSaludo);
         tvFecha = findViewById(R.id.tvFecha);
         tvTipoDia = findViewById(R.id.tvTipoDia);
+        tvTipoSesion = findViewById(R.id.tvTipoSesion);
         tvFaseNombre = findViewById(R.id.tvFaseNombre);
 
         tvSleepScore = findViewById(R.id.tvSleepScore);
@@ -397,6 +398,16 @@ public class HomeActivity extends BaseActivity {
             default: tipoDiaTexto = "DESCANSO"; break;
         }
         tvTipoDia.setText(tipoDiaTexto);
+
+        // ── Split de hoy (Push/Pierna/Pull/Hombros+Brazos) ──
+        // Solo en días de gym — para saber qué mochila preparar por la mañana
+        // sin tener que entrar al flujo de entreno.
+        if (vista.esGym() && vista.getTipoSesion() != null) {
+            tvTipoSesion.setText(vista.getTipoSesion());
+            tvTipoSesion.setVisibility(View.VISIBLE);
+        } else {
+            tvTipoSesion.setVisibility(View.GONE);
+        }
 
         // ── Fase ──
         if (vista.getFase() != null) {

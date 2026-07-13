@@ -74,6 +74,20 @@
                     android:paddingVertical="@dimen/space_xs" />
 
                 <TextView
+                    android:id="@+id/tvTipoSesion"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/space_sm"
+                    android:text="—"
+                    android:textSize="@dimen/home_text_chip"
+                    android:fontFamily="sans-serif-medium"
+                    android:textColor="@color/text_primary"
+                    android:background="@drawable/bg_badge_actual"
+                    android:paddingHorizontal="@dimen/space_md"
+                    android:paddingVertical="@dimen/space_xs"
+                    android:visibility="gone" />
+
+                <TextView
                     android:id="@+id/tvFaseNombre"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"

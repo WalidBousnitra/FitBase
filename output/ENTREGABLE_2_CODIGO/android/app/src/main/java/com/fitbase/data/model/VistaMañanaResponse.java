@@ -16,6 +16,11 @@ public class VistaMañanaResponse {
     @SerializedName("tipo_dia")
     private String tipoDia; // "gym", "natacion", "descanso"
 
+    // Split del día (Push/Pierna/Pull/Hombros+Brazos) — solo presente si
+    // tipoDia es "gym"; null en natación/descanso (tipoDia ya lo dice todo).
+    @SerializedName("tipo_sesion")
+    private String tipoSesion;
+
     @SerializedName("pre_temporada")
     private boolean preTemporada; // true antes de que empiece el plan de 11 meses
 
@@ -183,6 +188,7 @@ public class VistaMañanaResponse {
 
     public String getFecha() { return fecha; }
     public String getTipoDia() { return tipoDia; }
+    public String getTipoSesion() { return tipoSesion; }
     public boolean isPreTemporada() { return preTemporada; }
     public String getFechaInicioPlan() { return fechaInicioPlan; }
     public FaseInfo getFase() { return fase; }

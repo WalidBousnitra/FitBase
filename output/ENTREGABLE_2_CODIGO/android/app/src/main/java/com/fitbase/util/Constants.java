@@ -28,5 +28,5 @@ public final class Constants {
     // Botones de desarrollo en Home (TEST/FASE/ENTRENO/RAMADÁN) — true en
     // desarrollo, cambiar a false antes de release para ocultarlos todos de
     // una vez (un único punto de control, no hay que tocar cada botón).
-    public static final boolean MOSTRAR_BOTONES_DEMO = true;
+    public static final boolean MOSTRAR_BOTONES_DEMO = false;
 }

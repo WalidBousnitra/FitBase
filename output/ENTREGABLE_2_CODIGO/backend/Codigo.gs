@@ -905,6 +905,12 @@ function getVistaMañana_() {
   return {
     fecha: hoy,
     tipo_dia: tipoDia,
+    // Split del día (Push/Pierna/Pull/Hombros+Brazos) para que la vista de
+    // mañana ya diga qué toca hoy, sin esperar a abrir el flujo de gym —
+    // así se sabe qué mochila preparar. Mismo TIPO_DISPLAY que usa
+    // populateSesionesPlan_/generarSesionTestHoy_, para que coincida
+    // exactamente con lo que luego muestra la pantalla de entreno.
+    tipo_sesion: tipoDia === 'gym' ? TIPO_DISPLAY[tipoSesionHoy] : null,
     pre_temporada: preTemporada,
     fecha_inicio_plan: plan.fecha_inicio,
     fase: faseActual ? { fase_id: faseActual.fase_id, nombre: faseActual.str_nombre_fase, tipo: tipoFase, nutri: faseActual.str_objetivo_nutri } : null,
