@@ -362,8 +362,12 @@ public class HomeActivity extends BaseActivity {
             if (score != null) {
                 tvSleepScore.setText(String.valueOf(score));
                 pintarColorSueno(score);
-                if (score < 60) {
-                    tvAvisoFatiga.setText("Sueño pobre — sesión reducida");
+                // Umbral alineado con calcularAjusteDia_ (Codigo.gs, 2026-d): antes
+                // <60 mostraba este aviso para casi cualquier noche imperfecta, aunque
+                // el efecto real en carga fuera mínimo. Ahora solo se muestra cuando el
+                // backend realmente aplica el ajuste (<30).
+                if (score < 30) {
+                    tvAvisoFatiga.setText("Sueño pobre — carga ligeramente reducida");
                     tvAvisoFatiga.setVisibility(View.VISIBLE);
                 } else {
                     tvAvisoFatiga.setVisibility(View.GONE);
@@ -410,8 +414,8 @@ public class HomeActivity extends BaseActivity {
                 Integer score = vista.getSueno().sleepScore;
                 tvSleepScore.setText(score != null ? String.valueOf(score) : "—");
                 if (score != null) pintarColorSueno(score);
-                if (score != null && score < 60) {
-                    tvAvisoFatiga.setText("Sueño pobre — sesión reducida");
+                if (score != null && score < 30) {
+                    tvAvisoFatiga.setText("Sueño pobre — carga ligeramente reducida");
                     tvAvisoFatiga.setVisibility(View.VISIBLE);
                 } else {
                     tvAvisoFatiga.setVisibility(View.GONE);

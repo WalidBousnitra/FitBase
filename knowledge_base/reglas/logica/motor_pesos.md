@@ -37,7 +37,7 @@ Algoritmo que ajusta las cargas de entrenamiento basándose en fatiga, sueño y 
 
 | Variable | Criterio | Acción | Evidencia |
 |----------|----------|--------|-----------|
-| `HC_SLEEP_SCORE` (calculado) | **< 60** | Reducir volumen | ⚠️ HEURÍSTICO |
+| `HC_SLEEP_SCORE` (calculado) | **< 30** | Reducir carga ligeramente (<5%) | ⚠️ HEURÍSTICO |
 | `HC_HR_REST` | **+10bpm vs baseline** | Considerar descanso | ⚠️ HEURÍSTICO |
 | `HC_HR_REST` | **↑ 2+ días consecutivos** | Día de recuperación activa | ✅ Adaptado de Kiviniemi 2007 |
 
@@ -104,9 +104,12 @@ def calcular_ajuste(datos_usuario):
         ajuste *= 0.80  # Reducción significativa
     
     # --- HEURÍSTICAS (marcar claramente) ---
-    # Sleep Score: calculado desde HC_SLEEP_DURATION + fases
-    if datos_usuario.sleep_score < 60:
-        ajuste *= 0.90  # ⚠️ HEURÍSTICO
+    # Sleep Score: calculado desde HC_SLEEP_DURATION + fases (ESTIMADO, no es
+    # el score real de Zepp — ver hardware.md §4). Umbral y magnitud
+    # recalibrados (2026-d): el score puede hundirse en una noche buena con
+    # fases atípicas, así que solo reacciona ante un score claramente malo.
+    if datos_usuario.sleep_score < 30:
+        ajuste *= 0.96  # ⚠️ HEURÍSTICO — antes <60 → ×0.90
 
     # Estrés/energía subjetivos: NO entran aquí (2026) — solo tracking, ver §3.
 
@@ -219,9 +222,14 @@ ctx:
 > **Capa 6 — historial (2026)**: llegó a incluir estrés y energía subjetivos
 > (factor mínimo apilado 0.55, −45%, más agresivo que un deload), con un suelo
 > en 0.70 para limitarlo. El usuario pidió sacar estrés/energía del cálculo por
-> completo (quiere solo trackearlos, ver §3) — con solo FC(×0.80) y sueño(×0.90)
-> el mínimo posible ya es 0.72, así que el suelo de 0.70 quedó inalcanzable y se
-> quitó también (código muerto, mismo criterio que el fix de la Capa 5).
+> completo (quiere solo trackearlos, ver §3) — con solo FC(×0.80) y sueño el
+> mínimo posible ya quedaba muy por encima de 0.70, así que el suelo se quitó
+> también (código muerto, mismo criterio que el fix de la Capa 5).
+>
+> **Recalibración sueño (2026-d)**: umbral <60→×0.90 bajado a <30→×0.96 (a
+> petición del usuario) — el score es una estimación (ver §3) que penaliza con
+> demasiada fuerza noches buenas con fases de sueño atípicas. Mínimo apilado
+> actual: FC(×0.80) × sueño(×0.96) = 0.768.
 
 ### Fórmula APRE (Capa 2):
 ```

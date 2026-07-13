@@ -1323,9 +1323,17 @@ function calcularAjusteDia_() {
     }
 
     // ⚠️ HEURÍSTICO: sueño pobre (basado en Fullagar 2015 sin umbral específico)
-    if (metrica.num_sleep_score && metrica.num_sleep_score < 60) {
-      factor *= 0.90;
-      razones.push('Sleep score bajo <60 (heurístico, Fullagar 2015)');
+    // Umbral y magnitud recalibrados (2026-d, a petición del usuario): el score
+    // de esta app es una ESTIMACIÓN (HealthConnectBridge.kt — Health Connect no
+    // expone el score real de Zepp), calculada desde duración+fases con una
+    // penalización agresiva (×3 por punto de desviación de %profundo/%REM
+    // "típico") que puede hundir el número en una noche buena pero con una
+    // distribución de fases distinta a la media poblacional. Con <60 → ×0.90,
+    // casi cualquier noche imperfecta disparaba un recorte notable. Ahora solo
+    // reacciona ante un score claramente malo, y con un castigo menor.
+    if (metrica.num_sleep_score && metrica.num_sleep_score < 30) {
+      factor *= 0.96;
+      razones.push('Sleep score muy bajo <30 (heurístico, Fullagar 2015)');
     }
   }
 
@@ -1333,7 +1341,7 @@ function calcularAjusteDia_() {
   // (2026): se siguen guardando vía guardarMetricasSubjetivas_ y se ven en
   // progresión, pero el motor ya no los usa para recortar carga. Petición
   // explícita del usuario: "solo quiero trackearlo". Esto también deja el
-  // stack máximo en FC(×0.80) × sueño(×0.90) = 0.72, así que el antiguo tope
+  // stack máximo en FC(×0.80) × sueño(×0.96) = 0.768, así que el antiguo tope
   // de −30% (0.70) ya no puede alcanzarse con las señales que quedan — se
   // quita también para no dejar código muerto (mismo criterio que el fix
   // de la Capa 5 de calcularPesoSugerido_).
