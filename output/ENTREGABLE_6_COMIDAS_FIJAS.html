@@ -26,7 +26,17 @@
         .target-badge { display: inline-block; background: var(--surface2); border: 1px solid var(--accent); border-radius: 100px; padding: 6px 14px; font-size: 0.8rem; margin-bottom: 18px; }
         .target-badge strong { color: var(--accent); }
 
-        .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; align-items: start; }
+        /* ═══ CARRUSEL — tarjetas que se deslizan a izq/dcha, una por pantalla ═══ */
+        .grid2, .plate-grid { display: flex; gap: 14px; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: 6px; align-items: stretch; }
+        .grid2::-webkit-scrollbar, .plate-grid::-webkit-scrollbar { display: none; }
+        .grid2 > .card, .plate-grid > .plate-card { flex: 0 0 85%; scroll-snap-align: center; }
+        @media (min-width: 640px) {
+            .grid2 > .card, .plate-grid > .plate-card { flex: 0 0 340px; }
+        }
+        .carousel-hint { text-align: center; font-size: 0.76rem; color: var(--text3); margin: 6px 0 10px; }
+        .carousel-dots { display: flex; justify-content: center; align-items: center; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+        .carousel-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--surface2); cursor: pointer; transition: width 0.15s, background 0.15s; }
+        .carousel-dot.activo { background: var(--accent); width: 16px; border-radius: 3px; }
 
         .card { background: var(--surface); border-radius: var(--radius); padding: 18px; display: flex; flex-direction: column; }
         .card-num { font-size: 0.72rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
@@ -67,7 +77,6 @@
         .modular-box { background: rgba(45,212,191,0.08); border-left: 3px solid var(--modular); border-radius: 8px; padding: 14px 16px; margin: 16px 0; font-size: 0.85rem; color: var(--text2); }
         .modular-box strong { color: var(--modular); }
 
-        .plate-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; align-items: start; }
         .plate-card { background: var(--surface); border-radius: var(--radius); padding: 16px; border-top: 2px solid var(--modular); }
         .plate-card .pnum { font-size: 0.72rem; color: var(--modular); text-transform: uppercase; letter-spacing: 0.05em; }
         .plate-card h4 { font-size: 0.95rem; font-weight: 600; margin: 4px 0 8px; }
@@ -142,7 +151,6 @@
             .hero p { font-size: 0.9rem; }
             section { padding: 22px 14px; }
             h2 { font-size: 1.2rem; }
-            .grid2 { grid-template-columns: 1fr; }
             .card { padding: 15px; }
             .card-num { font-size: 0.74rem; flex-wrap: wrap; }
             .card h3 { font-size: 1rem; }
@@ -153,7 +161,6 @@
             table.ing-table td { display: block; padding: 0; border-bottom: none; }
             .badge-mini { font-size: 0.68rem; }
             .fase-tag { font-size: 0.72rem; }
-            .plate-grid { grid-template-columns: 1fr; }
             .target-badge { font-size: 0.76rem; padding: 6px 12px; }
             .fase-switcher { padding: 8px 10px; gap: 4px; }
             .fase-tab { font-size: 0.74rem; padding: 9px 4px; }
@@ -248,7 +255,8 @@
     <div class="obj-fase vol" data-fase-obj="vol"><strong>Volumen</strong> ~720 kcal·40P·105C·16G</div>
     <div class="obj-fase cut" data-fase-obj="cut"><strong>Definición</strong> ~500 kcal·44P·55C·13G</div>
     <div class="obj-fase mnt" data-fase-obj="mnt"><strong>Mantenimiento</strong> ~625 kcal·40P·82C·16G</div>
-    <div class="grid2">
+    <div class="carousel-hint">‹ desliza para ver las demás opciones ›</div>
+    <div class="grid2" id="carruselDesayuno">
 
         <div class="card">
             <div class="card-num">Opción 1</div>
@@ -337,6 +345,7 @@
         </div>
 
     </div>
+    <div class="carousel-dots" id="dotsDesayuno"></div>
 </section>
 
 <!-- ============================= COMIDA ============================= -->
@@ -346,7 +355,8 @@
     <div class="obj-fase vol" data-fase-obj="vol"><strong>Volumen</strong> ~920 kcal·42P·140C·23G</div>
     <div class="obj-fase cut" data-fase-obj="cut"><strong>Definición</strong> ~640 kcal·46P·74C·19G</div>
     <div class="obj-fase mnt" data-fase-obj="mnt"><strong>Mantenimiento</strong> ~800 kcal·42P·110C·23G</div>
-    <div class="grid2">
+    <div class="carousel-hint">‹ desliza para ver las demás opciones ›</div>
+    <div class="grid2" id="carruselComida">
 
         <div class="card">
             <div class="card-num">Opción 1</div>
@@ -452,6 +462,7 @@
         </div>
 
     </div>
+    <div class="carousel-dots" id="dotsComida"></div>
 </section>
 
 <!-- ============================= CENA ============================= -->
@@ -461,7 +472,8 @@
     <div class="obj-fase vol" data-fase-obj="vol"><strong>Volumen</strong> ~920 kcal·42P·140C·23G</div>
     <div class="obj-fase cut" data-fase-obj="cut"><strong>Definición</strong> ~640 kcal·46P·74C·19G</div>
     <div class="obj-fase mnt" data-fase-obj="mnt"><strong>Mantenimiento</strong> ~800 kcal·42P·110C·23G</div>
-    <div class="grid2">
+    <div class="carousel-hint">‹ desliza para ver las demás opciones ›</div>
+    <div class="grid2" id="carruselCena">
 
         <div class="card">
             <div class="card-num">Opción 1</div>
@@ -550,6 +562,7 @@
         </div>
 
     </div>
+    <div class="carousel-dots" id="dotsCena"></div>
 </section>
 
 <!-- ============================= SNACKS ============================= -->
@@ -559,7 +572,8 @@
     <div class="obj-fase vol" data-fase-obj="vol"><strong>Volumen</strong> ~240 kcal·11P·34C·5G</div>
     <div class="obj-fase cut" data-fase-obj="cut"><strong>Definición</strong> ~168 kcal·12P·18C·4G</div>
     <div class="obj-fase mnt" data-fase-obj="mnt"><strong>Mantenimiento</strong> ~208 kcal·11P·27C·5G</div>
-    <div class="grid2">
+    <div class="carousel-hint">‹ desliza para ver las demás opciones ›</div>
+    <div class="grid2" id="carruselSnack">
         <div class="card">
             <div class="card-num">Opción 1</div>
             <h3>Dátiles + frutos secos</h3>
@@ -594,6 +608,7 @@
             </div>
         </div>
     </div>
+    <div class="carousel-dots" id="dotsSnack"></div>
 </section>
 
 <!-- ============================= PRODUCTOS DE SUPERMERCADO / FUERA DE CASA ============================= -->
@@ -651,7 +666,8 @@
 <section data-momento="ideas">
     <h2>🍽️ 10 Ideas de Ensamble Modular (Zero Cocina)</h2>
     <div class="sec-desc">Repertorio libre para variar — no todas están calibradas a un macro exacto (para eso usa las opciones <span class="badge-mini modular">MODULAR</span> de Comida/Cena de arriba). Regla de oro: cero fuego, cero horno, cero salsas complejas — todo se dispone en el plato tal cual, jugando con contrastes de textura (crujiente/cremoso) y sabor (dulce/salado/ácido). Jamón serrano sustituido por cecina (halal).</div>
-    <div class="plate-grid">
+    <div class="carousel-hint">‹ desliza para ver las 10 ideas ›</div>
+    <div class="plate-grid" id="carruselIdeas">
         <div class="plate-card">
             <div class="pnum">1</div>
             <h4>Bikini Griego de Atún</h4>
@@ -705,6 +721,7 @@
             <ul><li><b>Proteína:</b> queso batido</li><li><b>Vegetal:</b> espinaca baby</li><li><b>Grasa:</b> nueces</li><li><b>Carbo:</b> uvas</li><li><b>Toque:</b> miel + pimienta negra</li></ul>
         </div>
     </div>
+    <div class="carousel-dots" id="dotsIdeas"></div>
 </section>
 
 <section data-momento="info">
@@ -809,6 +826,59 @@
         return momentoPorHora();
     }
 
+    var CARRUSELES = [
+        ['carruselDesayuno', 'dotsDesayuno', '.card'],
+        ['carruselComida', 'dotsComida', '.card'],
+        ['carruselCena', 'dotsCena', '.card'],
+        ['carruselSnack', 'dotsSnack', '.card'],
+        ['carruselIdeas', 'dotsIdeas', '.plate-card']
+    ];
+
+    // Tarjetas deslizables (izq/dcha) en vez de lista larga — una opción por
+    // pantalla, con puntos abajo para saber cuántas hay y en cuál estás.
+    function initCarousel(contId, dotsId, itemSel) {
+        var cont = document.getElementById(contId);
+        var dots = document.getElementById(dotsId);
+        if (!cont || !dots) return;
+        var items = cont.querySelectorAll(itemSel);
+
+        dots.innerHTML = '';
+        items.forEach(function (item, i) {
+            var d = document.createElement('span');
+            d.className = 'carousel-dot';
+            d.addEventListener('click', function () {
+                item.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+            });
+            dots.appendChild(d);
+        });
+
+        function actualizarActivo() {
+            var centro = cont.scrollLeft + cont.clientWidth / 2;
+            var mejorIdx = 0, mejorDist = Infinity;
+            items.forEach(function (item, i) {
+                var mid = item.offsetLeft + item.offsetWidth / 2;
+                var dist = Math.abs(mid - centro);
+                if (dist < mejorDist) { mejorDist = dist; mejorIdx = i; }
+            });
+            dots.querySelectorAll('.carousel-dot').forEach(function (d, i) {
+                d.classList.toggle('activo', i === mejorIdx);
+            });
+        }
+
+        if (!cont.dataset.carruselInit) {
+            cont.dataset.carruselInit = '1';
+            cont.addEventListener('scroll', function () {
+                clearTimeout(cont._scrollT);
+                cont._scrollT = setTimeout(actualizarActivo, 80);
+            });
+        }
+        actualizarActivo();
+    }
+
+    function initTodosCarruseles() {
+        CARRUSELES.forEach(function (c) { initCarousel(c[0], c[1], c[2]); });
+    }
+
     window.setMomento = function (momento) {
         document.querySelectorAll('.momento-chip').forEach(function (chip) {
             chip.classList.toggle('activa', chip.dataset.momento === momento);
@@ -817,6 +887,8 @@
             el.classList.toggle('momento-oculto', momento !== 'todo' && el.dataset.momento !== momento);
         });
         window.scrollTo(0, 0);
+        // Recalcula puntos ahora que la sección recién mostrada tiene medidas reales.
+        initTodosCarruseles();
     };
 
     aplicarFiltro(faseGuardada());
