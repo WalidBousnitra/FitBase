@@ -93,6 +93,49 @@
         .tipo-tag.fat { background: rgba(251,191,36,0.15); color: var(--fat); }
         .tipo-tag.veg { background: rgba(34,197,94,0.15); color: var(--success); }
 
+        /* ═══ CABECERA FIJA: fase (cantidades) + momento (qué sección ver) ═══ */
+        .app-header { position: sticky; top: 0; z-index: 50; background: var(--bg); border-bottom: 1px solid var(--surface2); }
+        .fase-switcher { display: flex; gap: 6px; padding: 10px 14px 6px; }
+        .fase-tab { flex: 1; min-width: 0; overflow-wrap: break-word; word-break: break-word; text-align: center; padding: 10px 4px; border-radius: 10px; font-size: 0.82rem; font-weight: 500; background: var(--surface); color: var(--text2); border: 1px solid var(--surface2); cursor: pointer; user-select: none; }
+        .fase-tab.activa[data-fase="vol"] { background: rgba(167,139,250,0.18); color: var(--vol); border-color: var(--vol); }
+        .fase-tab.activa[data-fase="cut"] { background: rgba(249,115,22,0.18); color: var(--cut); border-color: var(--cut); }
+        .fase-tab.activa[data-fase="mnt"] { background: rgba(34,197,94,0.18); color: var(--mnt); border-color: var(--mnt); }
+
+        .momento-switcher { display: flex; gap: 6px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 6px 14px 10px; scrollbar-width: none; }
+        .momento-switcher::-webkit-scrollbar { display: none; }
+        .momento-chip { flex: 0 0 auto; padding: 9px 15px; border-radius: 100px; font-size: 0.8rem; font-weight: 500; background: var(--surface); color: var(--text2); border: 1px solid var(--surface2); cursor: pointer; user-select: none; white-space: nowrap; }
+        .momento-chip.activa { background: rgba(59,130,246,0.18); color: var(--accent); border-color: var(--accent); }
+
+        [data-momento].momento-oculto { display: none; }
+
+        .fase-guia-toggle { text-align: center; font-size: 0.78rem; color: var(--accent); padding: 8px 0 2px; cursor: pointer; user-select: none; }
+        .fase-guia-body { display: none; }
+        .fase-guia-body.abierta { display: block; }
+
+        .adjust-row.fase-oculta { display: none; }
+
+        .obj-fase { display: inline-block; padding: 6px 14px; border-radius: 100px; font-size: 0.82rem; background: var(--surface2); border: 1px solid var(--accent); margin-bottom: 4px; }
+        .obj-fase.fase-oculta { display: none; }
+        .obj-fase strong { color: var(--accent); }
+
+        .sodio-tag { display: inline-block; font-size: 0.64rem; color: var(--warning); border: 1px solid var(--warning); border-radius: 100px; padding: 0 6px; margin-left: 6px; white-space: nowrap; vertical-align: middle; }
+        .potasio-tag { display: inline-block; font-size: 0.64rem; color: var(--success); border: 1px solid var(--success); border-radius: 100px; padding: 0 6px; margin-left: 6px; white-space: nowrap; vertical-align: middle; }
+        .fila-sodio-oculta { display: none; }
+        .sodio-toggle { display: inline-block; margin-top: 6px; font-size: 0.8rem; color: var(--accent); cursor: pointer; text-decoration: underline; }
+        .sodio-toggle.oculto { display: none; }
+
+        /* ═══ CAJAS DE GUÍA POR FASE (Volumen/Definición/Mantenimiento) ═══ */
+        .fase-info-box { border-radius: 8px; padding: 14px 16px; margin: 16px 0; font-size: 0.85rem; color: var(--text2); border-left: 3px solid var(--accent); }
+        .fase-info-box.fase-oculta { display: none; }
+        .fase-info-box[data-fase-info="vol"] { background: rgba(167,139,250,0.08); border-left-color: var(--vol); }
+        .fase-info-box[data-fase-info="vol"] strong { color: var(--vol); }
+        .fase-info-box[data-fase-info="cut"] { background: rgba(249,115,22,0.08); border-left-color: var(--cut); }
+        .fase-info-box[data-fase-info="cut"] strong { color: var(--cut); }
+        .fase-info-box[data-fase-info="mnt"] { background: rgba(34,197,94,0.08); border-left-color: var(--mnt); }
+        .fase-info-box[data-fase-info="mnt"] strong { color: var(--mnt); }
+        .fase-info-box ul { margin: 8px 0 0 18px; }
+        .fase-info-box li { margin-bottom: 4px; }
+
         @media (max-width: 640px) {
             .hero { min-height: auto; padding: 34px 16px; }
             .hero h1 { font-size: 1.5rem; }
@@ -112,12 +155,60 @@
             .fase-tag { font-size: 0.72rem; }
             .plate-grid { grid-template-columns: 1fr; }
             .target-badge { font-size: 0.76rem; padding: 6px 12px; }
+            .fase-switcher { padding: 8px 10px; gap: 4px; }
+            .fase-tab { font-size: 0.74rem; padding: 9px 4px; }
+            .fase-info-box, .sodio-toggle { font-size: 0.8rem; }
+        }
+        @media (max-width: 360px) {
+            .fase-tab { font-size: 0.66rem; padding: 8px 2px; }
+            .momento-chip { font-size: 0.74rem; padding: 8px 12px; }
         }
     </style>
 </head>
 <body>
 
-<section class="pantry-section">
+<!-- ═══ CABECERA FIJA ═══ -->
+<div class="app-header">
+    <!-- Fase: decide CANTIDADES (qué versión de cada receta) -->
+    <div class="fase-switcher" id="faseSwitcher">
+        <div class="fase-tab" data-fase="vol" onclick="setFase('vol')">🟣 Volumen</div>
+        <div class="fase-tab" data-fase="cut" onclick="setFase('cut')">🟠 Definición</div>
+        <div class="fase-tab" data-fase="mnt" onclick="setFase('mnt')">🟢 Mantenim.</div>
+    </div>
+    <!-- Momento: decide QUÉ SECCIÓN ver — se autoselecciona según la hora al abrir -->
+    <div class="momento-switcher" id="momentoSwitcher">
+        <div class="momento-chip" data-momento="desayuno" onclick="setMomento('desayuno')">🍳 Desayuno</div>
+        <div class="momento-chip" data-momento="comida" onclick="setMomento('comida')">🍱 Comida</div>
+        <div class="momento-chip" data-momento="cena" onclick="setMomento('cena')">🌙 Cena</div>
+        <div class="momento-chip" data-momento="snack" onclick="setMomento('snack')">🥜 Snack</div>
+        <div class="momento-chip" data-momento="super" onclick="setMomento('super')">🛒 Fuera de casa</div>
+        <div class="momento-chip" data-momento="ideas" onclick="setMomento('ideas')">🍽️ Ideas</div>
+        <div class="momento-chip" data-momento="info" onclick="setMomento('info')">ℹ️ Info</div>
+        <div class="momento-chip" data-momento="todo" onclick="setMomento('todo')">📋 Todo</div>
+    </div>
+</div>
+
+<section data-momento="info" style="padding-bottom:0;">
+    <div class="fase-guia-toggle" onclick="toggleGuiaFase()" id="guiaFaseToggle">ℹ️ Qué vigilar en tu fase actual ▸</div>
+    <div class="fase-guia-body" id="guiaFaseBody">
+        <div class="fase-info-box" data-fase-info="vol">
+            <strong>En Volumen:</strong> prioriza carbohidratos alrededor del entreno (Helms 2014) y no te cortes con snacks calóricos (frutos secos, fruta desecada, dátiles) — el agua extra que retengas por sodio o glucógeno es normal e incluso ayuda al rendimiento, no hace falta vigilarla en esta fase.
+        </div>
+        <div class="fase-info-box" data-fase-info="cut">
+            <strong>En Definición, además de bajar calorías, vigila 3 cosas más:</strong>
+            <ul>
+                <li><strong>Sodio</strong> — favorece retener agua subcutánea que tapa visualmente la grasa perdida, aunque báscula y macros vayan bien. Por eso en Fuera de Casa los embutidos/curados quedan ocultos por defecto en esta fase.</li>
+                <li><strong>Potasio</strong> — ayuda a compensar el sodio y a eliminar el agua retenida: plátano, patata, tomate, espinaca, aguacate (marcados con <span class="potasio-tag">✅ K</span> donde aplica).</li>
+                <li><strong>Densidad calórica / saciedad</strong> — con menos margen calórico, prioriza volumen (verdura, proteína magra, fruta entera) sobre snacks muy calóricos y poco saciantes (frutos secos en exceso, chocolate, fruta desecada) — no están prohibidos, solo cuidado con la ración.</li>
+            </ul>
+        </div>
+        <div class="fase-info-box" data-fase-info="mnt">
+            <strong>En Mantenimiento:</strong> sin restricciones especiales — es la fase con más margen, cualquier opción de abajo vale tal cual. Sigue repartiendo bien la proteína entre comidas y cumpliendo el agua objetivo.
+        </div>
+    </div>
+</section>
+
+<section data-momento="info" class="pantry-section">
     <h2>🧺 Despensa Mínima</h2>
     <div class="sec-desc">Con estos 7 ingredientes en casa, siempre puedes montar al menos 1 desayuno + 1 comida + 1 cena de las opciones de abajo, sin depender de tupper ni de comprar nada más: <strong>Desayuno Opción 3</strong> (Tostadas con atún y huevo duro) + <strong>Comida Opción 2</strong> (Pasta integral + atún + tomate) + <strong>Cena Opción 1</strong> (Huevos con tomate + arroz) — se reparten entre sí el huevo, el atún y el tomate, así que no sobra nada en la despensa.</div>
     <table class="pantry-table">
@@ -131,12 +222,12 @@
     </table>
 </section>
 
-<div class="hero">
+<div class="hero" data-momento="info">
     <h1>Comidas Fijas — Desayuno · Comida · Cena</h1>
     <p>Cada opción de abajo trae su propia tabla de ajuste: la misma receta base, con las cantidades que cambian según tu fase actual (<span class="fase-tag vol">Volumen</span> <span class="fase-tag cut">Definición</span> <span class="fase-tag mnt">Mantenimiento</span> — <code>getMacrosHoy_()</code> en Codigo.gs). Mira el campo <code>fase</code> de la pantalla Home para saber cuál te toca hoy.</p>
 </div>
 
-<section>
+<section data-momento="info">
     <h2>Cómo leer cada tarjeta</h2>
     <div class="sec-desc">De <code>motor_dieta.md</code> (REG-NUT-01), <code>preferencias.md</code> (REG-NUT-02) y <code>cultura.md</code> (USR-PER-01).</div>
     <div class="info-box">
@@ -151,9 +242,12 @@
 </section>
 
 <!-- ============================= DESAYUNO ============================= -->
-<section>
+<section data-momento="desayuno">
     <h2>🍳 Desayuno</h2>
-    <div class="sec-desc">Preparación ≤15 min (preferencias.md §2 — lo preparas tú). Objetivo de referencia: <strong>Volumen ~720 kcal·40P·105C·16G</strong> · <strong>Definición ~500 kcal·44P·55C·13G</strong> · <strong>Mantenimiento ~625 kcal·40P·82C·16G</strong>.</div>
+    <div class="sec-desc">Preparación ≤15 min (preferencias.md §2 — lo preparas tú). Objetivo de referencia según tu fase:</div>
+    <div class="obj-fase vol" data-fase-obj="vol"><strong>Volumen</strong> ~720 kcal·40P·105C·16G</div>
+    <div class="obj-fase cut" data-fase-obj="cut"><strong>Definición</strong> ~500 kcal·44P·55C·13G</div>
+    <div class="obj-fase mnt" data-fase-obj="mnt"><strong>Mantenimiento</strong> ~625 kcal·40P·82C·16G</div>
     <div class="grid2">
 
         <div class="card">
@@ -246,9 +340,12 @@
 </section>
 
 <!-- ============================= COMIDA ============================= -->
-<section>
+<section data-momento="comida">
     <h2>🍱 Comida</h2>
-    <div class="sec-desc">Normalmente la cocina tu madre (no hace falta pesarla, solo el objetivo de macros) — aquí tienes variantes por si te toca prepararla tú o llevar tupper. Objetivo de referencia: <strong>Volumen ~920 kcal·42P·140C·23G</strong> · <strong>Definición ~640 kcal·46P·74C·19G</strong> · <strong>Mantenimiento ~800 kcal·42P·110C·23G</strong>.</div>
+    <div class="sec-desc">Normalmente la cocina tu madre (no hace falta pesarla, solo el objetivo de macros) — aquí tienes variantes por si te toca prepararla tú o llevar tupper. Objetivo de referencia según tu fase:</div>
+    <div class="obj-fase vol" data-fase-obj="vol"><strong>Volumen</strong> ~920 kcal·42P·140C·23G</div>
+    <div class="obj-fase cut" data-fase-obj="cut"><strong>Definición</strong> ~640 kcal·46P·74C·19G</div>
+    <div class="obj-fase mnt" data-fase-obj="mnt"><strong>Mantenimiento</strong> ~800 kcal·42P·110C·23G</div>
     <div class="grid2">
 
         <div class="card">
@@ -358,9 +455,12 @@
 </section>
 
 <!-- ============================= CENA ============================= -->
-<section>
+<section data-momento="cena">
     <h2>🌙 Cena</h2>
-    <div class="sec-desc">"Variable según el día" (preferencias.md) — mismo objetivo que Comida (motor_dieta.md las trata igual). Objetivo de referencia: <strong>Volumen ~920 kcal·42P·140C·23G</strong> · <strong>Definición ~640 kcal·46P·74C·19G</strong> · <strong>Mantenimiento ~800 kcal·42P·110C·23G</strong>.</div>
+    <div class="sec-desc">"Variable según el día" (preferencias.md) — mismo objetivo que Comida (motor_dieta.md las trata igual). Objetivo de referencia según tu fase:</div>
+    <div class="obj-fase vol" data-fase-obj="vol"><strong>Volumen</strong> ~920 kcal·42P·140C·23G</div>
+    <div class="obj-fase cut" data-fase-obj="cut"><strong>Definición</strong> ~640 kcal·46P·74C·19G</div>
+    <div class="obj-fase mnt" data-fase-obj="mnt"><strong>Mantenimiento</strong> ~800 kcal·42P·110C·23G</div>
     <div class="grid2">
 
         <div class="card">
@@ -453,9 +553,12 @@
 </section>
 
 <!-- ============================= SNACKS ============================= -->
-<section>
+<section data-momento="snack">
     <h2>🥜 Snacks (x3/día)</h2>
-    <div class="sec-desc">Objetivo de referencia: <strong>Volumen ~240 kcal·11P·34C·5G</strong> · <strong>Definición ~168 kcal·12P·18C·4G</strong> · <strong>Mantenimiento ~208 kcal·11P·27C·5G</strong> (por snack).</div>
+    <div class="sec-desc">Objetivo de referencia según tu fase (por snack):</div>
+    <div class="obj-fase vol" data-fase-obj="vol"><strong>Volumen</strong> ~240 kcal·11P·34C·5G</div>
+    <div class="obj-fase cut" data-fase-obj="cut"><strong>Definición</strong> ~168 kcal·12P·18C·4G</div>
+    <div class="obj-fase mnt" data-fase-obj="mnt"><strong>Mantenimiento</strong> ~208 kcal·11P·27C·5G</div>
     <div class="grid2">
         <div class="card">
             <div class="card-num">Opción 1</div>
@@ -493,8 +596,59 @@
     </div>
 </section>
 
+<!-- ============================= PRODUCTOS DE SUPERMERCADO / FUERA DE CASA ============================= -->
+<section id="supermercado" data-momento="super">
+    <h2>🛒 Productos de Supermercado / Fuera de Casa</h2>
+    <div class="sec-desc">Para cine, descansos en el trabajo, gasolinera o cualquier imprevisto donde no hay tupper — productos envasados normales de supermercado que no rompen la dieta ni los objetivos. Regla general: mirar la etiqueta (azúcares añadidos, halal) antes de repetir siempre la misma marca.</div>
+
+    <h3 style="font-size:0.95rem; font-weight:500; margin: 18px 0 6px;">Bebidas</h3>
+    <table class="pantry-table">
+        <tr><td>Refresco de cola/naranja "Zero" o "Light"</td><td><span class="tipo-tag carb">0 kcal</span></td><td>Antojo de refresco sin gastar macros</td></tr>
+        <tr><td>Bebida isotónica (tipo Aquarius/Powerade)</td><td><span class="tipo-tag carb">Carbohidrato</span></td><td>Solo post-entreno o con mucho calor/sudor — si no, mejor agua</td></tr>
+        <tr><td>Agua con gas / agua saborizada 0%</td><td><span class="tipo-tag carb">0 kcal</span></td><td>Alternativa con más sabor que el agua sola</td></tr>
+        <tr><td>Té frío sin azúcar / con edulcorante</td><td><span class="tipo-tag carb">~0 kcal</span></td><td>Revisa que ponga "sin azúcar", no solo "light"</td></tr>
+    </table>
+
+    <h3 style="font-size:0.95rem; font-weight:500; margin: 18px 0 6px;">Fruta lista para comer</h3>
+    <table class="pantry-table">
+        <tr><td>Tarrina de piña cortada (o macedonia natural)</td><td><span class="tipo-tag carb">Carbohidrato</span></td><td>Revisa que sea "en su jugo" o natural, no en almíbar</td></tr>
+        <tr><td>Pieza de fruta individual (manzana/plátano/pera)<span class="potasio-tag">✅ K</span></td><td><span class="tipo-tag carb">Carbohidrato</span></td><td>La opción más simple, cero azúcar añadido siempre — el plátano aporta potasio (ver nota de Definición arriba)</td></tr>
+        <tr><td>Fruta desecada sin azúcar añadido (orejones, ciruelas, pasas)</td><td><span class="tipo-tag carb">Carbohidrato</span></td><td>Calórica por poco volumen — puñado pequeño, no bolsa entera</td></tr>
+    </table>
+
+    <h3 style="font-size:0.95rem; font-weight:500; margin: 18px 0 6px;">Frutos secos y snacks salados</h3>
+    <table class="pantry-table">
+        <tr><td>Bolsa individual de frutos secos naturales/tostados (almendra, nuez, anacardo)</td><td><span class="tipo-tag fat">Grasa</span></td><td>Mejor "naturales" o "tostados sin sal añadida" que fritos con aceites de mala calidad</td></tr>
+        <tr><td>Edamame tostado / garbanzos tostados</td><td><span class="tipo-tag prot">Proteína+Fibra</span></td><td>Más proteína y menos grasa que los frutos secos clásicos</td></tr>
+        <tr><td>Palomitas naturales (sin mantequilla extra) — cine</td><td><span class="tipo-tag carb">Carbohidrato</span></td><td>Pide "naturales" en vez de "mantequilla" o "caramelo", y tamaño pequeño</td></tr>
+    </table>
+
+    <h3 style="font-size:0.95rem; font-weight:500; margin: 18px 0 6px;">Proteína de acceso rápido</h3>
+    <table class="pantry-table">
+        <tr class="fila-sodio-oculta" data-sodio="alto"><td>Beef jerky / cecina en tiras envasada<span class="sodio-tag">⚠️ sodio</span></td><td><span class="tipo-tag prot">Proteína</span></td><td>Verifica sello halal o que sea 100% ternera/vacuno — evita mezclas sin especificar</td></tr>
+        <tr class="fila-sodio-oculta" data-sodio="alto"><td>Salami o fiambre de pavo en lonchas<span class="sodio-tag">⚠️ sodio</span></td><td><span class="tipo-tag prot">Proteína</span></td><td>Curado/procesado — igual de práctico que el jerky pero mismo problema de sodio</td></tr>
+        <tr><td>Lata de atún/caballa con abre-fácil</td><td><span class="tipo-tag prot">Proteína</span></td><td>No hace falta ni cubierto, se come directa</td></tr>
+        <tr><td>Huevos duros pelados envasados</td><td><span class="tipo-tag prot">Proteína</span></td><td>Cada vez más común en la sección refrigerada del súper</td></tr>
+        <tr><td>Yogur griego natural / skyr individual</td><td><span class="tipo-tag prot">Proteína</span></td><td>Elige "natural" o "0%", evita los de sabores con azúcar</td></tr>
+        <tr><td>Queso fresco en porciones / quesitos</td><td><span class="tipo-tag prot">Proteína</span></td><td>Aporte más pequeño de proteína, útil como complemento</td></tr>
+        <tr><td>Batido de proteína UHT listo para beber</td><td><span class="tipo-tag prot">Proteína</span></td><td>Formato brik individual, no necesita nevera hasta abrirlo</td></tr>
+    </table>
+    <span class="sodio-toggle" id="sodioToggle" onclick="toggleSodio()">▸ ver también jerky/salami (alto en sodio, oculto en Definición)</span>
+
+    <h3 style="font-size:0.95rem; font-weight:500; margin: 18px 0 6px;">Dulce controlado</h3>
+    <table class="pantry-table">
+        <tr><td>Barrita de proteína</td><td><span class="tipo-tag prot">Proteína</span></td><td>Revisa la lista de ingredientes: descarta si lleva gelatina animal no halal</td></tr>
+        <tr><td>Chocolate negro &gt;85%, unas onzas</td><td><span class="tipo-tag fat">Grasa</span></td><td>Antojo dulce con poco azúcar real, controla la cantidad (calórico)</td></tr>
+        <tr><td>Yogur/skyr de sabores 0% azúcar</td><td><span class="tipo-tag prot">Proteína</span></td><td>Cubre el antojo dulce con más proteína que un postre normal</td></tr>
+    </table>
+
+    <div class="warn-box" style="margin-top:18px;">
+        <strong>Antes de repetir un producto nuevo:</strong> mira la etiqueta — nada de gelatina de cerdo, manteca, alcohol en el listado de ingredientes (afecta sobre todo a gominolas, algunas barritas y jerky de mezcla). Si no está claro, mejor evitarlo. Y en fase de definición, ojo con las cantidades de fruta desecada/frutos secos/chocolate — son las opciones más calóricas de esta lista.
+    </div>
+</section>
+
 <!-- ============================= 10 IDEAS ENSAMBLE MODULAR ============================= -->
-<section>
+<section data-momento="ideas">
     <h2>🍽️ 10 Ideas de Ensamble Modular (Zero Cocina)</h2>
     <div class="sec-desc">Repertorio libre para variar — no todas están calibradas a un macro exacto (para eso usa las opciones <span class="badge-mini modular">MODULAR</span> de Comida/Cena de arriba). Regla de oro: cero fuego, cero horno, cero salsas complejas — todo se dispone en el plato tal cual, jugando con contrastes de textura (crujiente/cremoso) y sabor (dulce/salado/ácido). Jamón serrano sustituido por cecina (halal).</div>
     <div class="plate-grid">
@@ -530,13 +684,15 @@
         </div>
         <div class="plate-card">
             <div class="pnum">7</div>
-            <h4>Tabla Nórdica de Sardinas</h4>
+            <h4>Tabla Nórdica de Sardinas<span class="sodio-tag">⚠️ sodio</span></h4>
             <ul><li><b>Proteína:</b> sardinas en lata</li><li><b>Vegetal:</b> pepinillos + cebolletas encurtidas</li><li><b>Grasa:</b> aguacate</li><li><b>Carbo:</b> pan de centeno tostado</li><li><b>Toque:</b> mostaza Dijon</li></ul>
+            <div style="font-size:0.72rem; color:var(--text3); margin-top:6px;">Encurtidos = mucho sodio. En Definición, cámbialos por pepino/rábano fresco.</div>
         </div>
         <div class="plate-card">
             <div class="pnum">8</div>
-            <h4>Picoteo Proteico de Cecina</h4>
-            <ul><li><b>Proteína:</b> cecina</li><li><b>Vegetal:</b> tomates cherry</li><li><b>Grasa:</b> aceitunas</li><li><b>Carbo:</b> higos frescos</li><li><b>Toque:</b> parmesano en lascas</li></ul>
+            <h4>Picoteo Proteico de Cecina<span class="sodio-tag">⚠️ sodio</span></h4>
+            <ul><li><b>Proteína:</b> cecina</li><li><b>Vegetal:</b> tomates cherry<span class="potasio-tag">✅ K</span></li><li><b>Grasa:</b> aceitunas</li><li><b>Carbo:</b> higos frescos</li><li><b>Toque:</b> parmesano en lascas</li></ul>
+            <div style="font-size:0.72rem; color:var(--text3); margin-top:6px;">Cecina + parmesano + aceitunas = alto en sodio. Guárdala para Volumen/Mantenimiento; en Definición mejor pollo/pavo cocido sin curar.</div>
         </div>
         <div class="plate-card">
             <div class="pnum">9</div>
@@ -551,7 +707,7 @@
     </div>
 </section>
 
-<section>
+<section data-momento="info">
     <h2>Cómo se completa el día</h2>
     <div class="success-box">
         <strong>Comida principal (madre):</strong> lo que no cubran estas recetas lo completa lo que cocine tu madre (tajine, marga, huevos, legumbres...) — no hace falta pesarlo, solo decirle el objetivo de macros de tu fase (preferencias.md §2).
@@ -567,6 +723,106 @@
 <div class="footer">
     FitBase · Comidas fijas — Desayuno/Comida/Cena con ajuste por fase · Fuentes: <code>motor_dieta.md</code> (REG-NUT-01), <code>preferencias.md</code> (REG-NUT-02), <code>cultura.md</code> (USR-PER-01), <code>equipamiento.md</code> (USR-03), <code>Codigo.gs</code> (getMacrosHoy_)
 </div>
+
+<script>
+(function () {
+    var FASES = ['vol', 'cut', 'mnt'];
+
+    function faseGuardada() {
+        // ?fase=cut en la URL permite enlazar directo a una fase (o forzarla al
+        // probar) sin tocar el selector — si no viene, se usa lo último elegido.
+        var porUrl = new URLSearchParams(location.search).get('fase');
+        if (FASES.indexOf(porUrl) >= 0) return porUrl;
+        var f = localStorage.getItem('fitbase_fase_vista');
+        return FASES.indexOf(f) >= 0 ? f : 'vol';
+    }
+
+    function aplicarFiltro(fase) {
+        document.querySelectorAll('.fase-tab').forEach(function (tab) {
+            tab.classList.toggle('activa', tab.dataset.fase === fase);
+        });
+        document.querySelectorAll('.fase-info-box').forEach(function (box) {
+            box.classList.toggle('fase-oculta', box.dataset.faseInfo !== fase);
+        });
+        document.querySelectorAll('.obj-fase').forEach(function (el) {
+            el.classList.toggle('fase-oculta', el.dataset.faseObj !== fase);
+        });
+        // Cada fila de ajuste ya trae su propio fase-tag (vol/cut/mnt) — se
+        // reutiliza esa clase para decidir cuál mostrar, sin duplicar datos.
+        document.querySelectorAll('.adjust-row').forEach(function (row) {
+            var tag = row.querySelector('.fase-tag');
+            row.classList.toggle('fase-oculta', !(tag && tag.classList.contains(fase)));
+        });
+        // Sodio alto: solo se ocultan en Definición, salvo que el usuario haya
+        // pulsado "ver también" (se mantiene visible el resto de la sesión).
+        var mostrarSodio = document.body.dataset.mostrarSodio === '1';
+        document.querySelectorAll('[data-sodio="alto"]').forEach(function (fila) {
+            fila.classList.toggle('fila-sodio-oculta', fase === 'cut' && !mostrarSodio);
+        });
+        var toggle = document.getElementById('sodioToggle');
+        if (toggle) toggle.classList.toggle('oculto', fase !== 'cut');
+    }
+
+    window.setFase = function (fase) {
+        localStorage.setItem('fitbase_fase_vista', fase);
+        aplicarFiltro(fase);
+    };
+
+    window.toggleSodio = function () {
+        var actual = document.body.dataset.mostrarSodio === '1';
+        document.body.dataset.mostrarSodio = actual ? '0' : '1';
+        var toggle = document.getElementById('sodioToggle');
+        if (toggle) {
+            toggle.textContent = actual
+                ? '▸ ver también jerky/salami (alto en sodio, oculto en Definición)'
+                : '▾ ocultar de nuevo';
+        }
+        aplicarFiltro(faseGuardada());
+    };
+
+    window.toggleGuiaFase = function () {
+        var body = document.getElementById('guiaFaseBody');
+        var abierta = body.classList.toggle('abierta');
+        document.getElementById('guiaFaseToggle').textContent =
+            (abierta ? 'ℹ️ Qué vigilar en tu fase actual ▾' : 'ℹ️ Qué vigilar en tu fase actual ▸');
+    };
+
+    // ═══ MOMENTO — qué sección ver, para no tener que buscar/hacer scroll.
+    // Se autoselecciona según la hora al abrir la página ("según me pille"),
+    // y cualquier chip lo cambia solo para esta visita (no se guarda: la
+    // próxima vez que abras, vuelve a adivinar según la hora que sea).
+    var MOMENTOS = ['desayuno', 'comida', 'cena', 'snack', 'super', 'ideas', 'info', 'todo'];
+
+    function momentoPorHora() {
+        var h = new Date().getHours();
+        if (h >= 6 && h < 11) return 'desayuno';
+        if (h >= 11 && h < 14) return 'snack';
+        if (h >= 14 && h < 17) return 'comida';
+        if (h >= 17 && h < 20) return 'snack';
+        if (h >= 20 && h < 24) return 'cena';
+        return 'snack';
+    }
+
+    function momentoInicial() {
+        var porUrl = new URLSearchParams(location.search).get('momento');
+        if (MOMENTOS.indexOf(porUrl) >= 0) return porUrl;
+        return momentoPorHora();
+    }
+
+    window.setMomento = function (momento) {
+        document.querySelectorAll('.momento-chip').forEach(function (chip) {
+            chip.classList.toggle('activa', chip.dataset.momento === momento);
+        });
+        document.querySelectorAll('[data-momento]:not(.momento-chip)').forEach(function (el) {
+            el.classList.toggle('momento-oculto', momento !== 'todo' && el.dataset.momento !== momento);
+        });
+        window.scrollTo(0, 0);
+    };
+
+    aplicarFiltro(faseGuardada());
+    setMomento(momentoInicial());
+})();
+</script>
 
 </body>
 </html>

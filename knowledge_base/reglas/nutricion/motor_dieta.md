@@ -197,3 +197,15 @@ Ver `usuario/perfil/cultura.md`:
 ## 10. Uso en el Sistema
 1. El backend calcula macros diarios.
 2. La app muestra progreso y sugiere ajustes.
+
+## 11. Selección de Alimentos por Fase (2026-e, a petición del usuario)
+
+> ⚠️ **HEURÍSTICO**: no hay un paper único que valide cada punto — es práctica común de manipulación de agua/sodio y manejo de saciedad en dietas de físico (peak week / contest prep, aplicado aquí de forma suave durante toda la fase de Definición, no solo la semana final). No cambia el cálculo de calorías/macros de §7 — es una capa adicional sobre QUÉ alimentos priorizar dentro de esos mismos macros. Implementado en `output/ENTREGABLE_6_COMIDAS_FIJAS.html` (selector de fase + filtros).
+
+| Fase | Qué vigilar | Por qué |
+|------|-------------|---------|
+| **Definición (cut)** | Sodio — evitar embutidos/curados (jerky, cecina, salami, quesos curados) como primera opción | El sodio retiene agua subcutánea, que puede tapar visualmente la pérdida de grasa aunque el progreso real (báscula, macros) sea correcto |
+| **Definición (cut)** | Potasio — priorizar plátano, patata, tomate, espinaca, aguacate | Ayuda a compensar el sodio y facilita eliminar el agua retenida |
+| **Definición (cut)** | Densidad calórica / saciedad — priorizar volumen (verdura, proteína magra, fruta entera) sobre snacks muy calóricos y poco saciantes (frutos secos en exceso, fruta desecada, chocolate) | Con menos margen calórico total, la saciedad por gramo importa más para la adherencia (mismo principio que Helms 2014 §5 sobre cut) |
+| **Volumen (bulk)** | Sin restricción de sodio ni de densidad calórica | Con superávit, el agua extra por sodio/glucógeno no es perceptible ni un problema — al contrario, los snacks calóricos ayudan a llegar al objetivo de kcal |
+| **Mantenimiento** | Sin restricciones especiales | Fase con más margen — cualquier opción del listado vale tal cual |
