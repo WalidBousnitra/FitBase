@@ -101,11 +101,20 @@ function guardarHorarioSemanal_(datos) {
 
   PropertiesService.getScriptProperties().setProperty('HORARIO_SEMANAL', JSON.stringify(nuevo));
 
-  // fechaHoy_() ya está en huso Europe/Madrid — sumar el día ahí evita
-  // desajustes con el huso por defecto del proyecto de Apps Script.
-  var manana = parseDate_(fechaHoy_());
-  manana.setDate(manana.getDate() + 1);
-  var mananaStr = formatDate_(manana);
+  // FIX (2026-j): la versión anterior hacía parseDate_(fechaHoy_()) y luego
+  // manana.setDate(manana.getDate()+1) — pero parseDate_ interpreta la
+  // cadena "yyyy-MM-dd" como medianoche UTC (new Date(str) es UTC para
+  // fechas sin hora), mientras que .getDate()/.setDate() operan en el huso
+  // POR DEFECTO DEL PROYECTO de Apps Script (no necesariamente Europe/Madrid
+  // ni UTC). Si ese huso por defecto no coincide, "mañana" podía calcularse
+  // mal (0, 1 o más días desviado según el huso configurado), rompiendo
+  // silenciosamente el rango que regenerarSesionesDesde_ usa para decidir
+  // qué conservar y qué generar. Ahora se suma 1 día en milisegundos sobre
+  // el instante UTC (independiente de cualquier huso local) y se formatea
+  // el resultado explícitamente en Europe/Madrid — sin pasar nunca por
+  // getDate()/setDate().
+  var hoyDate = parseDate_(fechaHoy_());
+  var mananaStr = formatDate_(new Date(hoyDate.getTime() + 86400000));
   var resultado = regenerarSesionesDesde_(mananaStr);
 
   return {
@@ -1911,6 +1920,29 @@ function getHoja_(nombre) {
   return SpreadsheetApp.getActiveSpreadsheet().getSheetByName(nombre);
 }
 
+/**
+ * Sustituye todas las filas de datos (desde la fila 2) de una hoja por
+ * `filas`, sin usar deleteRows()/insertRows() — evita el error de Apps
+ * Script "You are editing a row/column that is frozen" cuando el usuario
+ * ha inmovilizado filas a mano en Google Sheets (Ver > Inmovilizar), algo
+ * que la app no controla. deleteRows() sobre una fila fija aborta con
+ * excepción a mitad de la operación, dejando el horario/plan nuevo sin
+ * escribir (bug real: cambiar el horario semanal guardaba la propiedad
+ * pero sesiones_plan se quedaba con los datos viejos, o directamente
+ * vacía, porque regenerarSesionesDesde_ moría aquí antes de escribir
+ * nada). Solo manipula VALORES de celda (clearContent/setValues), que sí
+ * está permitido sobre filas fijas — nunca cambia la estructura de filas.
+ */
+function reemplazarFilas_(hoja, filas) {
+  var filasActuales = hoja.getLastRow() - 1;
+  if (filasActuales > 0) {
+    hoja.getRange(2, 1, filasActuales, hoja.getLastColumn()).clearContent();
+  }
+  if (filas.length) {
+    hoja.getRange(2, 1, filas.length, filas[0].length).setValues(filas);
+  }
+}
+
 function jsonOutput_(json) {
   return ContentService.createTextOutput(typeof json === 'string' ? json : JSON.stringify(json))
     .setMimeType(ContentService.MimeType.JSON);
@@ -2631,13 +2663,22 @@ function regenerarSesionesDesde_(fechaDesdeStr) {
 
   const eliminadas = (datosSes.length - 1) - filasSesHistoricas.length;
 
-  if (hojaSes.getLastRow() > 1) hojaSes.deleteRows(2, hojaSes.getLastRow() - 1);
-  if (hojaEj.getLastRow() > 1) hojaEj.deleteRows(2, hojaEj.getLastRow() - 1);
-
   const todasSes = filasSesHistoricas.concat(gen.filasSes);
   const todasEj = filasEjHistoricas.concat(gen.filasEj);
-  if (todasSes.length) hojaSes.getRange(2, 1, todasSes.length, todasSes[0].length).setValues(todasSes);
-  if (todasEj.length) hojaEj.getRange(2, 1, todasEj.length, todasEj[0].length).setValues(todasEj);
+
+  // SALVAGUARDA: si no hay NADA que escribir (ni historial preservado ni
+  // sesiones nuevas generadas), NO tocar la hoja — este resultado siempre es
+  // un bug (fecha corrupta, horario vacío/inválido, etc.), nunca un estado
+  // válido real: mientras el plan esté vigente SIEMPRE debe generarse al
+  // menos una fila futura. Sin esta guarda, reemplazarFilas_ borraría los
+  // datos existentes y no escribiría nada — vaciando sesiones_plan entera
+  // en silencio (bug real que ya ocurrió).
+  if (todasSes.length === 0) {
+    throw new Error('regenerarSesionesDesde_: 0 filas resultantes (fechaDesde=' + fechaDesdeStr + ') — abortado para no vaciar sesiones_plan.');
+  }
+
+  reemplazarFilas_(hojaSes, todasSes);
+  reemplazarFilas_(hojaEj, todasEj);
 
   return { eliminadas: eliminadas, generadas: gen.filasSes.length };
 }
@@ -2647,18 +2688,13 @@ function rellenarPlanCompleto() {
   const hojaSes = getHoja_(HOJAS.SESIONES_PLAN);
   const hojaEj = getHoja_(HOJAS.EJERCICIOS_PLAN);
 
-  // Limpiar datos previos (conservar cabeceras)
-  [hojaPlan, hojaSes, hojaEj].forEach(function(h) {
-    if (h && h.getLastRow() > 1) h.deleteRows(2, h.getLastRow() - 1);
-  });
-
   // Plan anual. FIX (2026): num_año se derivaba a 2026 fijo para TODAS las
   // fases, pese a que el plan cruza a 2027 (FAS_06 en adelante). Se toma el
   // año real del inicio de cada fase (date_inicio ya es correcto).
   const filasPlan = FASES.map(function(f, i) {
     return [f.id, parseInt(f.inicio.substring(0, 4), 10), i+1, f.nombre, f.tipo, f.inicio, f.fin, f.sem, f.rir, f.foco, f.nutri, ''];
   });
-  hojaPlan.getRange(2, 1, filasPlan.length, filasPlan[0].length).setValues(filasPlan);
+  reemplazarFilas_(hojaPlan, filasPlan);
 
   // Sesiones + Ejercicios — horario semanal configurable (getHorarioSemanal_,
   // por defecto lun/mié/vie/sáb gym + mar/jue natación + dom descanso).
@@ -2667,8 +2703,8 @@ function rellenarPlanCompleto() {
   const fin = new Date(FASES[FASES.length - 1].fin);
   const gen = generarFilasSesiones_(inicio, fin, horario);
 
-  if (gen.filasSes.length) hojaSes.getRange(2, 1, gen.filasSes.length, gen.filasSes[0].length).setValues(gen.filasSes);
-  if (gen.filasEj.length) hojaEj.getRange(2, 1, gen.filasEj.length, gen.filasEj[0].length).setValues(gen.filasEj);
+  reemplazarFilas_(hojaSes, gen.filasSes);
+  reemplazarFilas_(hojaEj, gen.filasEj);
 
   // Catálogo de ejercicios
   rellenarCatalogo_();
@@ -2680,7 +2716,6 @@ function rellenarPlanCompleto() {
 function rellenarCatalogo_() {
   const hoja = getHoja_(HOJAS.EJERCICIOS_CATALOGO);
   if (!hoja) return;
-  if (hoja.getLastRow() > 1) hoja.deleteRows(2, hoja.getLastRow() - 1);
   const cat = [
     ['EJE_PRESS_INC','Press inclinado mancuernas','Incline DB Press','Pecho','["Hombro","Tríceps"]','Empuje horizontal','Mancuernas,Banco',true,true,false,'',''],
     ['EJE_CRUCES','Cruces polea alta','High Cable Fly','Pecho','[]','Empuje horizontal','Poleas',false,true,false,'',''],
@@ -2723,7 +2758,7 @@ function rellenarCatalogo_() {
     ['EJE_WALL_ANGEL','Wall angels','Wall Angels','Postura','["Hombros"]','Correctivo','Pared',false,false,false,'',''],
     ['EJE_PAJARO','Pájaro inclinado','Reverse Fly','Hombros','[]','Tirón','Mancuernas',false,false,false,'','']
   ];
-  hoja.getRange(2, 1, cat.length, cat[0].length).setValues(cat);
+  reemplazarFilas_(hoja, cat);
 }
 
 // ─── §7b. (ELIMINADO) RELLENAR DATOS FICTICIOS ───────────────
@@ -2749,7 +2784,7 @@ function limpiarDatosTest() {
     if (!h) { resultados[nombre] = 'NO EXISTE'; return; }
     var filas = h.getLastRow();
     if (filas <= 1) { resultados[nombre] = 'YA VACÍA'; return; }
-    h.deleteRows(2, filas - 1);
+    reemplazarFilas_(h, []);
     resultados[nombre] = 'LIMPIA (' + (filas - 1) + ' filas borradas)';
   });
 
