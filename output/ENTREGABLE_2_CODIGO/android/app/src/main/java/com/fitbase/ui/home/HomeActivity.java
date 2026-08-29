@@ -113,7 +113,18 @@ public class HomeActivity extends BaseActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        viewModel.cargarDatosDelDia();
+        // Si venimos DIRECTOS de SplashActivity (precarga terminada hace
+        // instantes), los datos ya están frescos — repetir aquí la misma
+        // recarga completa (red + Health Connect) solo duplica el trabajo que
+        // Splash acaba de hacer y compite por el mismo lector de Health
+        // Connect, que es precisamente lo que hacía tardar varios segundos
+        // más en aparecer algo en pantalla justo después de "cargar". En
+        // cualquier onResume posterior (volver de otra pantalla, reabrir tras
+        // un rato) sí se recarga: msDesdeCarga ya será alto.
+        long msDesdeCarga = System.currentTimeMillis() - com.fitbase.data.cache.AppDataCache.getUltimaCargaCompletaMs();
+        if (!com.fitbase.data.cache.AppDataCache.isCargaInicialCompleta() || msDesdeCarga > 2000) {
+            viewModel.cargarDatosDelDia();
+        }
         comprobarMetricasSubjetivas();
         // Por si el proceso se mató del todo y se reabre desde Home en vez de
         // Workout — la alarma de "descanso terminado" se calla sola igual.

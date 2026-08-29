@@ -313,13 +313,28 @@ object HealthConnectBridge {
                                             else agg.duracionTotalMin.toInt()
 
                     // Score ESTIMADO 0-100 (no es el de Zepp — HC no lo tiene) en base a
-                    // 3 factores, cada uno ya acotado 0-100, pesos suman 1 (no puede pasar
-                    // de 100 ni saturar siempre ahí, a diferencia de un intento anterior):
-                    //   1) Duración vs objetivo de 7.5h (evidencia/sueno.md: 7-9h adulto,
-                    //      se usa el extremo bajo para no penalizar noches normales) → 50%
-                    //   2) Eficiencia: % del tiempo en cama que se pasó dormido           → 20%
-                    //   3) Cercanía de % profundo/REM a rangos fisiológicos típicos       → 30%
-                    //      (profundo ~13-23% del sueño, REM ~20-25% — Ohayon et al. 2004)
+                    // 2 factores con respaldo real en evidencia/sueno.md, pesos suman 1:
+                    //   1) Duración vs objetivo de 7.5h (Fullagar 2015 / National Sleep
+                    //      Foundation: 7-9h adulto, se usa el extremo bajo para no
+                    //      penalizar noches normales)                            → 70%
+                    //   2) Eficiencia: % del tiempo en cama que se pasó dormido (ratio
+                    //      real medido, sin "objetivo" inventado — más alto siempre
+                    //      es mejor)                                             → 30%
+                    //
+                    // FIX (2026-g, a petición del usuario — "siempre me sale un
+                    // coeficiente muy bajo respecto al de Zepp"): se ELIMINA el 3er
+                    // factor que había aquí ("cercanía de %profundo/%REM a un target
+                    // fisiológico típico" de 18%/22.5%, con penalización ×3 por punto
+                    // de desviación). Esos porcentajes NO están en evidencia/sueno.md
+                    // — Fullagar 2015 no los da, y el "Ohayon et al. 2004" citado en
+                    // la versión anterior ni siquiera es una fuente del proyecto — es
+                    // justo el tipo de dato inventado que REGLA CERO prohíbe. Además,
+                    // los wearables de muñeca (Amazfit GTS 4 incluido) infieren fases
+                    // de sueño por movimiento+FC, no por EEG, y suelen repartir
+                    // profundo/REM de forma distinta a un "ideal" de laboratorio — ese
+                    // componente podía hundir el score en noches objetivamente buenas
+                    // (duración completa, alta eficiencia) solo por cómo el reloj
+                    // clasificó las fases, sin que reflejara peor recuperación real.
                     val score = if (totalDormidoMin > 0) {
                         val minutosObjetivo = 450.0 // 7.5h
                         val scoreDuracion = (totalDormidoMin / minutosObjetivo * 100.0).coerceIn(0.0, 100.0)
@@ -328,15 +343,7 @@ object HealthConnectBridge {
                             (totalDormidoMin.toDouble() / agg.duracionTotalMin * 100.0).coerceIn(0.0, 100.0)
                         else 100.0
 
-                        val deepPct = agg.deepMin.toDouble() / totalDormidoMin * 100.0
-                        val remPct = agg.remMin.toDouble() / totalDormidoMin * 100.0
-                        // Pendiente de penalización más suave (3.0) que el intento anterior (4.0)
-                        // — un desvío moderado de los rangos ideales no debería hundir el score.
-                        val scoreDeep = (100.0 - (kotlin.math.abs(deepPct - 18.0) * 3.0)).coerceIn(0.0, 100.0)
-                        val scoreRem = (100.0 - (kotlin.math.abs(remPct - 22.5) * 3.0)).coerceIn(0.0, 100.0)
-                        val scoreFases = (scoreDeep + scoreRem) / 2.0
-
-                        (scoreDuracion * 0.5 + scoreEficiencia * 0.2 + scoreFases * 0.3)
+                        (scoreDuracion * 0.7 + scoreEficiencia * 0.3)
                             .let { Math.round(it).toInt() }.coerceIn(0, 100)
                     } else {
                         // Sin desglose de fases (dispositivo no las reportó) — fallback

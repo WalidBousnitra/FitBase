@@ -42,7 +42,7 @@ Algoritmo que ajusta las cargas de entrenamiento basándose en fatiga, sueño y 
 | `HC_HR_REST` | **↑ 2+ días consecutivos** | Día de recuperación activa | ✅ Adaptado de Kiviniemi 2007 |
 
 > ⚠️ **HRV no disponible**: Zepp no exporta RMSSD a Health Connect. Como alternativa, usamos:
-> - Sleep Score (calculado desde duración + fases de sueño)
+> - Sleep Score (calculado desde duración 70% + eficiencia 30% — ver nota 2026-g más abajo, ya NO usa % de fases profundo/REM)
 > - FC reposo elevada (indicador indirecto de estrés/fatiga)
 
 ### Métricas Subjetivas (USR-MET-02) — SOLO TRACKING (2026)
@@ -230,6 +230,17 @@ ctx:
 > petición del usuario) — el score es una estimación (ver §3) que penaliza con
 > demasiada fuerza noches buenas con fases de sueño atípicas. Mínimo apilado
 > actual: FC(×0.80) × sueño(×0.96) = 0.768.
+>
+> **Corrección fórmula del score (2026-g)**: el propio cálculo del score
+> (`HealthConnectBridge.kt`, no vive en `Codigo.gs`) tenía un 3er factor —
+> "cercanía de %profundo/%REM a un target de 18%/22.5%, penalización ×3/punto"
+> — sin respaldo en `evidencia/sueno.md` (dato inventado, viola REGLA CERO) y
+> causa muy probable de que el score saliera sistemáticamente bajo frente al
+> de Zepp (los wearables de muñeca reparten fases por movimiento+FC, no EEG,
+> raramente calzan con un "ideal" de laboratorio). Eliminado — ahora
+> `score = duración(70%) + eficiencia(30%)`, los dos únicos factores con
+> respaldo real (Fullagar 2015 / National Sleep Foundation para duración;
+> eficiencia es un ratio medido, no un target inventado).
 
 ### Fórmula APRE (Capa 2):
 ```

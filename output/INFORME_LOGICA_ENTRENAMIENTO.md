@@ -174,47 +174,48 @@ Esta sección responde directamente a la pregunta: *"¿por qué un 49 hoy reduci
 
 ### 7.1 De dónde sale el número — y por qué NO es el de Zepp
 
-Health Connect **no expone** el Sleep Score propietario de Zepp — solo expone las fases de sueño en bruto (duración, profundo, REM, ligero). El "49" que ves en FitBase **no es el score de la app Zepp** — es un score **estimado**, calculado por la propia app FitBase (`HealthConnectBridge.kt`, función de lectura de `SleepSessionRecord`) con esta fórmula:
+Health Connect **no expone** el Sleep Score propietario de Zepp — solo expone las fases de sueño en bruto (duración, profundo, REM, ligero). El número que ves en FitBase **no es el score de la app Zepp** — es un score **estimado**, calculado por la propia app FitBase (`HealthConnectBridge.kt`, función de lectura de `SleepSessionRecord`).
+
+> **Actualizado (2026-g)**: la fórmula original tenía un 3er factor ("cercanía de %profundo/%REM a un target fisiológico de 18%/22.5%, penalización ×3/punto") que **no estaba respaldado por `evidencia/sueno.md`** (Fullagar 2015 no da esos porcentajes, y la cita "Ohayon et al. 2004" del código anterior ni siquiera era una fuente del proyecto) — un dato inventado que REGLA CERO prohíbe, y la causa más probable de que el score saliera "siempre bajo" respecto al de Zepp: los wearables de muñeca (Amazfit GTS 4 incluido) infieren fases por movimiento+FC, no EEG, así que su reparto profundo/REM rara vez encaja con un "ideal" de laboratorio, aunque la noche haya sido objetivamente buena. Ese factor se **eliminó** — la fórmula actual es:
 
 ```
-score = duración(50%) + eficiencia(20%) + fases(30%)
+score = duración(70%) + eficiencia(30%)
 
-duración   = min(100, minutos_dormidos / 450 × 100)        # objetivo 7.5h
-eficiencia = minutos_dormidos / minutos_en_cama × 100        # % del tiempo en cama realmente dormido
-fases      = ( score_profundo + score_REM ) / 2
-  score_profundo = 100 − |%profundo_real − 18%| × 3
-  score_REM      = 100 − |%REM_real − 22.5%| × 3
+duración   = min(100, minutos_dormidos / 450 × 100)   # objetivo 7.5h (Fullagar 2015 / Nat. Sleep Foundation)
+eficiencia = minutos_dormidos / minutos_en_cama × 100  # % del tiempo en cama realmente dormido (ratio real, sin "objetivo" inventado)
 ```
 
-**Por qué puede dar 49 con una noche que sientes genial** — cualquiera de estos, o una combinación:
-- Dormiste menos de 7.5h (el 50% de peso del score cae directo, aunque sean 6h de sueño excelente)
-- Tu % de sueño profundo o REM esa noche se desvió de los rangos "típicos poblacionales" (18%/22.5%, Ohayon et al. 2004) — la penalización es ×3 por punto porcentual de desviación, así que un 30% de sueño profundo (muy bueno, pero "atípico") ya resta ~36 puntos en `score_profundo`
-- Baja "eficiencia" si el reloj detectó tiempo despierto en cama que tú no recuerdas (p. ej. microdespertares que Zepp cuenta como AWAKE)
+Los dos factores que quedan tienen respaldo directo en `evidencia/sueno.md` §2 (horas recomendadas) y son ratios de datos reales, no comparaciones contra un target inventado — el score ya no puede hundirse solo porque el reloj clasificó las fases de forma distinta a una composición "típica".
 
-**El punto clave**: esta fórmula fue diseñada como sustituto razonable ante la ausencia del dato real de Zepp, pero **penaliza variabilidad biológica normal** de forma bastante agresiva (pendiente ×3), y no tiene ninguna entrada para cómo te sientes subjetivamente. Es, por diseño, un proxy imperfecto — el propio comentario del código lo llama "ESTIMADO" explícitamente, dos veces.
+**Por qué aun así puede salir bajo con una noche que sientes genial** (ya sin el 3er factor):
+- Dormiste menos de 7.5h (el 70% de peso del score cae directo, aunque sean 6h de sueño excelente) — esto es real y esperado, no un bug: menos horas es objetivamente menos sueño.
+- Baja "eficiencia" si el reloj detectó tiempo despierto en cama que tú no recuerdas (p. ej. microdespertares que Zepp cuenta como AWAKE).
 
 ### 7.2 Dónde entra este número en la lógica de entrenamiento
 
-Un único punto de entrada: `calcularAjusteDia_()` (Codigo.gs, línea 1301):
+Un único punto de entrada: `calcularAjusteDia_()` (Codigo.gs):
 
 ```js
-if (metrica.num_sleep_score && metrica.num_sleep_score < 60) {
-  factor *= 0.90;   // -10%
-  razones.push('Sleep score bajo <60 (heurístico, Fullagar 2015)');
+// Umbral y magnitud recalibrados (2026-d, a petición del usuario)
+if (metrica.num_sleep_score && metrica.num_sleep_score < 30) {
+  factor *= 0.96;   // -4%
+  razones.push('Sleep score muy bajo <30 (heurístico, Fullagar 2015)');
 }
 ```
 
+> **Actualizado (2026-d)**: el umbral original era `<60 → ×0.90` (-10%) — casi cualquier noche imperfecta lo disparaba. Combinado con el fix 2026-g de arriba (fórmula del score sin el factor de fases inventado), ahora hacen falta DOS cosas para que el sueño reduzca algo: (1) que el score real caiga por debajo de 30 — algo que solo pasa con duración/eficiencia genuinamente bajas, ya no por un reparto de fases "atípico" — y (2) aun así el efecto es mínimo (-4%, antes -10%).
+
 Eso es **todo** lo que hace el sueño por sí solo. No hay ningún otro umbral en el código (el "<50 → priorizar descanso" que aparece en `motor_pesos.md §7` como "ALERTA" **nunca se implementó** — es un umbral que existe en el markdown pero no tiene ninguna línea de código correspondiente; confirmado por búsqueda exhaustiva).
 
-### 7.3 Qué efecto real tiene ese 0.90 hoy, con tu 49
+### 7.3 Qué efecto real tiene esto hoy
 
-| Consumidor de `factorDia` | Umbral para activarse | ¿Se activa con 0.90 (solo sueño)? |
+| Consumidor de `factorDia` | Umbral para activarse | ¿Se activa con 0.96 (solo sueño)? |
 |---|---|---|
-| **Peso sugerido** (`calcularPesoSugerido_`, Capa 6) | Cualquier valor <1.0 ya multiplica | ✅ Sí — el peso sugerido de cada ejercicio de hoy sale **10% más bajo** que si el factor fuera 1.0 |
-| **Volumen/series** (`ajustarSeriesAdaptativo_`) | Necesita `factorDia ≤ 0.80` | ❌ No — 0.90 > 0.80, así que **las series de hoy NO se reducen** |
-| **Banner "Sueño pobre — sesión reducida"** (`HomeActivity`) | `score < 60` | ✅ Sí — el texto se muestra, aunque el impacto real sea solo sobre el peso |
+| **Peso sugerido** (`calcularPesoSugerido_`, Capa 6) | Cualquier valor <1.0 ya multiplica | ✅ Sí, pero solo si score <30 — el peso sugerido sale **4% más bajo** que si el factor fuera 1.0 |
+| **Volumen/series** (`ajustarSeriesAdaptativo_`) | Necesita `factorDia ≤ 0.80` | ❌ No — 0.96 > 0.80, así que **las series NO se reducen** por sueño solo |
+| **Banner "Sueño pobre — carga ligeramente reducida"** (`HomeActivity`) | `score < 30` | ✅ Sí, y ahora coincide exactamente con cuándo el backend aplica el ajuste (antes el umbral de la UI y el del backend estaban desalineados) |
 
-**Conclusión concreta para hoy**: con un 49 (y asumiendo tu FC de reposo normal), el factor del día es 0.90. Eso se traduce en **pesos sugeridos ~10% más bajos** en cada ejercicio — no en menos series, no en menos ejercicios, no en una sesión "recortada" en el sentido que probablemente imaginas. El banner dice "sesión reducida" pero el efecto real medible es un -10% de intensidad, no de volumen. Y es solo una *sugerencia*: puedes registrar el peso que tú decidas — el motor no bloquea nada, solo propone.
+**Conclusión**: con la fórmula y el umbral actuales, un score bajo por sí solo como mucho resta un 4% al peso sugerido de cada ejercicio, y solo si cae por debajo de 30 — nunca toca el número de series/ejercicios. Y sigue siendo solo una *sugerencia*: puedes registrar el peso que tú decidas, el motor no bloquea nada.
 
 ### 7.4 Por qué el sistema ya NO usa energía/estrés subjetivos (contexto importante)
 

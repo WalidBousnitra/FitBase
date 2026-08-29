@@ -67,6 +67,14 @@ Mujeres: BMR = (10 × peso_kg) + (6.25 × altura_cm) - (5 × edad) - 161
 | Ganancia muscular | TDEE × **1.10-1.20** | **0.25-0.5% peso/semana** |
 
 > **Nota**: Avanzados deben ser más conservadores (menor potencial de ganancia).
+>
+> **Aplicado (2026-h, a petición del usuario)**: bulk usa el extremo
+> conservador del rango, **×1.10** (antes ×1.15, el punto medio) — el usuario
+> es intermedio-avanzado (menor potencial de ganancia real, más riesgo de que
+> el superávit sea solo grasa) y reportó que la cantidad de calorías le
+> seguía pareciendo alta. Cut se mantiene en el extremo agresivo del rango,
+> **×0.80** — ya era la opción más efectiva para pérdida de grasa dentro de
+> la evidencia citada, no hacía falta tocarlo.
 
 ## 5. Distribución de Macros
 
@@ -78,6 +86,12 @@ Mujeres: BMR = (10 × peso_kg) + (6.25 × altura_cm) - (5 × edad) - 161
 | **Ganancia muscular (bulk)** | **1.6 - 2.2** | Iraki 2019 |
 | Pérdida grasa (cut) | 2.3 - 3.1 g/kg masa magra | Helms 2014 |
 | Recomposición | >2.0 | Barakat 2020 |
+
+> **Aplicado (2026-h)**: cut usa **3.0 g/kg LBM** (antes 2.7, el punto medio)
+> — cerca del extremo alto de Helms 2014, a petición del usuario para
+> maximizar la retención de masa magra y la saciedad en un corte más
+> estricto ("perfeccionista", de cara al verano). Sigue dentro del rango
+> citado (2.3-3.1), no es un valor nuevo inventado.
 
 ### Grasas
 | Contexto | Recomendación | Fuente |
@@ -124,8 +138,9 @@ BMR_estimado: ~1842 kcal
 TDEE_estimado: ~2855 kcal
 
 # Objetivo: Bulk limpio
-# Superávit: +10-20% (Iraki 2019) → +15% = +428 kcal
-CALORIAS_OBJETIVO: ~3280 kcal
+# Superávit: +10-20% (Iraki 2019) → +10% = ~285 kcal (2026-h: bajado del
+# punto medio +15% al extremo conservador, a petición del usuario)
+CALORIAS_OBJETIVO: ~3140 kcal
 
 # Macros (CON EVIDENCIA - Iraki 2019)
 PROTEINA:
@@ -136,29 +151,37 @@ PROTEINA:
   
 GRASAS:
   rango_evidencia: "0.5-1.5 g/kg (20-30% kcal)"
-  aplicado: 1.0 g/kg (~24% kcal)
+  aplicado: 1.0 g/kg (~22% kcal)
   gramos: 78g
   calorias: 702 kcal
   
 CARBOS:
   rango_evidencia: "≥3-5 g/kg"
-  aplicado: resto (~488g = 6.2 g/kg)
-  gramos: 488g
-  calorias: 1952 kcal
+  aplicado: resto (~454g = 5.8 g/kg)
+  gramos: 454g
+  calorias: 1816 kcal
 ```
+
+> **Nota**: con el ajuste 2026-h, el bulk diario baja ~140 kcal frente al
+> valor anterior (~3280→~3140), todo recortado de los carbohidratos
+> (proteína y grasas son gramos/kg de peso, no cambian con el multiplicador).
 
 ### Distribución por Comida (3 + snacks)
 
 > ✅ **Fuente**: 0.40-0.55 g/kg proteína/comida (Iraki 2019)
 > A 78.2 kg → máximo óptimo por comida: ~31-43g
 
+> **Nota (2026-h)**: solo los carbohidratos bajan con el ajuste de bulk
+> (proteína/grasas son g/kg de peso, no dependen del multiplicador calórico)
+> — la tabla ya refleja el total ~3140 kcal actual, no el ~3280 anterior.
+
 | Comida | Calorías | Proteína | Carbos | Grasas |
 |--------|----------|----------|--------|--------|
-| **Desayuno** | ~720 kcal | 40g | 105g | 16g |
-| **Comida** | ~920 kcal | 42g | 140g | 23g |
-| **Cena** | ~920 kcal | 42g | 140g | 23g |
-| **Snacks** | ~720 kcal | 32g | 103g | 16g |
-| **TOTAL** | ~3280 kcal | 156g | 488g | 78g |
+| **Desayuno** | ~696 kcal | 40g | 98g | 16g |
+| **Comida** | ~895 kcal | 42g | 130g | 23g |
+| **Cena** | ~895 kcal | 42g | 130g | 23g |
+| **Snacks** | ~656 kcal | 32g | 96g | 16g |
+| **TOTAL** | ~3140 kcal | 156g | 454g | 78g |
 
 > 💡 **Días de entreno**: Priorizar carbos pre/post entreno (evidencia: Helms 2014)
 

@@ -19,7 +19,7 @@
 
 const HOJAS = {
   // metricas_zepp centraliza TODO lo que se recoge de Health Connect: sueño,
-  // pasos, FC reposo, peso y % grasa (antes peso/grasa vivían en peso_log,
+  // pasos, FC reposo, peso y % grasa (antes peso/grasa vivían en peso_log,Ç
   // ahora fusionado aquí — una sola fila por día).
   METRICAS_ZEPP: 'metricas_zepp',
   METRICAS_SUBJETIVAS: 'metricas_subjetivas',

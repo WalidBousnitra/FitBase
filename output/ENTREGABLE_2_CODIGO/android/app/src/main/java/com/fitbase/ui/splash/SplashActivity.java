@@ -64,28 +64,13 @@ public class SplashActivity extends BaseActivity {
 
     private void precargarYContinuar() {
         new Thread(() -> {
-            // 1) Health Connect PRIMERO (bloqueante, en este mismo hilo de fondo).
-            try {
-                if (HealthConnectBridge.isAvailable(this) && HealthConnectBridge.hasPermissions(this)) {
-                    HealthConnectBridge.HealthData hoyData = HealthConnectBridge.readTodayData(this);
-                    HealthConnectBridge.RecoveryData recuperacion30d = HealthConnectBridge.readRecoveryData(this, 30);
-                    AppDataCache.setHealthHoy(hoyData);
-                    AppDataCache.setHealthRecuperacion30d(recuperacion30d);
-
-                    // 2) Si ha cambiado el día natural desde la última apertura, cierra
-                    // el día anterior con el total de pasos definitivo (paseo nocturno
-                    // tras la última apertura de ese día incluido).
-                    DailySyncManager.cerrarDiaAnteriorSiHaceFalta(this);
-
-                    // 3) Sync diario HC → BBDD (idempotente) ANTES de pedir al backend,
-                    // para que el histórico que lea Progresión ya incluya lo de hoy.
-                    DailySyncManager.sincronizarSiHaceFalta(this, hoyData, recuperacion30d);
-                }
-            } catch (Exception ignored) {
-                // Sin HC — Home/Progresión mostrarán lo que ya haya en la BBDD
-            }
-
-            // 3) Backend: 3 llamadas en paralelo (Retrofit ya es asíncrono)
+            // Backend (3 llamadas) y Health Connect no dependen entre sí — antes
+            // se esperaba a que TODO Health Connect terminara (bloqueante) antes
+            // de lanzar siquiera la primera llamada de red, sumando ambos
+            // tiempos en vez de solaparlos. Ahora las 3 llamadas se lanzan
+            // primero (enqueue() no bloquea, corren en el pool de OkHttp) y
+            // Health Connect se lee en paralelo en este mismo hilo — el tiempo
+            // total pasa a ser el mayor de los dos, no la suma.
             CountDownLatch latch = new CountDownLatch(3);
 
             ApiClient.getApi().getVistaMañana("vista_manana").enqueue(new Callback<VistaMañanaResponse>() {
@@ -119,6 +104,28 @@ public class SplashActivity extends BaseActivity {
                         @Override
                         public void onFailure(Call<MetricasProgresionResponse> call, Throwable t) { latch.countDown(); }
                     });
+
+            // Health Connect, en paralelo con las 3 llamadas de arriba (mismo
+            // hilo de fondo — es bloqueante, pero ya no serializado detrás de
+            // la red: mientras esto corre, las llamadas ya están en vuelo).
+            try {
+                if (HealthConnectBridge.isAvailable(this) && HealthConnectBridge.hasPermissions(this)) {
+                    HealthConnectBridge.HealthData hoyData = HealthConnectBridge.readTodayData(this);
+                    HealthConnectBridge.RecoveryData recuperacion30d = HealthConnectBridge.readRecoveryData(this, 30);
+                    AppDataCache.setHealthHoy(hoyData);
+                    AppDataCache.setHealthRecuperacion30d(recuperacion30d);
+
+                    // Si ha cambiado el día natural desde la última apertura, cierra
+                    // el día anterior con el total de pasos definitivo (paseo nocturno
+                    // tras la última apertura de ese día incluido).
+                    DailySyncManager.cerrarDiaAnteriorSiHaceFalta(this);
+
+                    // Sync diario HC → BBDD (idempotente).
+                    DailySyncManager.sincronizarSiHaceFalta(this, hoyData, recuperacion30d);
+                }
+            } catch (Exception ignored) {
+                // Sin HC — Home/Progresión mostrarán lo que ya haya en la BBDD
+            }
 
             try {
                 latch.await(TIMEOUT_CARGA_MS, TimeUnit.MILLISECONDS);

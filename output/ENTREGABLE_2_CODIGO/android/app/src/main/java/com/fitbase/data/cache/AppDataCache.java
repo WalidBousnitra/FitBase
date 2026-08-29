@@ -19,6 +19,10 @@ public final class AppDataCache {
     private static volatile HealthConnectBridge.HealthData healthHoy;
     private static volatile HealthConnectBridge.RecoveryData healthRecuperacion30d;
     private static volatile boolean cargaInicialCompleta = false;
+    // Marca de tiempo de la última precarga completa (SplashActivity) — permite
+    // a Home saber si acaba de recibir estos datos hace instantes y evitarse
+    // una recarga completa redundante en su primer onResume (ver HomeActivity).
+    private static volatile long ultimaCargaCompletaMs = 0;
 
     private AppDataCache() {}
 
@@ -38,5 +42,9 @@ public final class AppDataCache {
     public static void setHealthRecuperacion30d(HealthConnectBridge.RecoveryData r) { healthRecuperacion30d = r; }
 
     public static boolean isCargaInicialCompleta() { return cargaInicialCompleta; }
-    public static void marcarCargaCompleta() { cargaInicialCompleta = true; }
+    public static void marcarCargaCompleta() {
+        cargaInicialCompleta = true;
+        ultimaCargaCompletaMs = System.currentTimeMillis();
+    }
+    public static long getUltimaCargaCompletaMs() { return ultimaCargaCompletaMs; }
 }

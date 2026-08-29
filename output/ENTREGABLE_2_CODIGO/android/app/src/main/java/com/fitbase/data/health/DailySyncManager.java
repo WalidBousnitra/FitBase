@@ -12,6 +12,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.TimeZone;
 
 import retrofit2.Call;
 import retrofit2.Response;
@@ -55,6 +56,23 @@ public class DailySyncManager {
     private static final String KEY_ULTIMO_DIA_ABIERTO = "ultimo_dia_abierto";
 
     /**
+     * "Hoy" en el MISMO huso que el backend (Codigo.gs fechaHoy_() usa
+     * 'Europe/Madrid' explícito), no el huso del dispositivo. Antes esta
+     * clase calculaba "hoy" con el huso local del teléfono — coincide con
+     * Madrid mientras el usuario esté en España, pero un viaje a otro huso
+     * (excepciones.md contempla "Viajes") desalinearía qué fila de
+     * metricas_zepp recibe los pasos/sueño/FC/peso de hoy: el dispositivo
+     * podría considerar "mañana" (o "ayer") un rato antes o después de que
+     * el backend cambie de día, escribiendo en la fecha equivocada o
+     * duplicando el cierre de día anterior.
+     */
+    private static String hoyMadrid() {
+        SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+        fmt.setTimeZone(TimeZone.getTimeZone("Europe/Madrid"));
+        return fmt.format(new Date());
+    }
+
+    /**
      * Sincroniza sueño/FC reposo/peso/grasa si hoy aún no se ha hecho, usando
      * datos de Health Connect YA LEÍDOS por el llamador (evita leer HC dos
      * veces). BLOQUEANTE — llamar desde un hilo de fondo (red síncrona).
@@ -79,7 +97,7 @@ public class DailySyncManager {
             Log.d(TAG, "Sin datos de Health Connect — no se sincroniza");
             return;
         }
-        String hoy = new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date());
+        String hoy = hoyMadrid();
         Integer hrReposo = recuperacion.fcReposo.isEmpty() ? null
                 : recuperacion.fcReposo.get(recuperacion.fcReposo.size() - 1).bpm;
         Integer sleepScore = recuperacion.suenos.isEmpty() ? null
@@ -107,7 +125,7 @@ public class DailySyncManager {
     public static void sincronizarSiHaceFalta(Context context,
                                                HealthConnectReader.DatosRecuperacion recuperacion) {
         if (recuperacion == null) return;
-        String hoy = new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date());
+        String hoy = hoyMadrid();
         Integer hrReposo = recuperacion.fcReposo.isEmpty() ? null
                 : recuperacion.fcReposo.get(recuperacion.fcReposo.size() - 1).bpm;
         Integer sleepScore = recuperacion.suenos.isEmpty() ? null
@@ -167,7 +185,7 @@ public class DailySyncManager {
      * BLOQUEANTE (red síncrona) — llamar desde un hilo de fondo.
      */
     public static void cerrarDiaAnteriorSiHaceFalta(Context context) {
-        String hoy = new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date());
+        String hoy = hoyMadrid();
         SharedPreferences prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         String diaAnterior = prefs.getString(KEY_ULTIMO_DIA_ABIERTO, "");
 
@@ -195,7 +213,7 @@ public class DailySyncManager {
      */
     public static void actualizarPasosDelDia(Context context, int pasosHoy) {
         if (pasosHoy <= 0) return;
-        String hoy = new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date());
+        String hoy = hoyMadrid();
         Map<String, Object> datos = new HashMap<>();
         datos.put("accion", "guardar_metricas");
         datos.put("fecha", hoy);

@@ -98,13 +98,15 @@ Y una regla de auto-corrección: *si el peso se estanca 2+ semanas en bulk → s
 
 ```js
 const plan = getPlanAnual_();
-let obj = 'bulk', mult = 1.15, protRatio = 2.0;
+let obj = 'bulk', mult = 1.10, protRatio = 2.0;
 if (plan.fase_actual) {
   const n = plan.fase_actual.str_objetivo_nutri || 'bulk';
   if (n === 'cut') { mult = 0.80; obj = 'cut'; }
   else if (n === 'mantener') { mult = 1.0; protRatio = 2.0; obj = 'mantener'; }
 }
 ```
+> **Actualizado (2026-h)**: `mult` de bulk bajado de 1.15 a 1.10 a petición del
+> usuario ("sigue pareciendo que hay muchas kcal") — ver §4.5.
 **Decisión de diseño importante**: el objetivo nutricional NO vive en `getMacrosHoy_` — vive en la hoja `plan_anual`, columna `str_objetivo_nutri`, y este es solo el consumidor. Esto significa que **cambiar de fase (bulk→cut) es un cambio de datos, no de código** — coherente con la filosofía "NADA HARDCODEADO" del manifest.
 
 **Por qué `DELOAD` no tiene rama propia aquí**: confirmado también en `base_datos.md` — el deload solo afecta al *entrenamiento* (menos series), nunca a las calorías. Nutricionalmente, un deload se trata como el `str_objetivo_nutri` que tenga asignada esa fase (normalmente `mantener`).
@@ -113,8 +115,8 @@ if (plan.fase_actual) {
 
 | Fase | Multiplicador | Justificación |
 |---|---|---|
-| Bulk | `× 1.15` | Iraki 2019 recomienda 10-20% de superávit para intermedios/avanzados; 15% es el punto medio, elegido explícitamente por ser conservador (avanzados "deben ser más conservadores — menor potencial de ganancia") |
-| Cut | `× 0.80` | Dentro del rango de `motor_dieta.md §4` (0.80-0.90); se elige el extremo más agresivo del rango |
+| Bulk | `× 1.10` | Iraki 2019 recomienda 10-20% de superávit para intermedios/avanzados. **Actualizado (2026-h)**: bajado del punto medio (15%) al extremo conservador (10%) a petición del usuario — coherente con la propia nota de `motor_dieta.md §4` ("avanzados deben ser más conservadores — menor potencial de ganancia"), que el punto medio nunca aplicaba del todo bien a su nivel |
+| Cut | `× 0.80` | Dentro del rango de `motor_dieta.md §4` (0.80-0.90); se elige el extremo más agresivo del rango — sin cambios, ya era la opción más efectiva para pérdida de grasa |
 | Mantener | `× 1.0` | Trivial — TDEE sin ajuste |
 
 ### 4.6 Ajuste por actividad diaria (pasos)
@@ -131,7 +133,7 @@ if (pasos > 12000) calorias += 175;
 if (obj === 'cut') {
   var grasaPctActual = getGrasaActual_();
   var lbm = peso * (1 - grasaPctActual / 100);
-  protG = Math.round(lbm * 2.7);
+  protG = Math.round(lbm * 3.0);
 } else {
   protG = Math.round(peso * protRatio); // protRatio = 2.0
 }
@@ -141,7 +143,7 @@ if (obj === 'cut') {
 - **Cut**: aquí está el fix más importante documentado en todo el archivo (**auditoría NUT-02**). Helms 2014 especifica la proteína de déficit en **g/kg de masa magra (LBM)**, no peso total (2.3-3.1 g/kg LBM). La versión anterior aplicaba un ratio fijo sobre el peso total asumiendo un %BF constante que nunca se releía. Ahora:
   1. Se lee el `%grasa` **más reciente real** de `metricas_zepp` (no un valor fijo).
   2. Se calcula `LBM = peso × (1 - %grasa/100)`.
-  3. Se aplica `2.7 g/kg LBM` — el punto medio exacto del rango Helms (2.3-3.1).
+  3. Se aplica `3.0 g/kg LBM` — cerca del extremo alto del rango Helms (2.3-3.1). **Actualizado (2026-h)**: subido desde 2.7 (el punto medio) a petición del usuario, que quiere un corte "muy perfeccionista" de cara al verano — más proteína en déficit protege mejor la masa magra y ayuda a la saciedad.
 
 **Por qué esto importa nutricionalmente**: si el usuario baja de 18.9% a 15% de grasa a mitad de un cut, su LBM sube en términos relativos y su proteína objetivo debe subir con ella — de lo contrario, un %BF fijo antiguo iría infra-dosificando proteína justo cuando más protección muscular se necesita (déficit calórico = mayor riesgo catabólico).
 
@@ -300,10 +302,10 @@ Esta es la parte más honesta del análisis: hay contenido extenso en `knowledge
 |---|---|---|
 | `bmr = (10×peso)+(6.25×altura)-(5×edad)+5` | Fórmula BMR | Mifflin et al. 1990, R²=0.71 |
 | `tdee = bmr × 1.55` | Factor de actividad | `motor_dieta.md §3`, heurístico justificado (sedentario + natación baja intensidad) |
-| `mult = 1.15` (bulk) | Superávit 15% | Iraki 2019, rango 10-20%, punto medio conservador |
+| `mult = 1.10` (bulk) | Superávit 10% | Iraki 2019, rango 10-20%, extremo conservador (2026-h, antes 1.15 punto medio) |
 | `mult = 0.80` (cut) | Déficit 20% | `motor_dieta.md §4`, rango 0.80-0.90, extremo agresivo |
 | `protG = peso × 2.0` (bulk/mantener) | Proteína 2.0 g/kg | Iraki 2019, rango 1.6-2.2, extremo alto |
-| `protG = LBM × 2.7` (cut) | Proteína sobre masa magra | Helms 2014, rango 2.3-3.1 g/kg LBM, punto medio |
+| `protG = LBM × 3.0` (cut) | Proteína sobre masa magra | Helms 2014, rango 2.3-3.1 g/kg LBM, extremo alto (2026-h, antes 2.7 punto medio) |
 | `grasaG = peso × 1.0` (bulk/mantener) | Grasa 1.0 g/kg | Iraki 2019, rango 0.5-1.5 |
 | `grasaG = calorias × 0.25/9` (cut) | Grasa 25% kcal | Helms 2014, rango 15-30% |
 | `carbosG = resto` | Carbohidratos = remanente | Helms 2014 + Iraki 2019 (ambos coinciden: carbos = resto) |
