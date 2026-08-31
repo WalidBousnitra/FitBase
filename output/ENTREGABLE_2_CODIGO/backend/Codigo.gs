@@ -186,24 +186,28 @@ function doPost(e) {
 // ─── §3. LÓGICA PRINCIPAL ─────────────────────────────────────
 
 /**
- * Sesión de hoy con ejercicios y pesos DINÁMICOS (motor de cargas).
- * Fuente: REG-LOG-02 §5, REG-LOG-01 §6-8
+ * Busca la fila de sesiones_plan de hoy; si estamos en pre-temporada (antes
+ * de plan.fecha_inicio) y hoy es día de gym según el horario, la genera al
+ * vuelo (mismas plantillas T[] del plan real). Devuelve null si hoy no es
+ * día de gym. Extraído de getSesionHoy_ para poder reutilizarlo desde
+ * getVistaMañana_ sin duplicar esta lógica (evitar que ambas funciones
+ * puedan divergir sobre qué cuenta como "sesión de hoy").
  */
-function getSesionHoy_() {
-  const hoy = fechaHoy_();
+function buscarSesionEnHojaPorFecha_(fechaStr) {
   const hoja = getHoja_(HOJAS.SESIONES_PLAN);
   const datos = hoja.getDataRange().getValues();
   const cab = datos[0];
-
-  // Buscar sesión
-  let sesion = null;
   for (let i = 1; i < datos.length; i++) {
     const f = parseDate_(datos[i][cab.indexOf('date_fecha')]);
-    if (f && formatDate_(f) === hoy) {
-      sesion = rowToObj_(cab, datos[i]);
-      break;
-    }
+    if (f && formatDate_(f) === fechaStr) return rowToObj_(cab, datos[i]);
   }
+  return null;
+}
+
+function buscarOGenerarSesionHoy_() {
+  const hoy = fechaHoy_();
+  let sesion = buscarSesionEnHojaPorFecha_(hoy);
+  if (sesion) return sesion;
 
   // Pre-temporada (antes de plan.fecha_inicio): rellenarPlanCompleto solo
   // genera filas dentro de las fechas de FASES, así que hoy nunca tiene
@@ -213,15 +217,34 @@ function getSesionHoy_() {
   // completo de entreno + guardado antes de que el plan arranque de verdad.
   // Se marca con sufijo _TEST en el id para poder identificarla y borrarla
   // a mano — no se limpia sola en limpiarDatosTest() (§8 conserva sesiones_plan).
-  if (!sesion) {
-    const plan = getPlanAnual_();
-    if (hoy < plan.fecha_inicio) {
-      const tipoSesionHoy = getHorarioSemanal_()[new Date().getDay()];
-      if (TIPO_DISPLAY[tipoSesionHoy]) {
-        sesion = generarSesionTestHoy_(hoy, tipoSesionHoy);
-      }
-    }
+  const plan = getPlanAnual_();
+  if (hoy >= plan.fecha_inicio) return null;
+  const tipoSesionHoy = getHorarioSemanal_()[diaSemanaMadrid_(new Date())];
+  if (!TIPO_DISPLAY[tipoSesionHoy]) return null;
+
+  // LockService: getVistaMañana_ y getSesionHoy_ pueden llegar en paralelo
+  // (el splash lanza varias llamadas al backend a la vez) — sin lock, ambas
+  // podrían no encontrar sesión todavía y generar CADA UNA su propia fila
+  // _TEST duplicada para el mismo día. Se serializa y se vuelve a comprobar
+  // dentro del lock por si la otra petición ya la creó mientras esperábamos.
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    sesion = buscarSesionEnHojaPorFecha_(hoy);
+    if (!sesion) sesion = generarSesionTestHoy_(hoy, tipoSesionHoy);
+    return sesion;
+  } finally {
+    lock.releaseLock();
   }
+}
+
+/**
+ * Sesión de hoy con ejercicios y pesos DINÁMICOS (motor de cargas).
+ * Fuente: REG-LOG-02 §5, REG-LOG-01 §6-8
+ */
+function getSesionHoy_() {
+  const hoy = fechaHoy_();
+  const sesion = buscarOGenerarSesionHoy_();
   if (!sesion) return { sesion: null, ejercicios: [], mensaje: 'No hay sesión para hoy' };
 
   // Ramadán (cultura.md §5): -30% volumen, intensidad se mantiene. Se aplica
@@ -808,6 +831,12 @@ function registrarAusencia_(datos) {
     return { error: 'Fechas inválidas' };
   }
 
+  // Nunca tocar el pasado: si piden una fecha_inicio anterior a hoy, se
+  // recorta a hoy — evita que un rango mal escrito reescriba sesiones ya
+  // vividas (y su bool_completada real) como "AUSENCIA".
+  var hoyDate = parseDate_(fechaHoy_());
+  if (inicio < hoyDate) inicio = hoyDate;
+
   var diasAusencia = Math.ceil((fin - inicio) / 86400000);
 
   // Marcar sesiones en rango como no-entrenables (no se borran — motor las ignora)
@@ -815,14 +844,15 @@ function registrarAusencia_(datos) {
   var all = hoja.getDataRange().getValues();
   var cab = all[0];
   var colFecha = cab.indexOf('date_fecha');
-  var colNotas = cab.indexOf('str_fase');
+  var colCompletada = cab.indexOf('bool_completada');
   var sesionesAfectadas = 0;
 
   for (var i = 1; i < all.length; i++) {
     var f = parseDate_(all[i][colFecha]);
-    if (f && f >= inicio && f <= fin) {
-      // Marcar como completada=true para que no aparezca como "perdida"
-      hoja.getRange(i + 1, cab.indexOf('bool_completada') + 1).setValue(true);
+    // Solo sesiones futuras/pendientes (bool_completada aún false) — nunca
+    // se sobrescribe una sesión que el usuario ya completó de verdad.
+    if (f && f >= inicio && f <= fin && !all[i][colCompletada]) {
+      hoja.getRange(i + 1, colCompletada + 1).setValue(true);
       hoja.getRange(i + 1, cab.indexOf('date_fin') + 1).setValue('AUSENCIA');
       sesionesAfectadas++;
     }
@@ -846,7 +876,29 @@ function registrarAusencia_(datos) {
     // Tras una ausencia larga, ejercicios_log (retención 7 días) ya no tiene
     // base para esos ejercicios → la app muestra "elige tu peso" y tú reintroduces
     // la carga (naturalmente más conservadora). No hay un multiplicador mágico.
-    nota: 'Al volver, si el hueco supera la retención del log, la app pedirá elegir el peso de nuevo; si no, el motor ajusta a la baja por el gap (>7d → ×0.95).'
+    nota: 'Al volver, si el hueco supera la retención del log, la app pedirá elegir el peso de nuevo; si no, el motor ajusta a la baja por el gap (>7d → ×0.95).',
+    rutina_casa: getEntrenamientoCasa_()
+  };
+}
+
+/**
+ * Rutina de mantenimiento sin equipamiento de gimnasio (bandas + peso
+ * corporal), para usar durante vacaciones/ausencia extendida.
+ * Fuente: knowledge_base/reglas/logica/entrenamiento_casa.md §3.
+ */
+function getEntrenamientoCasa_() {
+  return {
+    titulo: 'Cuerpo completo — sin equipamiento (mantenimiento, no progresión)',
+    duracion_min: 30,
+    nota: 'Puente hasta volver al gimnasio — no sustituye el plan real. RIR 2-3, sin buscar el fallo.',
+    ejercicios: [
+      { nombre: 'Flexiones (push-ups)', reps: '3x AMRAP-2', objetivo: 'Pecho / hombro anterior / tríceps' },
+      { nombre: 'Flexión pies elevados (pike/declinada)', reps: '3x8-12', objetivo: 'Hombro (P1: V-taper)' },
+      { nombre: 'Remo con banda elástica', reps: '3x12-15', objetivo: 'Espalda media (P2: postura)' },
+      { nombre: 'Face pull con banda', reps: '3x15', objetivo: 'Deltoides posterior (P1+P2)' },
+      { nombre: 'Zancada / sentadilla búlgara (peso corporal)', reps: '3x12/lado', objetivo: 'Pierna' },
+      { nombre: 'Plancha', reps: '3x30-45seg', objetivo: 'Core' }
+    ]
   };
 }
 
@@ -856,7 +908,7 @@ function registrarAusencia_(datos) {
  */
 function getVistaMañana_() {
   var hoy = fechaHoy_();
-  var diaSemana = new Date().getDay(); // 0=dom, 1=lun...6=sab
+  var diaSemana = diaSemanaMadrid_(new Date()); // 0=dom, 1=lun...6=sab
 
   // 1. Sueño (de Health Connect vía metricas_zepp)
   var metrica = getUltimaFila_(HOJAS.METRICAS_ZEPP, 'date_fecha', hoy);
@@ -893,6 +945,29 @@ function getVistaMañana_() {
 
   // 5. Cardio objetivo del día (programacion.md §13, Wilson 2012)
   var cardio = getCardioObjetivo_(tipoFase, tipoDia);
+
+  // 4b. Resumen rápido del entreno de hoy (para decidir de un vistazo si hay
+  // que darse prisa, sin esperar a abrir el flujo completo de gym). Usa
+  // getEjerciciosSesion_ (lectura simple de ejercicios_plan) en vez de
+  // getSesionHoy_ completo — evita recalcular el motor de pesos (caro) solo
+  // para contar ejercicios.
+  var resumenEntreno = null;
+  if (tipoDia === 'gym') {
+    var sesionHoyRow = buscarOGenerarSesionHoy_();
+    if (sesionHoyRow) {
+      var ejsHoy = getEjerciciosSesion_(sesionHoyRow.sesion_id);
+      resumenEntreno = {
+        num_ejercicios: ejsHoy.length,
+        duracion_est_min: Number(sesionHoyRow.num_duracion_est_min) || 75,
+        cardio_extra_min: cardio.cardio_post_gym_min || 0
+      };
+    }
+  }
+
+  // 5b. Vistazo de MAÑANA (qué toca el día siguiente) — para saber la noche
+  // anterior qué mochila preparar (gym/natación/nada) sin esperar a que
+  // amanezca. Mismo criterio que el resumen de hoy, pero con la fecha+1.
+  var manana = getPreviewManana_(hoy, plan.fases);
 
   // 6. Movilidad matutina (programacion.md §14, Ruivo 2017, Hansraj 2014)
   var movilidad = getMovilidadMatutina_(plan.fecha_inicio);
@@ -932,6 +1007,8 @@ function getVistaMañana_() {
       agua_ml: macros.agua_ml
     },
     cardio: cardio,
+    resumen_entreno: resumenEntreno,
+    manana: manana,
     movilidad_matutina: movilidad,
     core_dia: coreDia,
     aviso_ausencia: ausencia,
@@ -939,6 +1016,55 @@ function getVistaMañana_() {
     resumen_hoy: sesionHoyEstado.resumen,
     ramadan: ramadan
   };
+}
+
+/**
+ * Vistazo de MAÑANA: qué tipo de día toca (gym/natación/descanso) y, si es
+ * gym, cuántos ejercicios/duración/cardio extra — para que la noche anterior
+ * ya se sepa qué mochila preparar (o si no hace falta preparar nada).
+ * No usa el motor de pesos (caro) — solo cuenta ejercicios del plan.
+ */
+function getPreviewManana_(hoyStr, fases) {
+  var mananaDate = sumarDias_(parseDate_(hoyStr), 1);
+  var mananaStr = formatDate_(mananaDate);
+  var diaSemanaManana = diaSemanaMadrid_(mananaDate);
+
+  var tipoSesionManana = getHorarioSemanal_()[diaSemanaManana];
+  var tipoDiaManana;
+  if (tipoSesionManana === 'NATACION') tipoDiaManana = 'natacion';
+  else if (tipoSesionManana === 'DESCANSO') tipoDiaManana = 'descanso';
+  else tipoDiaManana = 'gym';
+
+  var resultado = {
+    fecha: mananaStr,
+    tipo_dia: tipoDiaManana,
+    tipo_sesion: tipoDiaManana === 'gym' ? TIPO_DISPLAY[tipoSesionManana] : null,
+    num_ejercicios: null,
+    duracion_est_min: null,
+    cardio_extra_min: 0
+  };
+  if (tipoDiaManana !== 'gym') return resultado;
+
+  // Fase de mañana (normalmente la misma que hoy, salvo que hoy sea el
+  // último día de la fase actual — string yyyy-MM-dd, mismo patrón que
+  // getCambioFase_ usa para comparar fechas de fase).
+  var faseManana = null;
+  for (var i = 0; i < fases.length; i++) {
+    if (mananaStr >= fases[i].date_inicio && mananaStr <= fases[i].date_fin) { faseManana = fases[i]; break; }
+  }
+  var cardioManana = getCardioObjetivo_(faseManana ? faseManana.str_tipo : 'VOL', tipoDiaManana);
+  resultado.cardio_extra_min = cardioManana.cardio_post_gym_min || 0;
+
+  // Si la fila de mañana aún no existe en sesiones_plan (fuera del rango
+  // generado), se devuelve igualmente tipo_dia/tipo_sesion — suficiente
+  // para saber qué mochila preparar, aunque no el nº exacto de ejercicios.
+  var sesionManana = buscarSesionEnHojaPorFecha_(mananaStr);
+  if (sesionManana) {
+    var ejsManana = getEjerciciosSesion_(sesionManana.sesion_id);
+    resultado.num_ejercicios = ejsManana.length;
+    resultado.duracion_est_min = Number(sesionManana.num_duracion_est_min) || 75;
+  }
+  return resultado;
 }
 
 /**
@@ -1218,10 +1344,9 @@ function getCoreDia_(tipoDia) {
  * Detecta automáticamente según excepciones.md §2.1.
  */
 function checkAusenciaAyer_() {
-  var ayer = new Date();
-  ayer.setDate(ayer.getDate() - 1);
+  var ayer = sumarDias_(parseDate_(fechaHoy_()), -1);
   var ayerStr = formatDate_(ayer);
-  var diaSemana = ayer.getDay();
+  var diaSemana = diaSemanaMadrid_(ayer);
 
   // Solo comprobar en días de gym según el horario semanal vigente
   var tipoAyer = getHorarioSemanal_()[diaSemana];
@@ -1971,6 +2096,23 @@ function parseDate_(v) {
   return isNaN(d.getTime()) ? null : d;
 }
 
+// FIX (2026-k): día de la semana SIEMPRE en huso Europe/Madrid, nunca vía
+// Date.getDay() (que usa el huso POR DEFECTO DEL PROYECTO de Apps Script,
+// no necesariamente Europe/Madrid — mismo problema de raíz que el bug de
+// guardarHorarioSemanal_ que vació sesiones_plan). Utilities.formatDate(...,'u')
+// da 1=Lun..7=Dom (ISO); se remapea a 0=Dom..6=Sáb para igualar la convención
+// de Date.getDay() que usa el resto del código (horario[0]=domingo, etc).
+function diaSemanaMadrid_(fecha) {
+  var iso = parseInt(Utilities.formatDate(fecha, 'Europe/Madrid', 'u'), 10); // 1..7
+  return iso % 7; // 7(Dom)→0, 1..6 igual
+}
+
+// Suma/resta días por aritmética pura de milisegundos sobre el instante,
+// sin pasar nunca por setDate()/getDate() (huso local del proyecto).
+function sumarDias_(fecha, n) {
+  return new Date(fecha.getTime() + n * 86400000);
+}
+
 function rowToObj_(cab, fila) {
   var o = {};
   for (var i = 0; i < cab.length; i++) o[cab[i]] = fila[i];
@@ -2525,12 +2667,12 @@ function generarFilasSesiones_(fechaDesde, fechaHasta, horario) {
     var fecha = new Date(faseInicio);
     var semFase = 1;
     while (fecha < desde) {
-      if (fecha.getDay() === 0) semFase++;
-      fecha.setDate(fecha.getDate() + 1);
+      if (diaSemanaMadrid_(fecha) === 0) semFase++;
+      fecha = sumarDias_(fecha, 1);
     }
 
     while (fecha <= hasta) {
-      var dia = fecha.getDay(); // 0=dom, 1=lun...6=sab
+      var dia = diaSemanaMadrid_(fecha); // 0=dom, 1=lun...6=sab
       var fStr = Utilities.formatDate(fecha, 'Europe/Madrid', 'yyyy-MM-dd');
       var tipoSesion = horario[dia];
 
@@ -2579,7 +2721,7 @@ function generarFilasSesiones_(fechaDesde, fechaHasta, horario) {
       }
 
       if (dia === 0) semFase++; // fin de semana → cambio de semana dentro de la fase
-      fecha.setDate(fecha.getDate() + 1);
+      fecha = sumarDias_(fecha, 1);
     }
   }
 

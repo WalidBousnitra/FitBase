@@ -1,6 +1,7 @@
 package com.fitbase.data.api;
 
 import com.fitbase.data.model.ActualizarHorarioResponse;
+import com.fitbase.data.model.AusenciaRegistroResponse;
 import com.fitbase.data.model.AusenciaResponse;
 import com.fitbase.data.model.CambioFaseResponse;
 import com.fitbase.data.model.GenericResponse;
@@ -70,7 +71,7 @@ public interface FitBaseApi {
     Call<ResumenSesionResponse> completarSesion(@Body Map<String, Object> datos);
 
     @POST("exec")
-    Call<GenericResponse> registrarAusencia(@Body Map<String, Object> datos);
+    Call<AusenciaRegistroResponse> registrarAusencia(@Body Map<String, Object> datos);
 
     @POST("exec")
     Call<GenericResponse> enviarDatos(@Body Map<String, Object> datos);

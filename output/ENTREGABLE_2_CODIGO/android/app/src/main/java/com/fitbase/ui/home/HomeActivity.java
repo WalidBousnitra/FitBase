@@ -53,7 +53,7 @@ public class HomeActivity extends BaseActivity {
                     granted -> { if (viewModel != null) viewModel.cargarDatosDelDia(); });
 
     // ─── Vistas: Header ───
-    private TextView tvSaludo, tvFecha, tvTipoDia, tvTipoSesion, tvFaseNombre;
+    private TextView tvSaludo, tvFecha, tvTipoDia, tvTipoSesion, tvFaseNombre, tvResumenEntreno, tvPausarPlan;
 
     // ─── Vistas: Sueño ───
     private TextView tvSleepScore, tvFcReposo, tvAvisoFatiga;
@@ -92,6 +92,8 @@ public class HomeActivity extends BaseActivity {
     // ─── Vistas: Banners ───
     private View bannerAusencia;
     private TextView tvAusenciaMensaje;
+    private View cardManana;
+    private TextView tvMananaResumen;
     private View bannerRamadan;
     private TextView tvRamadanTitulo, tvRamadanDetalle;
 
@@ -227,6 +229,8 @@ public class HomeActivity extends BaseActivity {
         tvTipoDia = findViewById(R.id.tvTipoDia);
         tvTipoSesion = findViewById(R.id.tvTipoSesion);
         tvFaseNombre = findViewById(R.id.tvFaseNombre);
+        tvResumenEntreno = findViewById(R.id.tvResumenEntreno);
+        tvPausarPlan = findViewById(R.id.tvPausarPlan);
 
         tvSleepScore = findViewById(R.id.tvSleepScore);
         tvFcReposo = findViewById(R.id.tvFcReposo);
@@ -267,6 +271,8 @@ public class HomeActivity extends BaseActivity {
 
         bannerAusencia = findViewById(R.id.bannerAusencia);
         tvAusenciaMensaje = findViewById(R.id.tvAusenciaMensaje);
+        cardManana = findViewById(R.id.cardManana);
+        tvMananaResumen = findViewById(R.id.tvMananaResumen);
         bannerRamadan = findViewById(R.id.bannerRamadan);
         tvRamadanTitulo = findViewById(R.id.tvRamadanTitulo);
         tvRamadanDetalle = findViewById(R.id.tvRamadanDetalle);
@@ -276,7 +282,110 @@ public class HomeActivity extends BaseActivity {
         btnPlanAnual.setOnClickListener(v -> startActivity(new Intent(this, PlanAnualActivity.class)));
         btnProgresion.setOnClickListener(v -> startActivity(new Intent(this, ProgressionActivity.class)));
 
+        tvPausarPlan.setOnClickListener(v -> mostrarDialogoPausarPlan());
+
         vincularBotonesDemo();
+    }
+
+    /**
+     * "Pausar plan (vacaciones)" — excepciones.md §2.2. Pide fecha_inicio/fin,
+     * llama a registrar_ausencia (suspende sesiones futuras en ese rango sin
+     * tocar histórico real) y muestra impacto + rutina de mantenimiento sin
+     * equipamiento (entrenamiento_casa.md).
+     */
+    private void mostrarDialogoPausarPlan() {
+        java.text.SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+        Calendar calInicio = Calendar.getInstance();
+        Calendar calFin = Calendar.getInstance();
+        calFin.add(Calendar.DAY_OF_MONTH, 7); // sugerencia por defecto: 1 semana
+
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        int pad = (int) (16 * getResources().getDisplayMetrics().density);
+        layout.setPadding(pad, pad, pad, pad);
+
+        TextView tvExplicacion = new TextView(this);
+        tvExplicacion.setText("Las sesiones futuras en ese rango se suspenden (no cuentan como perdidas). Al volver, el motor ajusta el peso automáticamente.");
+        tvExplicacion.setPadding(0, 0, 0, pad);
+        layout.addView(tvExplicacion);
+
+        Button btnInicio = new Button(this);
+        Button btnFin = new Button(this);
+        btnInicio.setText("Desde: " + fmt.format(calInicio.getTime()));
+        btnFin.setText("Hasta: " + fmt.format(calFin.getTime()));
+        layout.addView(btnInicio);
+        layout.addView(btnFin);
+
+        btnInicio.setOnClickListener(v -> new android.app.DatePickerDialog(this, (view, y, m, d) -> {
+            calInicio.set(y, m, d);
+            btnInicio.setText("Desde: " + fmt.format(calInicio.getTime()));
+        }, calInicio.get(Calendar.YEAR), calInicio.get(Calendar.MONTH), calInicio.get(Calendar.DAY_OF_MONTH)).show());
+
+        btnFin.setOnClickListener(v -> new android.app.DatePickerDialog(this, (view, y, m, d) -> {
+            calFin.set(y, m, d);
+            btnFin.setText("Hasta: " + fmt.format(calFin.getTime()));
+        }, calFin.get(Calendar.YEAR), calFin.get(Calendar.MONTH), calFin.get(Calendar.DAY_OF_MONTH)).show());
+
+        new AlertDialog.Builder(this)
+                .setTitle("Pausar plan (vacaciones)")
+                .setView(layout)
+                .setPositiveButton("Confirmar", (dialog, which) -> {
+                    if (calFin.getTimeInMillis() <= calInicio.getTimeInMillis()) {
+                        Toast.makeText(this, "La fecha de fin debe ser posterior a la de inicio", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    registrarAusenciaBackend(fmt.format(calInicio.getTime()), fmt.format(calFin.getTime()));
+                })
+                .setNegativeButton("Cancelar", null)
+                .show();
+    }
+
+    private void registrarAusenciaBackend(String fechaInicio, String fechaFin) {
+        java.util.Map<String, Object> datos = new java.util.HashMap<>();
+        datos.put("accion", "registrar_ausencia");
+        datos.put("fecha_inicio", fechaInicio);
+        datos.put("fecha_fin", fechaFin);
+
+        com.fitbase.data.api.ApiClient.getApi().registrarAusencia(datos).enqueue(
+                new retrofit2.Callback<com.fitbase.data.model.AusenciaRegistroResponse>() {
+            @Override
+            public void onResponse(retrofit2.Call<com.fitbase.data.model.AusenciaRegistroResponse> call,
+                                    retrofit2.Response<com.fitbase.data.model.AusenciaRegistroResponse> response) {
+                com.fitbase.data.model.AusenciaRegistroResponse body = response.body();
+                if (response.isSuccessful() && body != null && body.ok) {
+                    mostrarResultadoAusencia(body);
+                    if (viewModel != null) viewModel.cargarDatosDelDia();
+                } else if (body != null && body.error != null) {
+                    Toast.makeText(HomeActivity.this, body.error, Toast.LENGTH_LONG).show();
+                } else {
+                    com.fitbase.data.local.SyncManager.encolar(HomeActivity.this, datos);
+                    Toast.makeText(HomeActivity.this, "Sin conexión — se aplicará en cuanto la haya.", Toast.LENGTH_LONG).show();
+                }
+            }
+
+            @Override
+            public void onFailure(retrofit2.Call<com.fitbase.data.model.AusenciaRegistroResponse> call, Throwable t) {
+                com.fitbase.data.local.SyncManager.encolar(HomeActivity.this, datos);
+                Toast.makeText(HomeActivity.this, "Sin conexión — se aplicará en cuanto la haya.", Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    private void mostrarResultadoAusencia(com.fitbase.data.model.AusenciaRegistroResponse body) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(body.sesionesSuspendidas).append(" sesiones suspendidas.\n\n").append(body.impacto);
+        if (body.rutinaCasa != null && body.rutinaCasa.ejercicios != null) {
+            sb.append("\n\nRutina en casa (opcional, sin equipamiento, ~")
+              .append(body.rutinaCasa.duracionMin).append(" min):\n");
+            for (com.fitbase.data.model.AusenciaRegistroResponse.EjercicioCasa ej : body.rutinaCasa.ejercicios) {
+                sb.append("• ").append(ej.nombre).append(" — ").append(ej.reps).append("\n");
+            }
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("Plan pausado")
+                .setMessage(sb.toString())
+                .setPositiveButton("Entendido", null)
+                .show();
     }
 
     /**
@@ -418,6 +527,44 @@ public class HomeActivity extends BaseActivity {
             tvTipoSesion.setVisibility(View.VISIBLE);
         } else {
             tvTipoSesion.setVisibility(View.GONE);
+        }
+
+        // ── Resumen rápido del entreno de hoy (nº ejercicios / duración / cardio) ──
+        // Para decidir de un vistazo, antes de salir de casa, si hay que darse
+        // prisa — sin tener que abrir el flujo completo de gym.
+        if (vista.esGym() && vista.getResumenEntreno() != null) {
+            VistaMañanaResponse.ResumenEntreno r = vista.getResumenEntreno();
+            StringBuilder sb = new StringBuilder();
+            sb.append(r.numEjercicios).append(r.numEjercicios == 1 ? " ejercicio" : " ejercicios");
+            sb.append(" · ~").append(r.duracionEstMin).append(" min");
+            if (r.cardioExtraMin > 0) sb.append(" · +").append(r.cardioExtraMin).append(" cardio");
+            tvResumenEntreno.setText(sb.toString());
+            tvResumenEntreno.setVisibility(View.VISIBLE);
+        } else {
+            tvResumenEntreno.setVisibility(View.GONE);
+        }
+
+        // ── Vistazo de mañana (qué mochila preparar la noche anterior) ──
+        if (vista.getManana() != null) {
+            VistaMañanaResponse.PreviewManana m = vista.getManana();
+            String texto;
+            switch (m.tipoDia) {
+                case "gym":
+                    StringBuilder sb = new StringBuilder(m.tipoSesion != null ? m.tipoSesion : "Gym");
+                    if (m.numEjercicios != null) {
+                        sb.append(" · ").append(m.numEjercicios).append(m.numEjercicios == 1 ? " ejercicio" : " ejercicios");
+                    }
+                    if (m.duracionEstMin != null) sb.append(" · ~").append(m.duracionEstMin).append(" min");
+                    if (m.cardioExtraMin > 0) sb.append(" · +").append(m.cardioExtraMin).append(" cardio");
+                    texto = sb.toString();
+                    break;
+                case "natacion": texto = "Natación"; break;
+                default: texto = "Descanso — no hace falta preparar nada"; break;
+            }
+            tvMananaResumen.setText(texto);
+            cardManana.setVisibility(View.VISIBLE);
+        } else {
+            cardManana.setVisibility(View.GONE);
         }
 
         // ── Fase ──

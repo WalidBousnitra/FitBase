@@ -39,6 +39,17 @@ public class VistaMañanaResponse {
     @SerializedName("cardio")
     private CardioObjetivo cardio;
 
+    // Resumen rápido del entreno de hoy (nº ejercicios, duración estimada,
+    // cardio extra) — solo presente si tipoDia es "gym". Pensado para decidir
+    // de un vistazo, sin abrir el flujo completo de gym, si hay que darse prisa.
+    @SerializedName("resumen_entreno")
+    private ResumenEntreno resumenEntreno;
+
+    // Vistazo de MAÑANA (tipo de día + resumen si es gym) — para saber la
+    // noche anterior qué mochila preparar, sin esperar a que amanezca.
+    @SerializedName("manana")
+    private PreviewManana manana;
+
     @SerializedName("movilidad_matutina")
     private MovilidadMatutina movilidadMatutina;
 
@@ -109,6 +120,30 @@ public class VistaMañanaResponse {
         public String intensidad;
         @SerializedName("justificacion")
         public String justificacion; // Evidence-based reason (Wilson 2012, Viana 2019)
+    }
+
+    public static class ResumenEntreno {
+        @SerializedName("num_ejercicios")
+        public int numEjercicios;
+        @SerializedName("duracion_est_min")
+        public int duracionEstMin;
+        @SerializedName("cardio_extra_min")
+        public int cardioExtraMin;
+    }
+
+    public static class PreviewManana {
+        @SerializedName("fecha")
+        public String fecha;
+        @SerializedName("tipo_dia")
+        public String tipoDia; // "gym", "natacion", "descanso"
+        @SerializedName("tipo_sesion")
+        public String tipoSesion; // Push/Pierna/Pull/Hombros — null si no es gym
+        @SerializedName("num_ejercicios")
+        public Integer numEjercicios; // null si la fila de mañana aún no existe
+        @SerializedName("duracion_est_min")
+        public Integer duracionEstMin;
+        @SerializedName("cardio_extra_min")
+        public int cardioExtraMin;
     }
 
     public static class MovilidadMatutina {
@@ -195,6 +230,8 @@ public class VistaMañanaResponse {
     public Sueno getSueno() { return sueno; }
     public MacrosResumen getMacros() { return macros; }
     public CardioObjetivo getCardio() { return cardio; }
+    public ResumenEntreno getResumenEntreno() { return resumenEntreno; }
+    public PreviewManana getManana() { return manana; }
     public MovilidadMatutina getMovilidadMatutina() { return movilidadMatutina; }
     public CoreDia getCoreDia() { return coreDia; }
     public AvisoAusencia getAvisoAusencia() { return avisoAusencia; }

@@ -99,7 +99,33 @@
                     android:paddingHorizontal="@dimen/space_md"
                     android:paddingVertical="@dimen/space_xs"
                     android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/tvResumenEntreno"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/space_sm"
+                    android:text="—"
+                    android:textSize="@dimen/home_text_chip"
+                    android:textColor="@color/text_secondary"
+                    android:background="@drawable/bg_badge_actual"
+                    android:paddingHorizontal="@dimen/space_md"
+                    android:paddingVertical="@dimen/space_xs"
+                    android:visibility="gone" />
             </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvPausarPlan"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_sm"
+                android:text="⏸ Pausar plan (vacaciones)"
+                android:textSize="@dimen/home_text_chip"
+                android:textColor="@color/text_secondary"
+                android:padding="@dimen/space_xs"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?attr/selectableItemBackground" />
         </LinearLayout>
 
         <LinearLayout
@@ -127,6 +153,37 @@
                 android:layout_height="wrap_content"
                 android:textSize="@dimen/home_text_chip"
                 android:textColor="@color/text_secondary" />
+        </LinearLayout>
+
+        <!-- ═══ VISTAZO DE MAÑANA — qué mochila preparar la noche anterior ═══ -->
+        <LinearLayout
+            android:id="@+id/cardManana"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="@drawable/bg_card_flat"
+            android:padding="@dimen/space_md"
+            android:layout_marginTop="@dimen/space_sm"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Mañana"
+                android:textSize="@dimen/home_text_chip"
+                android:fontFamily="sans-serif-medium"
+                android:textColor="@color/accent" />
+
+            <TextView
+                android:id="@+id/tvMananaResumen"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="@dimen/space_sm"
+                android:textSize="@dimen/home_text_chip"
+                android:textColor="@color/text_secondary"
+                android:gravity="end" />
         </LinearLayout>
 
         <!-- ═══ BANNER RAMADÁN / EID (cultura.md §5-6) ═══ -->
