@@ -116,19 +116,6 @@
                 android:paddingHorizontal="@dimen/space_md"
                 android:paddingVertical="@dimen/space_xs"
                 android:visibility="gone" />
-
-            <TextView
-                android:id="@+id/tvPausarPlan"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_sm"
-                android:text="⏸ Pausar plan (vacaciones)"
-                android:textSize="@dimen/home_text_chip"
-                android:textColor="@color/text_secondary"
-                android:padding="@dimen/space_xs"
-                android:clickable="true"
-                android:focusable="true"
-                android:background="?attr/selectableItemBackground" />
         </LinearLayout>
 
         <LinearLayout
@@ -187,6 +174,24 @@
                 android:textSize="@dimen/home_text_chip"
                 android:textColor="@color/text_secondary"
                 android:gravity="end" />
+
+            <!-- Pausar plan (vacaciones) — movido aquí (antes su propia fila en
+                 el hero) para no ocupar tanto alto de pantalla; icono compacto
+                 pegado al vistazo de mañana, mismo sitio donde tiene sentido
+                 pensar en "no voy a entrenar los próximos días". -->
+            <TextView
+                android:id="@+id/tvPausarPlan"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/space_sm"
+                android:text="⏸"
+                android:textSize="@dimen/home_text_chip"
+                android:textColor="@color/text_secondary"
+                android:contentDescription="Pausar plan (vacaciones)"
+                android:padding="@dimen/space_xs"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?attr/selectableItemBackground" />
         </LinearLayout>
 
         <!-- ═══ BANNER RAMADÁN / EID (cultura.md §5-6) ═══ -->
