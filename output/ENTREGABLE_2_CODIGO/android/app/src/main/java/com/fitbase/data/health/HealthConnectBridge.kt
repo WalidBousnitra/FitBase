@@ -16,6 +16,8 @@ import androidx.health.connect.client.records.WeightRecord
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
 import android.util.Log
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
 import java.time.Duration
 import java.time.Instant
@@ -136,19 +138,25 @@ object HealthConnectBridge {
             val timeFilter = TimeRangeFilter.between(startOfDay, now)
 
             runBlocking {
+                // PASOS y NUTRICIÓN son independientes — antes se leían uno detrás
+                // de otro (2 llamadas IPC a Health Connect en serie); en paralelo
+                // el tiempo total pasa a ser el del más lento, no la suma.
+                val stepsDeferred = async(Dispatchers.IO) {
+                    client.readRecords(ReadRecordsRequest(StepsRecord::class, timeRangeFilter = timeFilter))
+                }
+                val nutriDeferred = async(Dispatchers.IO) {
+                    client.readRecords(ReadRecordsRequest(NutritionRecord::class, timeRangeFilter = timeFilter))
+                }
+
                 // PASOS
-                val stepsResult = client.readRecords(
-                    ReadRecordsRequest(StepsRecord::class, timeRangeFilter = timeFilter)
-                )
+                val stepsResult = stepsDeferred.await()
                 for (record in stepsResult.records) {
                     data.pasos += record.count.toInt()
                 }
                 Log.d(TAG, "Steps: ${stepsResult.records.size} records, total=${data.pasos}")
 
                 // NUTRICIÓN (FatSecret u otra app)
-                val nutriResult = client.readRecords(
-                    ReadRecordsRequest(NutritionRecord::class, timeRangeFilter = timeFilter)
-                )
+                val nutriResult = nutriDeferred.await()
                 var kcalFromEnergy = 0
                 var kcalFromMacros = 0
                 for (record in nutriResult.records) {
@@ -216,49 +224,60 @@ object HealthConnectBridge {
         // de unidades entre dos medidas reales, no una estimación). Grasa/agua
         // son opcionales: si fallan (permiso no concedido, sin fuente de
         // datos), el peso se guarda igual, solo sin ese enriquecido.
-        try {
-            runBlocking {
-                val pesoResult = client.readRecords(
-                    ReadRecordsRequest(WeightRecord::class, timeRangeFilter = timeFilter)
-                )
-                val grasaPctPorDia = mutableMapOf<String, Double>()
+        // Los 3 grupos de abajo (peso+composición / sueño / FC reposo) son
+        // independientes entre sí — antes se leían uno detrás de otro (hasta 5
+        // llamadas IPC a Health Connect en serie: peso, grasa, agua, sueño, FC),
+        // sumando toda su latencia. Ahora corren en paralelo (Dispatchers.IO) en
+        // un único runBlocking — el tiempo total pasa a ser el del grupo más
+        // lento, no la suma de los tres. Cada grupo conserva su propio try/catch
+        // (ver comentario de arriba de la función): un permiso no concedido en
+        // un grupo no debe tumbar a los demás, y como cada uno escribe en una
+        // lista distinta de `data` (pesosKg / suenos / fcReposo) no hay
+        // condición de carrera entre ellos aunque corran a la vez.
+        runBlocking {
+            val pesoJob = async(Dispatchers.IO) {
                 try {
-                    val grasaResult = client.readRecords(
-                        ReadRecordsRequest(BodyFatRecord::class, timeRangeFilter = timeFilter)
+                    val pesoResult = client.readRecords(
+                        ReadRecordsRequest(WeightRecord::class, timeRangeFilter = timeFilter)
                     )
-                    for (record in grasaResult.records) {
-                        val fecha = record.time.atZone(ZoneId.systemDefault()).toLocalDate().toString()
-                        grasaPctPorDia[fecha] = record.percentage.value
+                    val grasaPctPorDia = mutableMapOf<String, Double>()
+                    try {
+                        val grasaResult = client.readRecords(
+                            ReadRecordsRequest(BodyFatRecord::class, timeRangeFilter = timeFilter)
+                        )
+                        for (record in grasaResult.records) {
+                            val fecha = record.time.atZone(ZoneId.systemDefault()).toLocalDate().toString()
+                            grasaPctPorDia[fecha] = record.percentage.value
+                        }
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Sin acceso a % grasa (BodyFatRecord): ${e.message}")
                     }
-                } catch (e: Exception) {
-                    Log.w(TAG, "Sin acceso a % grasa (BodyFatRecord): ${e.message}")
-                }
-                val aguaKgPorDia = mutableMapOf<String, Double>()
-                try {
-                    val aguaResult = client.readRecords(
-                        ReadRecordsRequest(BodyWaterMassRecord::class, timeRangeFilter = timeFilter)
-                    )
-                    for (record in aguaResult.records) {
-                        val fecha = record.time.atZone(ZoneId.systemDefault()).toLocalDate().toString()
-                        aguaKgPorDia[fecha] = record.mass.inKilograms
+                    val aguaKgPorDia = mutableMapOf<String, Double>()
+                    try {
+                        val aguaResult = client.readRecords(
+                            ReadRecordsRequest(BodyWaterMassRecord::class, timeRangeFilter = timeFilter)
+                        )
+                        for (record in aguaResult.records) {
+                            val fecha = record.time.atZone(ZoneId.systemDefault()).toLocalDate().toString()
+                            aguaKgPorDia[fecha] = record.mass.inKilograms
+                        }
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Sin acceso a masa de agua (BodyWaterMassRecord): ${e.message}")
                     }
-                } catch (e: Exception) {
-                    Log.w(TAG, "Sin acceso a masa de agua (BodyWaterMassRecord): ${e.message}")
-                }
 
-                for (record in pesoResult.records) {
-                    val kg = record.weight.inKilograms
-                    val fecha = record.time.atZone(ZoneId.systemDefault()).toLocalDate().toString()
-                    val grasaPct = grasaPctPorDia[fecha]
-                    val aguaKg = aguaKgPorDia[fecha]
-                    val hidratacionPct = if (aguaKg != null && kg > 0) (aguaKg / kg * 100.0) else null
-                    data.pesosKg.add(PesoEntry(fecha, kg, grasaPct, hidratacionPct))
+                    for (record in pesoResult.records) {
+                        val kg = record.weight.inKilograms
+                        val fecha = record.time.atZone(ZoneId.systemDefault()).toLocalDate().toString()
+                        val grasaPct = grasaPctPorDia[fecha]
+                        val aguaKg = aguaKgPorDia[fecha]
+                        val hidratacionPct = if (aguaKg != null && kg > 0) (aguaKg / kg * 100.0) else null
+                        data.pesosKg.add(PesoEntry(fecha, kg, grasaPct, hidratacionPct))
+                    }
+                    Log.d(TAG, "Weight: ${pesoResult.records.size} records, grasa: ${grasaPctPorDia.size}, agua: ${aguaKgPorDia.size} (over $diasAtras days)")
+                } catch (e: Exception) {
+                    Log.e(TAG, "Sin acceso a peso (WeightRecord): ${e.javaClass.simpleName}: ${e.message}", e)
                 }
-                Log.d(TAG, "Weight: ${pesoResult.records.size} records, grasa: ${grasaPctPorDia.size}, agua: ${aguaKgPorDia.size} (over $diasAtras days)")
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Sin acceso a peso (WeightRecord): ${e.javaClass.simpleName}: ${e.message}", e)
-        }
 
         // SUEÑO
         // Health Connect NO expone el "Sleep Score" propietario de Zepp (no existe
@@ -269,8 +288,8 @@ object HealthConnectBridge {
         //
         // Zepp puede escribir la noche como varias SleepSessionRecord separadas
         // (p.ej. interrupciones), así que se agrupan por "noche" para sumar los minutos.
-        try {
-            runBlocking {
+            val sleepJob = async(Dispatchers.IO) {
+                try {
                 val sleepResult = client.readRecords(
                     ReadRecordsRequest(SleepSessionRecord::class, timeRangeFilter = timeFilter)
                 )
@@ -364,33 +383,38 @@ object HealthConnectBridge {
                     ))
                 }
                 Log.d(TAG, "Sleep: ${sleepResult.records.size} sesiones agrupadas en ${porNoche.size} noches")
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Sin acceso a sueño (SleepSessionRecord): ${e.javaClass.simpleName}: ${e.message}", e)
-        }
-
-        // FC REPOSO — literal, tal cual la calcula Zepp/Amazfit.
-        // RestingHeartRateRecord es un dato propio del dispositivo (no HeartRateRecord
-        // continuo): no se estima ni se deriva nada aquí. Si un día no está, se omite
-        // (mejor "sin dato" que un número inventado).
-        try {
-            runBlocking {
-                val restingResult = client.readRecords(
-                    ReadRecordsRequest(RestingHeartRateRecord::class, timeRangeFilter = timeFilter)
-                )
-                val fcPorDia = mutableMapOf<String, Int>()
-                for (record in restingResult.records) {
-                    val fecha = record.time.atZone(ZoneId.systemDefault()).toLocalDate().toString()
-                    fcPorDia[fecha] = record.beatsPerMinute.toInt()
-                }
-                Log.d(TAG, "RestingHeartRate: ${restingResult.records.size} records, ${fcPorDia.size} días")
-
-                for ((fecha, bpm) in fcPorDia.toSortedMap()) {
-                    data.fcReposo.add(HrEntry(fecha, bpm))
+                } catch (e: Exception) {
+                    Log.e(TAG, "Sin acceso a sueño (SleepSessionRecord): ${e.javaClass.simpleName}: ${e.message}", e)
                 }
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Sin acceso a FC reposo (RestingHeartRateRecord): ${e.javaClass.simpleName}: ${e.message}", e)
+
+            // FC REPOSO — literal, tal cual la calcula Zepp/Amazfit.
+            // RestingHeartRateRecord es un dato propio del dispositivo (no
+            // HeartRateRecord continuo): no se estima ni se deriva nada aquí. Si
+            // un día no está, se omite (mejor "sin dato" que un número inventado).
+            val hrJob = async(Dispatchers.IO) {
+                try {
+                    val restingResult = client.readRecords(
+                        ReadRecordsRequest(RestingHeartRateRecord::class, timeRangeFilter = timeFilter)
+                    )
+                    val fcPorDia = mutableMapOf<String, Int>()
+                    for (record in restingResult.records) {
+                        val fecha = record.time.atZone(ZoneId.systemDefault()).toLocalDate().toString()
+                        fcPorDia[fecha] = record.beatsPerMinute.toInt()
+                    }
+                    Log.d(TAG, "RestingHeartRate: ${restingResult.records.size} records, ${fcPorDia.size} días")
+
+                    for ((fecha, bpm) in fcPorDia.toSortedMap()) {
+                        data.fcReposo.add(HrEntry(fecha, bpm))
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Sin acceso a FC reposo (RestingHeartRateRecord): ${e.javaClass.simpleName}: ${e.message}", e)
+                }
+            }
+
+            pesoJob.await()
+            sleepJob.await()
+            hrJob.await()
         }
         return data
     }

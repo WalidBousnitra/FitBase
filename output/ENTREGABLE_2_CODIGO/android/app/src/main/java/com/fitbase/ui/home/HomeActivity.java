@@ -123,8 +123,15 @@ public class HomeActivity extends BaseActivity {
         // más en aparecer algo en pantalla justo después de "cargar". En
         // cualquier onResume posterior (volver de otra pantalla, reabrir tras
         // un rato) sí se recarga: msDesdeCarga ya será alto.
+        // sinDatos cubre el caso en que SplashActivity dio por completada la
+        // precarga por timeout (8s) sin que vista_manana hubiera respondido
+        // todavía (Apps Script puede tardar más en frío) — marcarCargaCompleta()
+        // se llama igualmente, así que el timestamp de abajo mentía "recién
+        // cargado" y esto se quedaba sin pintar nada hasta reabrir la app 2-3
+        // veces (la única forma de que msDesdeCarga superase los 2000ms).
+        boolean sinDatos = viewModel.getVistaMañana().getValue() == null;
         long msDesdeCarga = System.currentTimeMillis() - com.fitbase.data.cache.AppDataCache.getUltimaCargaCompletaMs();
-        if (!com.fitbase.data.cache.AppDataCache.isCargaInicialCompleta() || msDesdeCarga > 2000) {
+        if (sinDatos || !com.fitbase.data.cache.AppDataCache.isCargaInicialCompleta() || msDesdeCarga > 2000) {
             viewModel.cargarDatosDelDia();
         }
         comprobarMetricasSubjetivas();

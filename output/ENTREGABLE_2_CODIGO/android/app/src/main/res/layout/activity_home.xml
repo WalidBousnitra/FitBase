@@ -99,20 +99,23 @@
                     android:paddingHorizontal="@dimen/space_md"
                     android:paddingVertical="@dimen/space_xs"
                     android:visibility="gone" />
-
-                <TextView
-                    android:id="@+id/tvResumenEntreno"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="@dimen/space_sm"
-                    android:text="—"
-                    android:textSize="@dimen/home_text_chip"
-                    android:textColor="@color/text_secondary"
-                    android:background="@drawable/bg_badge_actual"
-                    android:paddingHorizontal="@dimen/space_md"
-                    android:paddingVertical="@dimen/space_xs"
-                    android:visibility="gone" />
             </LinearLayout>
+
+            <!-- Fila propia, ancho completo — evita que se corte contra el
+                 borde derecho de la pantalla cuando los chips de arriba
+                 (tipo día + split + fase) ya ocupan casi todo el ancho. -->
+            <TextView
+                android:id="@+id/tvResumenEntreno"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_xs"
+                android:text="—"
+                android:textSize="@dimen/home_text_chip"
+                android:textColor="@color/text_secondary"
+                android:background="@drawable/bg_badge_actual"
+                android:paddingHorizontal="@dimen/space_md"
+                android:paddingVertical="@dimen/space_xs"
+                android:visibility="gone" />
 
             <TextView
                 android:id="@+id/tvPausarPlan"

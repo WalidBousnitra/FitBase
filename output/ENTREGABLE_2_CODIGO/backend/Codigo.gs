@@ -39,6 +39,36 @@ const EJERCICIOS_LOG_RETENCION_DIAS = 7;
 
 const CACHE_TTL = 30; // segundos
 
+// Caché en memoria de lecturas de hoja para UNA SOLA EJECUCIÓN de doGet/doPost.
+// getVistaMañana_ por sí sola llega a leer sesiones_plan/ejercicios_plan/
+// plan_anual/metricas_zepp varias veces cada una a través de sus helpers
+// (resumen de hoy + vistazo de mañana + aviso ausencia + sesión completada,
+// cada uno con su propia lectura) — cada lectura es una llamada remota a
+// Sheets (~150-500ms), así que sumaban varios segundos de más en una sola
+// petición (motivo real de la lentitud reportada, no el timeout de Splash).
+// Se limpia al empezar cada doGet/doPost — nunca sobrevive entre peticiones.
+// Los handlers de escritura (POST) NO usan este caché, siguen leyendo la
+// hoja directamente justo antes de escribir — aquí solo se acelera la
+// lectura pura de las pantallas (vista_manana, sesion_hoy, macros_hoy...).
+var _cacheHojas_ = {};
+function getDatosHoja_(nombreHoja) {
+  if (!_cacheHojas_[nombreHoja]) {
+    var hoja = getHoja_(nombreHoja);
+    _cacheHojas_[nombreHoja] = hoja ? hoja.getDataRange().getValues() : [];
+  }
+  return _cacheHojas_[nombreHoja];
+}
+// Se llama tras escribir una fila nueva a mitad de un GET (solo ocurre en
+// buscarOGenerarSesionHoy_, pre-temporada) para que una lectura posterior
+// dentro de la MISMA petición vea la fila recién creada en vez de la copia
+// cacheada de antes de escribir.
+function invalidarCacheHoja_(nombreHoja) {
+  delete _cacheHojas_[nombreHoja];
+}
+function limpiarCacheHojas_() {
+  _cacheHojas_ = {};
+}
+
 // ─── Ramadán (usuario/perfil/cultura.md §5-8) ─────────────────
 // Fechas confirmadas por el usuario (04/07/2026). El calendario islámico es
 // lunar — estas fechas hay que actualizarlas a mano cada año, no se calculan.
@@ -130,6 +160,7 @@ function guardarHorarioSemanal_(datos) {
 
 function doGet(e) {
   try {
+    limpiarCacheHojas_();
     const accion = e.parameter.accion;
     const cache = CacheService.getScriptCache();
     const cacheKey = 'GET:' + accion + ':' + (e.parameter.dias || '') + ':' + (e.parameter.semana || '');
@@ -164,6 +195,7 @@ function doGet(e) {
 
 function doPost(e) {
   try {
+    limpiarCacheHojas_();
     const datos = JSON.parse(e.postData.contents);
     let resultado;
     switch (datos.accion) {
@@ -194,8 +226,7 @@ function doPost(e) {
  * puedan divergir sobre qué cuenta como "sesión de hoy").
  */
 function buscarSesionEnHojaPorFecha_(fechaStr) {
-  const hoja = getHoja_(HOJAS.SESIONES_PLAN);
-  const datos = hoja.getDataRange().getValues();
+  const datos = getDatosHoja_(HOJAS.SESIONES_PLAN);
   const cab = datos[0];
   for (let i = 1; i < datos.length; i++) {
     const f = parseDate_(datos[i][cab.indexOf('date_fecha')]);
@@ -230,8 +261,20 @@ function buscarOGenerarSesionHoy_() {
   const lock = LockService.getScriptLock();
   lock.waitLock(10000);
   try {
+    // Fuerza una lectura fresca (no la cacheada de antes de esperar el
+    // lock) — otra petición en paralelo pudo haber generado ya la sesión
+    // mientras esperábamos; sin esto, el recheck perdería sentido y
+    // volveríamos a poder duplicar la fila _TEST.
+    invalidarCacheHoja_(HOJAS.SESIONES_PLAN);
     sesion = buscarSesionEnHojaPorFecha_(hoy);
-    if (!sesion) sesion = generarSesionTestHoy_(hoy, tipoSesionHoy);
+    if (!sesion) {
+      sesion = generarSesionTestHoy_(hoy, tipoSesionHoy);
+      // Acaba de escribir filas nuevas — invalidar para que cualquier otra
+      // lectura de estas hojas en esta misma petición (p.ej. getSesionCompletadaHoy_)
+      // vea la sesión recién creada en vez de la copia cacheada de antes.
+      invalidarCacheHoja_(HOJAS.SESIONES_PLAN);
+      invalidarCacheHoja_(HOJAS.EJERCICIOS_PLAN);
+    }
     return sesion;
   } finally {
     lock.releaseLock();
@@ -413,8 +456,7 @@ function getEstiramientos_(tipoDia) {
  * Los pesos son SIEMPRE dinámicos — el plan define tipo de trabajo, RIR y volumen.
  */
 function getPlanAnual_() {
-  const hoja = getHoja_(HOJAS.PLAN_ANUAL);
-  const datos = hoja.getDataRange().getValues();
+  const datos = getDatosHoja_(HOJAS.PLAN_ANUAL);
   const cab = datos[0];
   const fases = [];
   for (let i = 1; i < datos.length; i++) fases.push(rowToObj_(cab, datos[i]));
@@ -509,8 +551,13 @@ function getMacrosHoy_() {
   }
   const carbosG = Math.round((calorias - protG * 4 - grasaG * 9) / 4);
 
-  const sesionHoy = getSesionHoy_();
-  const esEntreno = sesionHoy.sesion !== null;
+  // FIX (rendimiento): antes llamaba a getSesionHoy_() completo — el motor de
+  // pesos entero (calcularPesoSugerido_/ajustarSeriesAdaptativo_ por cada
+  // ejercicio, con una lectura de ejercicios_log CADA UNO) solo para saber si
+  // hoy hay sesión o no. buscarOGenerarSesionHoy_() responde lo mismo con una
+  // sola lectura de sesiones_plan — el peso de cada ejercicio no hace falta
+  // aquí, solo si existe fila para hoy.
+  const esEntreno = buscarOGenerarSesionHoy_() !== null;
   // Agua: 35 ml/kg/día (evidencia/vitalidad.md) + 500ml extra en día entreno (compensar sudor)
   var agua = Math.round(peso * 35) + (esEntreno ? 500 : 0);
 
@@ -564,9 +611,17 @@ function getProgresionMetricas_(dias) {
 
   // Zepp — centraliza sueño, pasos, FC reposo, peso y % grasa (una fila/día;
   // peso_kg/grasa_pct pueden venir vacíos los días sin pesada).
+  // FIX (rendimiento del gráfico — reportado como "raro"): sleep_score usaba
+  // `|| 0` en vez de `|| null` como peso_kg/grasa_pct — un día sin sueño
+  // sincronizado (Health Connect no llegó a sincronizar, o antes de empezar a
+  // usar la app) se representaba como 0/100, no como "sin dato". El gráfico
+  // (ProgresionChartView) SÍ trata null como hueco (no interpola a través),
+  // pero un 0 literal es un punto real que hunde la línea hasta el suelo cada
+  // vez que faltaba un día — efecto sierra. También desinflaba sleep_media
+  // más abajo (promediaba ceros falsos junto a los scores reales).
   const zeppData = leerDatosDesdeFecha_(HOJAS.METRICAS_ZEPP, 'date_fecha', desde, function(row) {
     return {
-      fecha: row.date_fecha, sleep_score: row.num_sleep_score || 0,
+      fecha: row.date_fecha, sleep_score: row.num_sleep_score || null,
       hr_reposo: row.num_hr_reposo || 0, pasos: row.num_pasos || 0,
       peso_kg: row.num_peso_kg || null, grasa_pct: row.num_grasa_pct || null
     };
@@ -611,7 +666,14 @@ function getProgresionMetricas_(dias) {
     peso_inicio: conPeso.length > 0 ? conPeso[0].peso_kg : null,
     grasa_actual: conPeso.length > 0 ? conPeso[conPeso.length - 1].grasa_pct : null,
     grasa_inicio: conPeso.length > 0 ? conPeso[0].grasa_pct : null,
-    sleep_media: zeppData.length > 0 ? Math.round(zeppData.reduce(function(s, d) { return s + d.sleep_score; }, 0) / zeppData.length) : null,
+    // Media solo sobre los días CON dato — un día sin sincronizar (null) no
+    // debe contar como "0 de sueño" y arrastrar la media hacia abajo.
+    sleep_media: (function() {
+      var conSueno = zeppData.filter(function(d) { return d.sleep_score != null; });
+      return conSueno.length > 0
+        ? Math.round(conSueno.reduce(function(s, d) { return s + d.sleep_score; }, 0) / conSueno.length)
+        : null;
+    })(),
     pasos_media: zeppData.length > 0 ? Math.round(zeppData.reduce(function(s, d) { return s + d.pasos; }, 0) / zeppData.length) : null
   };
 
@@ -622,8 +684,7 @@ function getProgresionMetricas_(dias) {
 }
 
 function checkAusencia_() {
-  const hoja = getHoja_(HOJAS.SESIONES_PLAN);
-  const datos = hoja.getDataRange().getValues();
+  const datos = getDatosHoja_(HOJAS.SESIONES_PLAN);
   const cab = datos[0];
   const hoy = new Date();
   const hace7 = new Date(hoy.getTime() - 7 * 86400000);
@@ -1144,8 +1205,7 @@ function getCambioFase_() {
   const faseAnterior = fases[idxActual - 1];
 
   // Adherencia: sesiones completadas vs totales dentro del rango de fechas
-  var hSes = getHoja_(HOJAS.SESIONES_PLAN);
-  var datosSes = hSes.getDataRange().getValues();
+  var datosSes = getDatosHoja_(HOJAS.SESIONES_PLAN);
   var cabSes = datosSes[0];
   var colFecha = cabSes.indexOf('date_fecha');
   var colComp = cabSes.indexOf('bool_completada');
@@ -1161,14 +1221,17 @@ function getCambioFase_() {
 
   // Peso/sueño dentro del rango de la fase (metricas_zepp, permanente)
   var zeppFase = leerDatosDesdeFecha_(HOJAS.METRICAS_ZEPP, 'date_fecha', parseDate_(faseAnterior.date_inicio), function(row) {
-    return { fecha: row.date_fecha, peso_kg: row.num_peso_kg || null, sleep_score: row.num_sleep_score || 0 };
+    return { fecha: row.date_fecha, peso_kg: row.num_peso_kg || null, sleep_score: row.num_sleep_score || null };
   }).filter(function(r) { return r.fecha <= faseAnterior.date_fin; });
 
   var conPeso = zeppFase.filter(function(z) { return z.peso_kg; });
   var pesoInicio = conPeso.length ? conPeso[0].peso_kg : null;
   var pesoFin = conPeso.length ? conPeso[conPeso.length - 1].peso_kg : null;
-  var sleepMedia = zeppFase.length
-    ? Math.round(zeppFase.reduce(function(s, z) { return s + z.sleep_score; }, 0) / zeppFase.length)
+  // Media solo sobre los días CON dato de sueño (fix mismo patrón que
+  // getProgresionMetricas_: un día sin sincronizar no debe contar como 0).
+  var zeppFaseConSueno = zeppFase.filter(function(z) { return z.sleep_score != null; });
+  var sleepMedia = zeppFaseConSueno.length
+    ? Math.round(zeppFaseConSueno.reduce(function(s, z) { return s + z.sleep_score; }, 0) / zeppFaseConSueno.length)
     : null;
 
   return {
@@ -1190,9 +1253,8 @@ function getCambioFase_() {
  * completada, adjunta su resumen (mismo cálculo que completar_sesion).
  */
 function getSesionCompletadaHoy_(hoy) {
-  var hoja = getHoja_(HOJAS.SESIONES_PLAN);
-  if (!hoja) return { completada: false, resumen: null };
-  var datos = hoja.getDataRange().getValues();
+  var datos = getDatosHoja_(HOJAS.SESIONES_PLAN);
+  if (!datos.length) return { completada: false, resumen: null };
   var cab = datos[0];
   var colFecha = cab.indexOf('date_fecha');
   var colComp = cab.indexOf('bool_completada');
@@ -1352,8 +1414,7 @@ function checkAusenciaAyer_() {
   var tipoAyer = getHorarioSemanal_()[diaSemana];
   if (['PUSH', 'PIERNA', 'PULL', 'HOMBR'].indexOf(tipoAyer) < 0) return null;
 
-  var hoja = getHoja_(HOJAS.SESIONES_PLAN);
-  var datos = hoja.getDataRange().getValues();
+  var datos = getDatosHoja_(HOJAS.SESIONES_PLAN);
   var cab = datos[0];
 
   for (var i = 1; i < datos.length; i++) {
@@ -1374,9 +1435,8 @@ function checkAusenciaAyer_() {
  * Se muestra al usuario al finalizar el entreno.
  */
 function getResumenSesion_(sesionId) {
-  var hoja = getHoja_(HOJAS.EJERCICIOS_LOG);
-  if (!hoja) return { mensaje: 'Sin datos de log' };
-  var datos = hoja.getDataRange().getValues();
+  var datos = getDatosHoja_(HOJAS.EJERCICIOS_LOG);
+  if (!datos.length) return { mensaje: 'Sin datos de log' };
   var cab = datos[0];
   var colSes = cab.indexOf('sesion_id');
 
@@ -1498,9 +1558,8 @@ function calcularAjusteDia_() {
  * Adaptado de Kiviniemi 2007.
  */
 function esTendenciaFCAscendente_(dias) {
-  const hoja = getHoja_(HOJAS.METRICAS_ZEPP);
-  if (!hoja) return false;
-  const datos = hoja.getDataRange().getValues();
+  const datos = getDatosHoja_(HOJAS.METRICAS_ZEPP);
+  if (!datos.length) return false;
   const cab = datos[0];
   const colFC = cab.indexOf('num_hr_reposo');
   if (colFC < 0) return false;
@@ -1718,10 +1777,8 @@ function calcularPesoSugerido_(ejercicioId, ctx) {
  * @returns {Object|null} fila de ejercicios_log, o null si no hay historial.
  */
 function obtenerMejorSetReciente_(ejercicioId) {
-  var hoja = getHoja_(HOJAS.EJERCICIOS_LOG);
-  if (!hoja || hoja.getLastRow() <= 1) return null;
-
-  var datos = hoja.getDataRange().getValues();
+  var datos = getDatosHoja_(HOJAS.EJERCICIOS_LOG);
+  if (datos.length <= 1) return null;
   var cab = datos[0];
   var colEj = cab.indexOf('ejercicio_id');
   var colSes = cab.indexOf('sesion_id');
@@ -2028,8 +2085,7 @@ function parseRepsObjetivo_(v) {
 }
 
 function calcularMediaFC_(dias) {
-  const hoja = getHoja_(HOJAS.METRICAS_ZEPP);
-  const datos = hoja.getDataRange().getValues();
+  const datos = getDatosHoja_(HOJAS.METRICAS_ZEPP);
   const cab = datos[0];
   const colFC = cab.indexOf('num_hr_reposo');
   var vals = [];
@@ -2120,8 +2176,7 @@ function rowToObj_(cab, fila) {
 }
 
 function getEjerciciosSesion_(sesionId) {
-  const hoja = getHoja_(HOJAS.EJERCICIOS_PLAN);
-  const datos = hoja.getDataRange().getValues();
+  const datos = getDatosHoja_(HOJAS.EJERCICIOS_PLAN);
   const cab = datos[0];
   const col = cab.indexOf('sesion_id');
   var res = [];
@@ -2145,9 +2200,8 @@ function getEjerciciosSesion_(sesionId) {
 }
 
 function getCatalogoMap_() {
-  const hoja = getHoja_(HOJAS.EJERCICIOS_CATALOGO);
-  if (!hoja) return {};
-  const datos = hoja.getDataRange().getValues();
+  const datos = getDatosHoja_(HOJAS.EJERCICIOS_CATALOGO);
+  if (!datos.length) return {};
   const cab = datos[0];
   var mapa = {};
   for (let i = 1; i < datos.length; i++) {
@@ -2158,9 +2212,8 @@ function getCatalogoMap_() {
 }
 
 function getUltimaFila_(hoja, colFecha, fecha) {
-  const h = getHoja_(hoja);
-  if (!h) return null;
-  const datos = h.getDataRange().getValues();
+  const datos = getDatosHoja_(hoja);
+  if (!datos.length) return null;
   const cab = datos[0];
   const idx = cab.indexOf(colFecha);
   if (idx < 0) return null;
@@ -2172,9 +2225,8 @@ function getUltimaFila_(hoja, colFecha, fecha) {
 }
 
 function leerDatosDesdeFecha_(nombreHoja, colFecha, desde, mapper) {
-  const hoja = getHoja_(nombreHoja);
-  if (!hoja) return [];
-  const datos = hoja.getDataRange().getValues();
+  const datos = getDatosHoja_(nombreHoja);
+  if (!datos.length) return [];
   const cab = datos[0];
   const idx = cab.indexOf(colFecha);
   if (idx < 0) return [];
@@ -2191,9 +2243,7 @@ function leerDatosDesdeFecha_(nombreHoja, colFecha, desde, mapper) {
 }
 
 function getPesoActual_() {
-  const hoja = getHoja_(HOJAS.METRICAS_ZEPP);
-  if (!hoja) return 78.2; // Fallback: biometria.md peso actual
-  const datos = hoja.getDataRange().getValues();
+  const datos = getDatosHoja_(HOJAS.METRICAS_ZEPP);
   if (datos.length <= 1) return 78.2; // Fallback: biometria.md
   const cab = datos[0];
   const colP = cab.indexOf('num_peso_kg');
@@ -2212,9 +2262,7 @@ function getPesoActual_() {
  * %BF fijo en un comentario que no se recalcula si la composición cambia.
  */
 function getGrasaActual_() {
-  const hoja = getHoja_(HOJAS.METRICAS_ZEPP);
-  if (!hoja) return 18.9; // Fallback: biometria.md % grasa actual
-  const datos = hoja.getDataRange().getValues();
+  const datos = getDatosHoja_(HOJAS.METRICAS_ZEPP);
   if (datos.length <= 1) return 18.9;
   const cab = datos[0];
   const colG = cab.indexOf('num_grasa_pct');
@@ -2233,10 +2281,8 @@ function getGrasaActual_() {
  * venir de días distintos). Devuelve { peso, grasa } con null si no hay dato.
  */
 function getUltimoPesoGrasaConocido_(fecha) {
-  const hoja = getHoja_(HOJAS.METRICAS_ZEPP);
   const res = { peso: null, grasa: null };
-  if (!hoja) return res;
-  const datos = hoja.getDataRange().getValues();
+  const datos = getDatosHoja_(HOJAS.METRICAS_ZEPP);
   if (datos.length <= 1) return res;
   const cab = datos[0];
   const colFecha = cab.indexOf('date_fecha');
